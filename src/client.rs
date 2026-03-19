@@ -1,8 +1,13 @@
 // OpenAI client
 
+use std::time::Duration;
+
 use crate::config::ClientConfig;
 use crate::error::{ErrorResponse, OpenAIError};
 use crate::resources::chat::Chat;
+
+/// Status codes that trigger a retry.
+const RETRYABLE_STATUS_CODES: [u16; 4] = [429, 500, 502, 503];
 
 /// The main OpenAI client.
 #[derive(Debug, Clone)]
@@ -20,7 +25,7 @@ impl OpenAI {
     /// Create a client from a full config.
     pub fn with_config(config: ClientConfig) -> Self {
         let http = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(config.timeout_secs))
+            .timeout(Duration::from_secs(config.timeout_secs))
             .build()
             .expect("failed to build HTTP client");
         Self { http, config }
@@ -59,8 +64,8 @@ impl OpenAI {
         &self,
         path: &str,
     ) -> Result<T, OpenAIError> {
-        let response = self.request(reqwest::Method::GET, path).send().await?;
-        Self::handle_response(response).await
+        self.send_with_retry(reqwest::Method::GET, path, None::<&()>)
+            .await
     }
 
     /// Send a POST request with a JSON body and deserialize the response.
@@ -69,12 +74,8 @@ impl OpenAI {
         path: &str,
         body: &B,
     ) -> Result<T, OpenAIError> {
-        let response = self
-            .request(reqwest::Method::POST, path)
-            .json(body)
-            .send()
-            .await?;
-        Self::handle_response(response).await
+        self.send_with_retry(reqwest::Method::POST, path, Some(body))
+            .await
     }
 
     /// Send a DELETE request and deserialize the response.
@@ -82,8 +83,68 @@ impl OpenAI {
         &self,
         path: &str,
     ) -> Result<T, OpenAIError> {
-        let response = self.request(reqwest::Method::DELETE, path).send().await?;
-        Self::handle_response(response).await
+        self.send_with_retry(reqwest::Method::DELETE, path, None::<&()>)
+            .await
+    }
+
+    /// Send a request with retry logic for transient errors.
+    async fn send_with_retry<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        body: Option<&B>,
+    ) -> Result<T, OpenAIError> {
+        let max_retries = self.config.max_retries;
+        let mut last_error: Option<OpenAIError> = None;
+
+        for attempt in 0..=max_retries {
+            let mut req = self.request(method.clone(), path);
+            if let Some(b) = body {
+                req = req.json(b);
+            }
+
+            let response = match req.send().await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    last_error = Some(OpenAIError::RequestError(e));
+                    if attempt < max_retries {
+                        tokio::time::sleep(Self::backoff_delay(attempt, None)).await;
+                        continue;
+                    }
+                    break;
+                }
+            };
+
+            let status = response.status().as_u16();
+
+            if !RETRYABLE_STATUS_CODES.contains(&status) || attempt == max_retries {
+                return Self::handle_response(response).await;
+            }
+
+            // Retryable status — parse Retry-After and sleep
+            let retry_after = response
+                .headers()
+                .get("retry-after")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse::<f64>().ok());
+
+            last_error = Some(Self::extract_error(status, response).await);
+            tokio::time::sleep(Self::backoff_delay(attempt, retry_after)).await;
+        }
+
+        Err(last_error.unwrap_or_else(|| {
+            OpenAIError::InvalidArgument("retry loop exhausted without error".to_string())
+        }))
+    }
+
+    /// Calculate backoff delay: max(retry_after, 0.5 * 2^attempt) seconds.
+    fn backoff_delay(attempt: u32, retry_after_secs: Option<f64>) -> Duration {
+        let exponential = 0.5 * 2.0_f64.powi(attempt as i32);
+        let secs = match retry_after_secs {
+            Some(ra) => ra.max(exponential),
+            None => exponential,
+        };
+        Duration::from_secs_f64(secs.min(60.0))
     }
 
     /// Handle API response: check status, parse errors or deserialize body.
@@ -96,22 +157,26 @@ impl OpenAI {
             let value: T = serde_json::from_str(&body)?;
             Ok(value)
         } else {
-            let status_code = status.as_u16();
-            let body = response.text().await.unwrap_or_default();
-            if let Ok(error_resp) = serde_json::from_str::<ErrorResponse>(&body) {
-                Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: error_resp.error.message,
-                    type_: error_resp.error.type_,
-                    code: error_resp.error.code,
-                })
-            } else {
-                Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: body,
-                    type_: None,
-                    code: None,
-                })
+            Err(Self::extract_error(status.as_u16(), response).await)
+        }
+    }
+
+    /// Extract an OpenAIError from a failed response.
+    async fn extract_error(status: u16, response: reqwest::Response) -> OpenAIError {
+        let body = response.text().await.unwrap_or_default();
+        if let Ok(error_resp) = serde_json::from_str::<ErrorResponse>(&body) {
+            OpenAIError::ApiError {
+                status,
+                message: error_resp.error.message,
+                type_: error_resp.error.type_,
+                code: error_resp.error.code,
+            }
+        } else {
+            OpenAIError::ApiError {
+                status,
+                message: body,
+                type_: None,
+                code: None,
             }
         }
     }
@@ -138,6 +203,33 @@ mod tests {
         assert_eq!(client.config.base_url, "https://custom.api.com");
         assert_eq!(client.config.organization.as_deref(), Some("org-123"));
         assert_eq!(client.config.timeout_secs, 30);
+    }
+
+    #[test]
+    fn test_backoff_delay() {
+        // Attempt 0: 0.5s
+        let d = OpenAI::backoff_delay(0, None);
+        assert_eq!(d, Duration::from_millis(500));
+
+        // Attempt 1: 1.0s
+        let d = OpenAI::backoff_delay(1, None);
+        assert_eq!(d, Duration::from_secs(1));
+
+        // Attempt 2: 2.0s
+        let d = OpenAI::backoff_delay(2, None);
+        assert_eq!(d, Duration::from_secs(2));
+
+        // Retry-After takes precedence when larger
+        let d = OpenAI::backoff_delay(0, Some(5.0));
+        assert_eq!(d, Duration::from_secs(5));
+
+        // Exponential wins when larger than Retry-After
+        let d = OpenAI::backoff_delay(3, Some(0.1));
+        assert_eq!(d, Duration::from_secs(4));
+
+        // Capped at 60s
+        let d = OpenAI::backoff_delay(10, None);
+        assert_eq!(d, Duration::from_secs(60));
     }
 
     #[tokio::test]
@@ -297,6 +389,136 @@ mod tests {
 
         let resp: Resp = client.get("/test").await.unwrap();
         assert!(resp.ok);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_on_429_then_success() {
+        let mut server = mockito::Server::new_async().await;
+
+        // First request returns 429, second returns 200
+        let _mock_429 = server
+            .mock("GET", "/test")
+            .with_status(429)
+            .with_header("retry-after", "0")
+            .with_body(r#"{"error":{"message":"Rate limited","type":"rate_limit_error","param":null,"code":null}}"#)
+            .create_async()
+            .await;
+
+        let mock_200 = server
+            .mock("GET", "/test")
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(2),
+        );
+
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            ok: bool,
+        }
+
+        let resp: Resp = client.get("/test").await.unwrap();
+        assert!(resp.ok);
+        mock_200.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_exhausted_returns_last_error() {
+        let mut server = mockito::Server::new_async().await;
+
+        // All requests return 500
+        let _mock = server
+            .mock("GET", "/test")
+            .with_status(500)
+            .with_body(r#"{"error":{"message":"Internal server error","type":"server_error","param":null,"code":null}}"#)
+            .expect_at_least(2)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(1),
+        );
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Resp {
+            _ok: bool,
+        }
+
+        let err = client.get::<Resp>("/test").await.unwrap_err();
+        match err {
+            OpenAIError::ApiError { status, .. } => assert_eq!(status, 500),
+            other => panic!("expected ApiError, got: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_no_retry_on_400() {
+        let mut server = mockito::Server::new_async().await;
+
+        // 400 should not be retried
+        let mock = server
+            .mock("GET", "/test")
+            .with_status(400)
+            .with_body(r#"{"error":{"message":"Bad request","type":"invalid_request_error","param":null,"code":null}}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(2),
+        );
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Resp {
+            _ok: bool,
+        }
+
+        let err = client.get::<Resp>("/test").await.unwrap_err();
+        match err {
+            OpenAIError::ApiError { status, .. } => assert_eq!(status, 400),
+            other => panic!("expected ApiError, got: {other:?}"),
+        }
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_zero_retries_no_retry() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("GET", "/test")
+            .with_status(429)
+            .with_body(r#"{"error":{"message":"Rate limited","type":"rate_limit_error","param":null,"code":null}}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(0),
+        );
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Resp {
+            _ok: bool,
+        }
+
+        let err = client.get::<Resp>("/test").await.unwrap_err();
+        match err {
+            OpenAIError::ApiError { status, .. } => assert_eq!(status, 429),
+            other => panic!("expected ApiError, got: {other:?}"),
+        }
         mock.assert_async().await;
     }
 }
