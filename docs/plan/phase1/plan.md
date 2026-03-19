@@ -22,13 +22,13 @@
 
 ## Phase 1: Project Setup
 
-- [ ] Task 1.1: Create `Cargo.toml` with deps: reqwest (rustls-tls, json, stream, multipart), tokio (full), serde (derive), serde_json, thiserror, tracing. Dev-deps: mockito, tokio (rt-multi-thread). Feature: `live-tests`.
-- [ ] Task 1.2: Create `src/error.rs` — `OpenAIError` enum: ApiError { status, message, type_, code }, RequestError(reqwest::Error), JsonError(serde_json::Error), StreamError(String), InvalidArgument(String). Implement Display, Error. Add `ErrorResponse` struct matching OpenAI error JSON format.
+- [x] Task 1.1: Create `Cargo.toml` with deps: reqwest (rustls-tls, json, stream, multipart), tokio (full), serde (derive), serde_json, thiserror, tracing. Dev-deps: mockito, tokio (rt-multi-thread). Feature: `live-tests`. <!-- sha:99fdcdc -->
+- [x] Task 1.2: Create `src/error.rs` — `OpenAIError` enum: ApiError { status, message, type_, code }, RequestError(reqwest::Error), JsonError(serde_json::Error), StreamError(String), InvalidArgument(String). Implement Display, Error. Add `ErrorResponse` struct matching OpenAI error JSON format. <!-- sha:99fdcdc -->
 
 ## Phase 2: Base Client
 
-- [ ] Task 2.1: Create `src/config.rs` — `ClientConfig` struct: api_key, base_url (default "https://api.openai.com/v1"), organization, project, timeout_secs, max_retries. Builder pattern. Load api_key from `OPENAI_API_KEY` env if not set.
-- [ ] Task 2.2: Create `src/client.rs` — `OpenAI` struct wrapping reqwest::Client + config. Methods: `new(api_key)`, `with_config(config)`, `from_env()`. Internal: `get()`, `post()`, `delete()` helpers that add auth headers, parse errors. Test: construct client, verify headers.
+- [x] Task 2.1: Create `src/config.rs` — `ClientConfig` struct: api_key, base_url (default "https://api.openai.com/v1"), organization, project, timeout_secs, max_retries. Builder pattern. Load api_key from `OPENAI_API_KEY` env if not set. <!-- sha:99fdcdc -->
+- [~] Task 2.2: Create `src/client.rs` — `OpenAI` struct wrapping reqwest::Client + config. Methods: `new(api_key)`, `with_config(config)`, `from_env()`. Internal: `get()`, `post()`, `delete()` helpers that add auth headers, parse errors. Test: construct client, verify headers.
 - [ ] Task 2.3: Add retry logic to client — exponential backoff on 429/500/502/503. Configurable max_retries (default 2). Parse `Retry-After` header. Test with mockito: mock 429 → 200 sequence.
 
 ## Phase 3: Chat Completions (most important endpoint)
