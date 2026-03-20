@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod batch;
 pub mod beta;
 pub mod chat;
 pub mod common;
@@ -9,3 +10,4 @@ pub mod image;
 pub mod model;
 pub mod moderation;
 pub mod responses;
+pub mod upload;

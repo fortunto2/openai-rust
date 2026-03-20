@@ -5,6 +5,7 @@ use std::time::Duration;
 use crate::config::ClientConfig;
 use crate::error::{ErrorResponse, OpenAIError};
 use crate::resources::audio::Audio;
+use crate::resources::batches::Batches;
 use crate::resources::beta::assistants::Assistants;
 use crate::resources::beta::runs::Runs;
 use crate::resources::beta::threads::Threads;
@@ -17,6 +18,7 @@ use crate::resources::images::Images;
 use crate::resources::models::Models;
 use crate::resources::moderations::Moderations;
 use crate::resources::responses::Responses;
+use crate::resources::uploads::Uploads;
 
 /// Status codes that trigger a retry.
 const RETRYABLE_STATUS_CODES: [u16; 4] = [429, 500, 502, 503];
@@ -46,6 +48,16 @@ impl OpenAI {
     /// Create a client using the `OPENAI_API_KEY` environment variable.
     pub fn from_env() -> Result<Self, OpenAIError> {
         Ok(Self::with_config(ClientConfig::from_env()?))
+    }
+
+    /// Access the Batches resource.
+    pub fn batches(&self) -> Batches<'_> {
+        Batches::new(self)
+    }
+
+    /// Access the Uploads resource.
+    pub fn uploads(&self) -> Uploads<'_> {
+        Uploads::new(self)
     }
 
     /// Access the Beta resources (Assistants, Threads, Runs, Vector Stores).
