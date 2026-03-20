@@ -27,9 +27,9 @@ impl<'a> Embeddings<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::embedding::EmbeddingRequest;
-    use crate::OpenAI;
 
     #[tokio::test]
     async fn test_embeddings_create() {

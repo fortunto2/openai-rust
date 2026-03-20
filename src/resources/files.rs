@@ -61,9 +61,9 @@ impl<'a> Files<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::file::FileUploadParams;
-    use crate::OpenAI;
 
     #[tokio::test]
     async fn test_files_create() {

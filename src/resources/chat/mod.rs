@@ -81,9 +81,9 @@ impl<'a> Completions<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::chat::{ChatCompletionMessageParam, ChatCompletionRequest, UserContent};
-    use crate::OpenAI;
 
     #[tokio::test]
     async fn test_chat_completions_create() {

@@ -84,9 +84,9 @@ impl<'a> Images<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::image::{ImageGenerateRequest, ImageVariationParams};
-    use crate::OpenAI;
 
     #[tokio::test]
     async fn test_images_generate() {

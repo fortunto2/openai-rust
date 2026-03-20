@@ -125,9 +125,9 @@ impl<'a> Speech<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::audio::{SpeechRequest, TranscriptionParams, TranslationParams};
-    use crate::OpenAI;
 
     #[tokio::test]
     async fn test_audio_transcription_create() {

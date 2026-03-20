@@ -38,8 +38,8 @@ impl<'a> Models<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::ClientConfig;
     use crate::OpenAI;
+    use crate::config::ClientConfig;
 
     #[tokio::test]
     async fn test_models_list() {

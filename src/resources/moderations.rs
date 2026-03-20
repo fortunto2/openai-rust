@@ -27,9 +27,9 @@ impl<'a> Moderations<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::moderation::ModerationRequest;
-    use crate::OpenAI;
 
     #[tokio::test]
     async fn test_moderations_create() {

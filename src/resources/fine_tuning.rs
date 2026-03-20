@@ -80,9 +80,9 @@ impl<'a> Jobs<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::OpenAI;
     use crate::config::ClientConfig;
     use crate::types::fine_tuning::FineTuningJobCreateRequest;
-    use crate::OpenAI;
 
     const JOB_JSON: &str = r#"{
         "id": "ftjob-abc123",
