@@ -1,16 +1,30 @@
 #!/bin/sh
 set -e
 
-echo "Running tests..."
+echo "=== Tests ==="
 cargo test --quiet
 
-echo "Running OpenAPI coverage..."
+echo "=== OpenAPI Coverage ==="
 cargo test --test openapi_coverage --quiet
 
-echo "Running clippy..."
+echo "=== Clippy ==="
 cargo clippy -- -D warnings
 
-echo "Checking format..."
+echo "=== Format ==="
 cargo fmt -- --check
 
-echo "All checks passed."
+echo "=== Quality: no serde_json::Value in public types ==="
+VALUE_COUNT=$(grep -r "pub.*: .*serde_json::Value" src/types/*.rs 2>/dev/null | grep -v "//\|#\[" | wc -l | tr -d ' ')
+if [ "$VALUE_COUNT" -gt 5 ]; then
+    echo "WARN: $VALUE_COUNT public fields use serde_json::Value — should be typed structs"
+    grep -rn "pub.*: .*serde_json::Value" src/types/*.rs | grep -v "//\|#\[" | head -10
+    echo "(target: ≤5, currently: $VALUE_COUNT)"
+fi
+
+echo "=== Quality: enum coverage ==="
+STRING_FIELDS=$(grep -rn "pub.*: String," src/types/*.rs 2>/dev/null | grep -v "//\|name\|id\|url\|content\|text\|message\|description\|input\|path\|key\|label\|title" | wc -l | tr -d ' ')
+if [ "$STRING_FIELDS" -gt 10 ]; then
+    echo "NOTE: $STRING_FIELDS String fields might be enums — review periodically"
+fi
+
+echo "=== All checks passed ==="
