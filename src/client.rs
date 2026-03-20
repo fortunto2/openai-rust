@@ -7,6 +7,7 @@ use crate::error::{ErrorResponse, OpenAIError};
 use crate::resources::chat::Chat;
 use crate::resources::embeddings::Embeddings;
 use crate::resources::models::Models;
+use crate::resources::moderations::Moderations;
 
 /// Status codes that trigger a retry.
 const RETRYABLE_STATUS_CODES: [u16; 4] = [429, 500, 502, 503];
@@ -46,6 +47,11 @@ impl OpenAI {
     /// Access the Models resource.
     pub fn models(&self) -> Models<'_> {
         Models::new(self)
+    }
+
+    /// Access the Moderations resource.
+    pub fn moderations(&self) -> Moderations<'_> {
+        Moderations::new(self)
     }
 
     /// Access the Embeddings resource.
