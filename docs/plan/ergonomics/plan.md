@@ -28,17 +28,17 @@ Gate each API resource behind an optional Cargo feature so users can minimize co
 - [x] `cargo test --no-default-features --features chat` — chat tests pass
 - [x] `cargo clippy -- -D warnings` clean
 
-## Phase 2: BYOT Methods
+## Phase 2: BYOT Methods <!-- checkpoint:9cc562a -->
 
 Add `create_raw()` methods on key endpoints that accept any serializable request and return raw `serde_json::Value`. This lets advanced users use custom types or access fields not yet in our type system.
 
 ### Tasks
 
 - [x] Task 2.1: Add `post_json<B: Serialize>(&self, path, body) -> Result<serde_json::Value>` helper to `OpenAI` client in `src/client.rs`. Reuses `send_with_retry` logic with `serde_json::Value` as the deserialization target. <!-- sha:8549379 -->
-- [x] Task 2.2: Add `create_raw(&self, request: impl Serialize) -> Result<serde_json::Value>` to `Completions` in `src/resources/chat/mod.rs`. Gate behind `chat` feature.
-- [x] Task 2.3: Add `create_raw(&self, request: impl Serialize) -> Result<serde_json::Value>` to `Responses` in `src/resources/responses.rs`. Gate behind `responses` feature.
-- [x] Task 2.4: Add `create_raw(&self, request: impl Serialize) -> Result<serde_json::Value>` to `Embeddings` in `src/resources/embeddings.rs`. Gate behind `embeddings` feature.
-- [x] Task 2.5: Add mockito tests for all three `create_raw()` methods — verify custom request fields pass through and raw JSON response is returned.
+- [x] Task 2.2: Add `create_raw(&self, request: impl Serialize) -> Result<serde_json::Value>` to `Completions` in `src/resources/chat/mod.rs`. Gate behind `chat` feature. <!-- sha:9cc562a -->
+- [x] Task 2.3: Add `create_raw(&self, request: impl Serialize) -> Result<serde_json::Value>` to `Responses` in `src/resources/responses.rs`. Gate behind `responses` feature. <!-- sha:9cc562a -->
+- [x] Task 2.4: Add `create_raw(&self, request: impl Serialize) -> Result<serde_json::Value>` to `Embeddings` in `src/resources/embeddings.rs`. Gate behind `embeddings` feature. <!-- sha:9cc562a -->
+- [x] Task 2.5: Add mockito tests for all three `create_raw()` methods — verify custom request fields pass through and raw JSON response is returned. <!-- sha:9cc562a -->
 
 ### Verification
 
@@ -52,15 +52,15 @@ Add `Image::save(path)` convenience method that handles both URL download and b6
 
 ### Tasks
 
-- [ ] Task 3.1: Add `base64` crate (v0.22) to `[dependencies]` in `Cargo.toml`, gated behind `images` feature.
-- [ ] Task 3.2: Implement `Image::save(&self, path: impl AsRef<Path>) -> Result<(), OpenAIError>` in `src/types/image.rs`. If `b64_json` is set, decode and write. If `url` is set, download via reqwest and write. Error if neither is set.
-- [ ] Task 3.3: Add tests for `Image::save()` — test b64_json decode path (unit test with known base64 data), test error when no data present. URL download test with mockito.
+- [x] Task 3.1: Add `base64` crate (v0.22) to `[dependencies]` in `Cargo.toml`, gated behind `images` feature.
+- [x] Task 3.2: Implement `Image::save(&self, path: impl AsRef<Path>) -> Result<(), OpenAIError>` in `src/types/image.rs`. If `b64_json` is set, decode and write. If `url` is set, download via reqwest and write. Error if neither is set.
+- [x] Task 3.3: Add tests for `Image::save()` — test b64_json decode path (unit test with known base64 data), test error when no data present. URL download test with mockito.
 
 ### Verification
 
-- [ ] `Image::save("output.png")` works for b64_json responses
-- [ ] `Image::save("output.png")` works for URL responses
-- [ ] Error returned when image has neither URL nor b64_json
+- [x] `Image::save("output.png")` works for b64_json responses
+- [x] `Image::save("output.png")` works for URL responses
+- [x] Error returned when image has neither URL nor b64_json
 
 ## Phase 4: Docs & Cleanup
 

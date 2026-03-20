@@ -236,6 +236,60 @@ pub struct Image {
     pub url: Option<String>,
 }
 
+#[cfg(feature = "images")]
+impl Image {
+    /// Save the image to a file.
+    ///
+    /// - If `b64_json` is set, decodes the base64 data and writes it.
+    /// - If `url` is set, downloads the image via HTTP and writes it.
+    /// - Returns an error if neither field is populated.
+    ///
+    /// ```ignore
+    /// let resp = client.images().generate(req).await?;
+    /// if let Some(images) = &resp.data {
+    ///     images[0].save("output.png").await?;
+    /// }
+    /// ```
+    pub async fn save(
+        &self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<(), crate::error::OpenAIError> {
+        use base64::Engine;
+
+        let bytes = if let Some(ref b64) = self.b64_json {
+            base64::engine::general_purpose::STANDARD
+                .decode(b64)
+                .map_err(|e| {
+                    crate::error::OpenAIError::InvalidArgument(format!(
+                        "failed to decode b64_json: {e}"
+                    ))
+                })?
+        } else if let Some(ref url) = self.url {
+            let resp = reqwest::get(url)
+                .await
+                .map_err(crate::error::OpenAIError::RequestError)?;
+            if !resp.status().is_success() {
+                return Err(crate::error::OpenAIError::InvalidArgument(format!(
+                    "failed to download image: HTTP {}",
+                    resp.status()
+                )));
+            }
+            resp.bytes()
+                .await
+                .map_err(crate::error::OpenAIError::RequestError)?
+                .to_vec()
+        } else {
+            return Err(crate::error::OpenAIError::InvalidArgument(
+                "image has neither b64_json nor url".to_string(),
+            ));
+        };
+
+        tokio::fs::write(path, &bytes).await.map_err(|e| {
+            crate::error::OpenAIError::InvalidArgument(format!("failed to write file: {e}"))
+        })
+    }
+}
+
 /// Response from image generation/edit/variation endpoints.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ImagesResponse {
@@ -247,6 +301,78 @@ pub struct ImagesResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "images")]
+    #[tokio::test]
+    async fn test_image_save_b64_json() {
+        use base64::Engine;
+        let png_bytes = b"\x89PNG\r\n\x1a\nfakedata";
+        let b64 = base64::engine::general_purpose::STANDARD.encode(png_bytes);
+
+        let image = Image {
+            b64_json: Some(b64),
+            revised_prompt: None,
+            url: None,
+        };
+
+        let dir = std::env::temp_dir().join("openai_oxide_test_b64");
+        let path = dir.join("test_save.png");
+        let _ = std::fs::create_dir_all(&dir);
+
+        image.save(&path).await.unwrap();
+        let saved = std::fs::read(&path).unwrap();
+        assert_eq!(saved, png_bytes);
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[cfg(feature = "images")]
+    #[tokio::test]
+    async fn test_image_save_url() {
+        let mut server = mockito::Server::new_async().await;
+        let image_bytes = b"\x89PNG\r\n\x1a\nfromurl";
+        let mock = server
+            .mock("GET", "/image.png")
+            .with_status(200)
+            .with_body(image_bytes.as_slice())
+            .create_async()
+            .await;
+
+        let image = Image {
+            b64_json: None,
+            revised_prompt: None,
+            url: Some(format!("{}/image.png", server.url())),
+        };
+
+        let dir = std::env::temp_dir().join("openai_oxide_test_url");
+        let path = dir.join("test_save_url.png");
+        let _ = std::fs::create_dir_all(&dir);
+
+        image.save(&path).await.unwrap();
+        let saved = std::fs::read(&path).unwrap();
+        assert_eq!(saved, image_bytes.as_slice());
+        mock.assert_async().await;
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[cfg(feature = "images")]
+    #[tokio::test]
+    async fn test_image_save_no_data_error() {
+        let image = Image {
+            b64_json: None,
+            revised_prompt: None,
+            url: None,
+        };
+
+        let err = image.save("/tmp/should_not_exist.png").await.unwrap_err();
+        match err {
+            crate::error::OpenAIError::InvalidArgument(msg) => {
+                assert!(msg.contains("neither b64_json nor url"));
+            }
+            other => panic!("expected InvalidArgument, got: {other:?}"),
+        }
+    }
 
     #[test]
     fn test_serialize_image_generate_request() {

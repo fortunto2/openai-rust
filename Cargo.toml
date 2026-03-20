@@ -21,6 +21,7 @@ futures-core = "0.3"
 futures-util = "0.3"
 bytes = "1"
 pin-project-lite = "0.2"
+base64 = { version = "0.22", optional = true }
 
 [dev-dependencies]
 mockito = "1"
@@ -34,7 +35,7 @@ full = ["chat", "responses", "embeddings", "images", "audio", "files", "fine-tun
 chat = []
 responses = []
 embeddings = []
-images = []
+images = ["base64"]
 audio = []
 files = []
 fine-tuning = []
