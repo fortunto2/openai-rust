@@ -18,15 +18,15 @@ Add typed enums for all String fields where the Python SDK uses `Literal[...]`. 
 - [x] Task 1.1: Add status/reason enums to `src/types/common.rs` <!-- sha:c9f7058 --> — `FinishReason` (stop, length, tool_calls, content_filter, function_call), `ServiceTier` (auto, default, flex, scale, priority), `ReasoningEffort` (low, medium, high), `SearchContextSize` (low, medium, high). Update `src/types/chat.rs` fields to use them.
 - [x] Task 1.2: Add file/batch/upload status enums <!-- sha:ad0c4ca --> — `FilePurpose` and `FileStatus` in `src/types/file.rs`, `BatchStatus` in `src/types/batch.rs`, `UploadStatus` in `src/types/upload.rs`. Update corresponding struct fields.
 - [x] Task 1.3: Add fine-tuning and beta status enums <!-- sha:3a539b8 --> — `FineTuningStatus` and `FineTuningEventLevel` in `src/types/fine_tuning.rs`, `RunStatus` and `VectorStoreStatus` in `src/types/beta.rs`. Update struct fields.
-- [~] Task 1.4: Add image enums — `ImageQuality`, `ImageSize`, `ImageStyle`, `ImageOutputFormat`, `ImageBackground`, `ImageModeration` in `src/types/image.rs`. Update `ImageGenerateRequest` fields.
-- [ ] Task 1.5: Add audio/embedding enums — `AudioResponseFormat`, `SpeechResponseFormat`, `AudioVoice`, `AudioFormat`, `InputAudioFormat` in `src/types/audio.rs`, `EncodingFormat` in `src/types/embedding.rs`, `ImageDetail` in `src/types/chat.rs`. Update fields.
-- [ ] Task 1.6: Add realtime enums — `RealtimeAudioFormat`, `TurnDetectionType`, `Eagerness` in `src/types/realtime.rs`. Update struct fields.
+- [x] Task 1.4: Add image enums <!-- sha:1fa194a --> — `ImageQuality`, `ImageSize`, `ImageStyle`, `ImageOutputFormat`, `ImageBackground`, `ImageModeration` in `src/types/image.rs`. Update `ImageGenerateRequest` fields.
+- [x] Task 1.5: Add audio/embedding enums <!-- sha:1fa194a --> — `AudioResponseFormat`, `SpeechResponseFormat`, `AudioVoice`, `AudioFormat`, `InputAudioFormat` in `src/types/audio.rs`, `EncodingFormat` in `src/types/embedding.rs`, `ImageDetail` in `src/types/chat.rs`. Update fields.
+- [x] Task 1.6: Add realtime enums <!-- sha:1fa194a --> — `RealtimeAudioFormat`, `TurnDetectionType`, `Eagerness` in `src/types/realtime.rs`. Update struct fields.
 
 ### Verification
 
-- [ ] `cargo test` — all existing tests pass
-- [ ] `cargo clippy -- -D warnings` — clean
-- [ ] Grep: no `String` fields where Python SDK uses `Literal[...]` for status/format/role/reason
+- [x] `cargo test` — all existing tests pass
+- [x] `cargo clippy -- -D warnings` — clean
+- [x] Grep: no `String` fields where Python SDK uses `Literal[...]` for status/format/role/reason
 
 ## Phase 2: serde_json::Value → Typed Replacements
 
