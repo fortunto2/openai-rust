@@ -486,14 +486,17 @@ impl OpenAI {
     /// Handle API response: check status, parse errors or deserialize body.
     ///
     /// Uses `bytes()` + `from_slice()` instead of `text()` + `from_str()`
-    /// to avoid an intermediate String allocation (~5-10% faster on large responses).
+    /// to avoid an intermediate String allocation.
+    ///
+    /// With `simd` feature: uses simd-json for SIMD-accelerated parsing.
     pub(crate) async fn handle_response<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
     ) -> Result<T, OpenAIError> {
         let status = response.status();
         if status.is_success() {
             let body = response.bytes().await?;
-            match serde_json::from_slice::<T>(&body) {
+            let result = Self::deserialize_body::<T>(&body);
+            match result {
                 Ok(value) => Ok(value),
                 Err(e) => {
                     tracing::error!(
@@ -502,12 +505,26 @@ impl OpenAI {
                         body_preview = %String::from_utf8_lossy(&body[..body.len().min(500)]),
                         "failed to deserialize API response"
                     );
-                    Err(e.into())
+                    Err(e)
                 }
             }
         } else {
             Err(Self::extract_error(status.as_u16(), response).await)
         }
+    }
+
+    /// Deserialize JSON body. Uses simd-json when `simd` feature is enabled.
+    #[cfg(feature = "simd")]
+    fn deserialize_body<T: serde::de::DeserializeOwned>(body: &[u8]) -> Result<T, OpenAIError> {
+        let mut buf = body.to_vec();
+        simd_json::from_slice::<T>(&mut buf)
+            .map_err(|e| OpenAIError::StreamError(format!("simd-json: {e}")))
+    }
+
+    /// Deserialize JSON body (standard serde_json).
+    #[cfg(not(feature = "simd"))]
+    fn deserialize_body<T: serde::de::DeserializeOwned>(body: &[u8]) -> Result<T, OpenAIError> {
+        serde_json::from_slice::<T>(body).map_err(OpenAIError::from)
     }
 
     /// Extract an OpenAIError from a failed response.

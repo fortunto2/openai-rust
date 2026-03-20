@@ -22,6 +22,7 @@ futures-util = "0.3"
 bytes = "1"
 pin-project-lite = "0.2"
 base64 = { version = "0.22", optional = true }
+simd-json = { version = "0.17", optional = true }
 
 [dev-dependencies]
 mockito = "1"
@@ -45,6 +46,7 @@ batches = []
 uploads = []
 beta = []
 live-tests = []
+simd = ["dep:simd-json"]
 
 [[example]]
 name = "chat"
