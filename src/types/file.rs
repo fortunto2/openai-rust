@@ -1,6 +1,38 @@
 // File types — mirrors openai-python types/file_object.py
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+/// The intended purpose of an uploaded file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum FilePurpose {
+    #[serde(rename = "assistants")]
+    Assistants,
+    #[serde(rename = "assistants_output")]
+    AssistantsOutput,
+    #[serde(rename = "batch")]
+    Batch,
+    #[serde(rename = "batch_output")]
+    BatchOutput,
+    #[serde(rename = "fine-tune")]
+    FineTune,
+    #[serde(rename = "fine-tune-results")]
+    FineTuneResults,
+    #[serde(rename = "vision")]
+    Vision,
+    #[serde(rename = "user_data")]
+    UserData,
+}
+
+/// Processing status of an uploaded file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum FileStatus {
+    Uploaded,
+    Processed,
+    Error,
+}
 
 /// A file object from the API.
 #[derive(Debug, Clone, Deserialize)]
@@ -10,8 +42,8 @@ pub struct FileObject {
     pub created_at: i64,
     pub filename: String,
     pub object: String,
-    pub purpose: String,
-    pub status: String,
+    pub purpose: FilePurpose,
+    pub status: FileStatus,
     #[serde(default)]
     pub status_details: Option<String>,
     #[serde(default)]
@@ -38,15 +70,15 @@ pub struct FileDeleted {
 pub struct FileUploadParams {
     pub file: Vec<u8>,
     pub filename: String,
-    pub purpose: String,
+    pub purpose: FilePurpose,
 }
 
 impl FileUploadParams {
-    pub fn new(file: Vec<u8>, filename: impl Into<String>, purpose: impl Into<String>) -> Self {
+    pub fn new(file: Vec<u8>, filename: impl Into<String>, purpose: FilePurpose) -> Self {
         Self {
             file,
             filename: filename.into(),
-            purpose: purpose.into(),
+            purpose,
         }
     }
 }
@@ -69,8 +101,8 @@ mod tests {
         let file: FileObject = serde_json::from_str(json).unwrap();
         assert_eq!(file.id, "file-abc123");
         assert_eq!(file.bytes, 120000);
-        assert_eq!(file.purpose, "fine-tune");
-        assert_eq!(file.status, "processed");
+        assert_eq!(file.purpose, FilePurpose::FineTune);
+        assert_eq!(file.status, FileStatus::Processed);
     }
 
     #[test]

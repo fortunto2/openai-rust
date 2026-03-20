@@ -15,8 +15,8 @@ Add typed enums for all String fields where the Python SDK uses `Literal[...]`. 
 
 ### Tasks
 
-- [~] Task 1.1: Add status/reason enums to `src/types/common.rs` — `FinishReason` (stop, length, tool_calls, content_filter, function_call), `ServiceTier` (auto, default, flex, scale, priority), `ReasoningEffort` (low, medium, high), `SearchContextSize` (low, medium, high). Update `src/types/chat.rs` fields to use them.
-- [ ] Task 1.2: Add file/batch/upload status enums — `FilePurpose` and `FileStatus` in `src/types/file.rs`, `BatchStatus` in `src/types/batch.rs`, `UploadStatus` in `src/types/upload.rs`. Update corresponding struct fields.
+- [x] Task 1.1: Add status/reason enums to `src/types/common.rs` <!-- sha:c9f7058 --> — `FinishReason` (stop, length, tool_calls, content_filter, function_call), `ServiceTier` (auto, default, flex, scale, priority), `ReasoningEffort` (low, medium, high), `SearchContextSize` (low, medium, high). Update `src/types/chat.rs` fields to use them.
+- [~] Task 1.2: Add file/batch/upload status enums — `FilePurpose` and `FileStatus` in `src/types/file.rs`, `BatchStatus` in `src/types/batch.rs`, `UploadStatus` in `src/types/upload.rs`. Update corresponding struct fields.
 - [ ] Task 1.3: Add fine-tuning and beta status enums — `FineTuningStatus` and `FineTuningEventLevel` in `src/types/fine_tuning.rs`, `RunStatus` and `VectorStoreStatus` in `src/types/beta.rs`. Update struct fields.
 - [ ] Task 1.4: Add image enums — `ImageQuality`, `ImageSize`, `ImageStyle`, `ImageOutputFormat`, `ImageBackground`, `ImageModeration` in `src/types/image.rs`. Update `ImageGenerateRequest` fields.
 - [ ] Task 1.5: Add audio/embedding enums — `AudioResponseFormat`, `SpeechResponseFormat`, `AudioVoice`, `AudioFormat`, `InputAudioFormat` in `src/types/audio.rs`, `EncodingFormat` in `src/types/embedding.rs`, `ImageDetail` in `src/types/chat.rs`. Update fields.

@@ -81,7 +81,7 @@ mod tests {
 
         let batch = client.batches().create(request).await.unwrap();
         assert_eq!(batch.id, "batch_abc123");
-        assert_eq!(batch.status, "validating");
+        assert_eq!(batch.status, crate::types::batch::BatchStatus::Validating);
         mock.assert_async().await;
     }
 
@@ -125,7 +125,7 @@ mod tests {
 
         let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
         let batch = client.batches().cancel("batch_abc123").await.unwrap();
-        assert_eq!(batch.status, "cancelling");
+        assert_eq!(batch.status, crate::types::batch::BatchStatus::Cancelling);
         mock.assert_async().await;
     }
 }

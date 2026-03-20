@@ -34,6 +34,21 @@ impl BatchCreateRequest {
     }
 }
 
+/// Status of a batch job.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum BatchStatus {
+    Validating,
+    Failed,
+    InProgress,
+    Finalizing,
+    Completed,
+    Expired,
+    Cancelling,
+    Cancelled,
+}
+
 /// A batch object.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Batch {
@@ -42,7 +57,7 @@ pub struct Batch {
     pub endpoint: String,
     pub input_file_id: String,
     pub completion_window: String,
-    pub status: String,
+    pub status: BatchStatus,
     pub created_at: i64,
     #[serde(default)]
     pub output_file_id: Option<String>,
@@ -108,7 +123,7 @@ mod tests {
         }"#;
         let batch: Batch = serde_json::from_str(json).unwrap();
         assert_eq!(batch.id, "batch_abc123");
-        assert_eq!(batch.status, "completed");
+        assert_eq!(batch.status, BatchStatus::Completed);
         let counts = batch.request_counts.unwrap();
         assert_eq!(counts.total, 100);
     }

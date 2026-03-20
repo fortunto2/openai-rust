@@ -23,7 +23,14 @@ impl<'a> Files<'a> {
                 "file",
                 reqwest::multipart::Part::bytes(params.file).file_name(params.filename),
             )
-            .text("purpose", params.purpose);
+            .text(
+                "purpose",
+                serde_json::to_value(&params.purpose)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            );
 
         self.client.post_multipart("/files", form).await
     }
@@ -88,11 +95,15 @@ mod tests {
             .await;
 
         let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
-        let params = FileUploadParams::new(b"test data".to_vec(), "data.jsonl", "fine-tune");
+        let params = FileUploadParams::new(
+            b"test data".to_vec(),
+            "data.jsonl",
+            crate::types::file::FilePurpose::FineTune,
+        );
 
         let response = client.files().create(params).await.unwrap();
         assert_eq!(response.id, "file-abc123");
-        assert_eq!(response.purpose, "fine-tune");
+        assert_eq!(response.purpose, crate::types::file::FilePurpose::FineTune);
         mock.assert_async().await;
     }
 

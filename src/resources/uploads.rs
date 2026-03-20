@@ -77,11 +77,16 @@ mod tests {
             .await;
 
         let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
-        let request = UploadCreateRequest::new(2_000_000, "data.jsonl", "text/jsonl", "fine-tune");
+        let request = UploadCreateRequest::new(
+            2_000_000,
+            "data.jsonl",
+            "text/jsonl",
+            crate::types::file::FilePurpose::FineTune,
+        );
 
         let upload = client.uploads().create(request).await.unwrap();
         assert_eq!(upload.id, "upload_abc123");
-        assert_eq!(upload.status, "pending");
+        assert_eq!(upload.status, crate::types::upload::UploadStatus::Pending);
         mock.assert_async().await;
     }
 }

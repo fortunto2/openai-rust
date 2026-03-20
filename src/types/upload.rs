@@ -14,8 +14,8 @@ pub struct UploadCreateRequest {
     /// MIME type.
     pub mime_type: String,
 
-    /// Purpose (e.g. "assistants", "batch", "fine-tune").
-    pub purpose: String,
+    /// Purpose (e.g. assistants, batch, fine-tune).
+    pub purpose: crate::types::file::FilePurpose,
 }
 
 impl UploadCreateRequest {
@@ -23,13 +23,13 @@ impl UploadCreateRequest {
         bytes: i64,
         filename: impl Into<String>,
         mime_type: impl Into<String>,
-        purpose: impl Into<String>,
+        purpose: crate::types::file::FilePurpose,
     ) -> Self {
         Self {
             bytes,
             filename: filename.into(),
             mime_type: mime_type.into(),
-            purpose: purpose.into(),
+            purpose,
         }
     }
 }
@@ -42,6 +42,17 @@ pub struct UploadCompleteRequest {
     pub md5: Option<String>,
 }
 
+/// Status of an upload.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum UploadStatus {
+    Pending,
+    Completed,
+    Cancelled,
+    Expired,
+}
+
 /// An upload object.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Upload {
@@ -49,8 +60,8 @@ pub struct Upload {
     pub object: String,
     pub bytes: i64,
     pub filename: String,
-    pub purpose: String,
-    pub status: String,
+    pub purpose: crate::types::file::FilePurpose,
+    pub status: UploadStatus,
     pub created_at: i64,
     #[serde(default)]
     pub expires_at: Option<i64>,
@@ -64,7 +75,12 @@ mod tests {
 
     #[test]
     fn test_serialize_upload_create() {
-        let req = UploadCreateRequest::new(2_000_000, "data.jsonl", "text/jsonl", "fine-tune");
+        let req = UploadCreateRequest::new(
+            2_000_000,
+            "data.jsonl",
+            "text/jsonl",
+            crate::types::file::FilePurpose::FineTune,
+        );
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(json["bytes"], 2_000_000);
         assert_eq!(json["filename"], "data.jsonl");
@@ -84,6 +100,6 @@ mod tests {
         }"#;
         let upload: Upload = serde_json::from_str(json).unwrap();
         assert_eq!(upload.id, "upload_abc123");
-        assert_eq!(upload.status, "pending");
+        assert_eq!(upload.status, UploadStatus::Pending);
     }
 }
