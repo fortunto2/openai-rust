@@ -25,7 +25,7 @@ Each API resource is behind an optional Cargo feature (all enabled by default):
 openai-oxide = "0.8"
 
 # Only chat + embeddings
-openai-oxide = { version = "0.7", default-features = false, features = ["chat", "embeddings"] }
+openai-oxide = { version = "0.8", default-features = false, features = ["chat", "embeddings"] }
 ```
 
 Available features: `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`.
