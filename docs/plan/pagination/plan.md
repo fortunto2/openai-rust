@@ -15,11 +15,11 @@ Build the foundational types and the `Paginator<T>` async stream.
 
 ### Tasks
 
-- [x] Task 1.1: Add `SortOrder` enum to `src/types/common.rs` — `Asc`/`Desc` with `#[serde(rename_all = "snake_case")]`, `#[non_exhaustive]`
-- [x] Task 1.2: Add `get_with_query()` method to `src/client.rs` — like `get()` but accepts `&[(String, String)]` query params, used by list endpoints with pagination
-- [x] Task 1.3: Add missing pagination fields to list response types — add `has_more: Option<bool>`, `first_id: Option<String>`, `last_id: Option<String>` to `FileList`, `AssistantList`, `MessageList`, `VectorStoreList` in their respective type files. Update `BatchList` to use `Option<bool>` instead of `bool`. Files: `src/types/file.rs`, `src/types/beta.rs`, `src/types/batch.rs`
-- [x] Task 1.4: Create `src/pagination.rs` — `Paginator<T>` struct implementing `Stream<Item = Result<T, OpenAIError>>`. Uses a boxed async closure to fetch next page given an `after` cursor. Holds current page data and drains items before fetching next. Re-export from `src/lib.rs`
-- [x] Task 1.5: Create list param types in each resource's type file — `FileListParams` (after, limit, order, purpose), `BatchListParams` (after, limit), `FineTuningJobListParams` (after, limit), `FineTuningEventListParams` (after, limit), `AssistantListParams` (after, before, limit, order), `MessageListParams` (after, before, limit, order, run_id), `VectorStoreListParams` (after, before, limit, order). Each with builder pattern methods. Files: `src/types/file.rs`, `src/types/batch.rs`, `src/types/fine_tuning.rs`, `src/types/beta.rs`
+- [x] Task 1.1: Add `SortOrder` enum to `src/types/common.rs` <!-- sha:715f8d1 --> — `Asc`/`Desc` with `#[serde(rename_all = "snake_case")]`, `#[non_exhaustive]`
+- [x] Task 1.2: Add `get_with_query()` method <!-- sha:715f8d1 --> to `src/client.rs` — like `get()` but accepts `&[(String, String)]` query params, used by list endpoints with pagination
+- [x] Task 1.3: Add missing pagination fields <!-- sha:715f8d1 --> to list response types — add `has_more: Option<bool>`, `first_id: Option<String>`, `last_id: Option<String>` to `FileList`, `AssistantList`, `MessageList`, `VectorStoreList` in their respective type files. Update `BatchList` to use `Option<bool>` instead of `bool`. Files: `src/types/file.rs`, `src/types/beta.rs`, `src/types/batch.rs`
+- [x] Task 1.4: Create `src/pagination.rs` <!-- sha:715f8d1 --> — `Paginator<T>` struct implementing `Stream<Item = Result<T, OpenAIError>>`. Uses a boxed async closure to fetch next page given an `after` cursor. Holds current page data and drains items before fetching next. Re-export from `src/lib.rs`
+- [x] Task 1.5: Create list param types <!-- sha:715f8d1 --> in each resource's type file — `FileListParams` (after, limit, order, purpose), `BatchListParams` (after, limit), `FineTuningJobListParams` (after, limit), `FineTuningEventListParams` (after, limit), `AssistantListParams` (after, before, limit, order), `MessageListParams` (after, before, limit, order, run_id), `VectorStoreListParams` (after, before, limit, order). Each with builder pattern methods. Files: `src/types/file.rs`, `src/types/batch.rs`, `src/types/fine_tuning.rs`, `src/types/beta.rs`
 
 ### Verification
 
@@ -32,15 +32,15 @@ Add `list_page(params)` and `list_auto(params)` to each resource.
 
 ### Tasks
 
-- [ ] Task 2.1: Update `src/resources/files.rs` — add `list_page(params: FileListParams)` returning `Result<FileList>` and `list_auto(params: FileListParams)` returning `Paginator<FileObject>`
-- [ ] Task 2.2: Update `src/resources/batches.rs` — add `list_page(params: BatchListParams)` and `list_auto(params: BatchListParams)` returning `Paginator<Batch>`
-- [ ] Task 2.3: Update `src/resources/fine_tuning.rs` — add `list_page(params)` and `list_auto(params)` for both jobs and job events
-- [ ] Task 2.4: Update beta resources — add `list_page(params)` and `list_auto(params)` to `src/resources/beta/assistants.rs`, `src/resources/beta/threads.rs` (messages), `src/resources/beta/vector_stores.rs`, `src/resources/beta/runs.rs`
+- [x] Task 2.1: Update `src/resources/files.rs` — add `list_page(params: FileListParams)` returning `Result<FileList>` and `list_auto(params: FileListParams)` returning `Paginator<FileObject>`
+- [x] Task 2.2: Update `src/resources/batches.rs` — add `list_page(params: BatchListParams)` and `list_auto(params: BatchListParams)` returning `Paginator<Batch>`
+- [x] Task 2.3: Update `src/resources/fine_tuning.rs` — add `list_page(params)` and `list_auto(params)` for both jobs and job events
+- [x] Task 2.4: Update beta resources — add `list_page(params)` and `list_auto(params)` to `src/resources/beta/assistants.rs`, `src/resources/beta/threads.rs` (messages), `src/resources/beta/vector_stores.rs`, `src/resources/beta/runs.rs`
 
 ### Verification
 
-- [ ] `cargo check` passes
-- [ ] `cargo clippy -- -D warnings` clean
+- [x] `cargo check` passes
+- [x] `cargo clippy -- -D warnings` clean
 
 ## Phase 3: Tests
 

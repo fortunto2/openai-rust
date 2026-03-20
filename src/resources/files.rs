@@ -2,7 +2,8 @@
 
 use crate::client::OpenAI;
 use crate::error::OpenAIError;
-use crate::types::file::{FileDeleted, FileList, FileObject, FileUploadParams};
+use crate::pagination::{Page, Paginator};
+use crate::types::file::{FileDeleted, FileList, FileListParams, FileObject, FileUploadParams};
 
 /// Access file endpoints.
 pub struct Files<'a> {
@@ -40,6 +41,43 @@ impl<'a> Files<'a> {
     /// `GET /files`
     pub async fn list(&self) -> Result<FileList, OpenAIError> {
         self.client.get("/files").await
+    }
+
+    /// List files with pagination parameters.
+    ///
+    /// `GET /files`
+    pub async fn list_page(&self, params: FileListParams) -> Result<FileList, OpenAIError> {
+        self.client
+            .get_with_query("/files", &params.to_query())
+            .await
+    }
+
+    /// Auto-paginate through all files.
+    ///
+    /// Returns a [`Paginator`] stream that yields individual [`FileObject`] items,
+    /// automatically fetching subsequent pages.
+    pub fn list_auto(&self, params: FileListParams) -> Paginator<FileObject> {
+        let client = self.client.clone();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let list: FileList = client.get_with_query("/files", &params.to_query()).await?;
+                let after_cursor = list
+                    .last_id
+                    .clone()
+                    .or_else(|| list.data.last().map(|f| f.id.clone()));
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
     }
 
     /// Retrieve a file by ID.

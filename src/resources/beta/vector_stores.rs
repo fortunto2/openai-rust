@@ -3,8 +3,10 @@
 use super::BETA_HEADER;
 use crate::client::OpenAI;
 use crate::error::OpenAIError;
+use crate::pagination::{Page, Paginator};
 use crate::types::beta::{
     VectorStore, VectorStoreCreateRequest, VectorStoreDeleted, VectorStoreList,
+    VectorStoreListParams,
 };
 
 /// Access vector store endpoints (beta).
@@ -45,6 +47,54 @@ impl<'a> VectorStores<'a> {
             .send()
             .await?;
         OpenAI::handle_response(response).await
+    }
+
+    /// List vector stores with pagination parameters.
+    ///
+    /// `GET /vector_stores`
+    pub async fn list_page(
+        &self,
+        params: VectorStoreListParams,
+    ) -> Result<VectorStoreList, OpenAIError> {
+        let response = self
+            .client
+            .request(reqwest::Method::GET, "/vector_stores")
+            .header(BETA_HEADER.0, BETA_HEADER.1)
+            .query(&params.to_query())
+            .send()
+            .await?;
+        OpenAI::handle_response(response).await
+    }
+
+    /// Auto-paginate through all vector stores.
+    pub fn list_auto(&self, params: VectorStoreListParams) -> Paginator<VectorStore> {
+        let client = self.client.clone();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let response = client
+                    .request(reqwest::Method::GET, "/vector_stores")
+                    .header(BETA_HEADER.0, BETA_HEADER.1)
+                    .query(&params.to_query())
+                    .send()
+                    .await?;
+                let list: VectorStoreList = OpenAI::handle_response(response).await?;
+                let after_cursor = list
+                    .last_id
+                    .clone()
+                    .or_else(|| list.data.last().map(|v| v.id.clone()));
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
     }
 
     /// Retrieve a vector store.

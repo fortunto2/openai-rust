@@ -2,8 +2,10 @@
 
 use crate::client::OpenAI;
 use crate::error::OpenAIError;
+use crate::pagination::{Page, Paginator};
 use crate::types::fine_tuning::{
-    FineTuningJob, FineTuningJobCreateRequest, FineTuningJobEventList, FineTuningJobList,
+    FineTuningEventListParams, FineTuningJob, FineTuningJobCreateRequest, FineTuningJobEvent,
+    FineTuningJobEventList, FineTuningJobList, FineTuningJobListParams,
 };
 
 /// Access fine-tuning endpoints.
@@ -47,6 +49,42 @@ impl<'a> Jobs<'a> {
         self.client.get("/fine_tuning/jobs").await
     }
 
+    /// List fine-tuning jobs with pagination parameters.
+    ///
+    /// `GET /fine_tuning/jobs`
+    pub async fn list_page(
+        &self,
+        params: FineTuningJobListParams,
+    ) -> Result<FineTuningJobList, OpenAIError> {
+        self.client
+            .get_with_query("/fine_tuning/jobs", &params.to_query())
+            .await
+    }
+
+    /// Auto-paginate through all fine-tuning jobs.
+    pub fn list_auto(&self, params: FineTuningJobListParams) -> Paginator<FineTuningJob> {
+        let client = self.client.clone();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let list: FineTuningJobList = client
+                    .get_with_query("/fine_tuning/jobs", &params.to_query())
+                    .await?;
+                let after_cursor = list.data.last().map(|j| j.id.clone());
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
+    }
+
     /// Retrieve a fine-tuning job.
     ///
     /// `GET /fine_tuning/jobs/{job_id}`
@@ -75,6 +113,52 @@ impl<'a> Jobs<'a> {
         self.client
             .get(&format!("/fine_tuning/jobs/{job_id}/events"))
             .await
+    }
+
+    /// List events for a fine-tuning job with pagination parameters.
+    ///
+    /// `GET /fine_tuning/jobs/{job_id}/events`
+    pub async fn list_events_page(
+        &self,
+        job_id: &str,
+        params: FineTuningEventListParams,
+    ) -> Result<FineTuningJobEventList, OpenAIError> {
+        self.client
+            .get_with_query(
+                &format!("/fine_tuning/jobs/{job_id}/events"),
+                &params.to_query(),
+            )
+            .await
+    }
+
+    /// Auto-paginate through all events for a fine-tuning job.
+    pub fn list_events_auto(
+        &self,
+        job_id: &str,
+        params: FineTuningEventListParams,
+    ) -> Paginator<FineTuningJobEvent> {
+        let client = self.client.clone();
+        let job_id = job_id.to_string();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let job_id = job_id.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let path = format!("/fine_tuning/jobs/{job_id}/events");
+                let list: FineTuningJobEventList =
+                    client.get_with_query(&path, &params.to_query()).await?;
+                let after_cursor = list.data.last().map(|e| e.id.clone());
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
     }
 }
 

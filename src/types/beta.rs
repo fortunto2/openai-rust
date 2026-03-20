@@ -628,6 +628,70 @@ impl VectorStoreListParams {
     }
 }
 
+/// Parameters for listing runs with pagination.
+#[derive(Debug, Clone, Default)]
+pub struct RunListParams {
+    /// Cursor for pagination — fetch results after this run ID.
+    pub after: Option<String>,
+    /// Cursor for backward pagination — fetch results before this run ID.
+    pub before: Option<String>,
+    /// Maximum number of results per page (1–100).
+    pub limit: Option<i64>,
+    /// Sort order by `created_at`.
+    pub order: Option<SortOrder>,
+}
+
+impl RunListParams {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn after(mut self, after: impl Into<String>) -> Self {
+        self.after = Some(after.into());
+        self
+    }
+
+    pub fn before(mut self, before: impl Into<String>) -> Self {
+        self.before = Some(before.into());
+        self
+    }
+
+    pub fn limit(mut self, limit: i64) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn order(mut self, order: SortOrder) -> Self {
+        self.order = Some(order);
+        self
+    }
+
+    /// Convert to query parameter pairs for the HTTP request.
+    pub fn to_query(&self) -> Vec<(String, String)> {
+        let mut q = Vec::new();
+        if let Some(ref after) = self.after {
+            q.push(("after".into(), after.clone()));
+        }
+        if let Some(ref before) = self.before {
+            q.push(("before".into(), before.clone()));
+        }
+        if let Some(limit) = self.limit {
+            q.push(("limit".into(), limit.to_string()));
+        }
+        if let Some(ref order) = self.order {
+            q.push((
+                "order".into(),
+                serde_json::to_value(order)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ));
+        }
+        q
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -3,8 +3,10 @@
 use super::BETA_HEADER;
 use crate::client::OpenAI;
 use crate::error::OpenAIError;
+use crate::pagination::{Page, Paginator};
 use crate::types::beta::{
-    Message, MessageCreateRequest, MessageList, Thread, ThreadCreateRequest, ThreadDeleted,
+    Message, MessageCreateRequest, MessageList, MessageListParams, Thread, ThreadCreateRequest,
+    ThreadDeleted,
 };
 
 /// Access thread endpoints (beta).
@@ -104,6 +106,59 @@ impl<'a> Messages<'a> {
             .send()
             .await?;
         OpenAI::handle_response(response).await
+    }
+
+    /// List messages with pagination parameters.
+    ///
+    /// `GET /threads/{thread_id}/messages`
+    pub async fn list_page(&self, params: MessageListParams) -> Result<MessageList, OpenAIError> {
+        let response = self
+            .client
+            .request(
+                reqwest::Method::GET,
+                &format!("/threads/{}/messages", self.thread_id),
+            )
+            .header(BETA_HEADER.0, BETA_HEADER.1)
+            .query(&params.to_query())
+            .send()
+            .await?;
+        OpenAI::handle_response(response).await
+    }
+
+    /// Auto-paginate through all messages in a thread.
+    pub fn list_auto(&self, params: MessageListParams) -> Paginator<Message> {
+        let client = self.client.clone();
+        let thread_id = self.thread_id.clone();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let thread_id = thread_id.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let response = client
+                    .request(
+                        reqwest::Method::GET,
+                        &format!("/threads/{thread_id}/messages"),
+                    )
+                    .header(BETA_HEADER.0, BETA_HEADER.1)
+                    .query(&params.to_query())
+                    .send()
+                    .await?;
+                let list: MessageList = OpenAI::handle_response(response).await?;
+                let after_cursor = list
+                    .last_id
+                    .clone()
+                    .or_else(|| list.data.last().map(|m| m.id.clone()));
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
     }
 }
 

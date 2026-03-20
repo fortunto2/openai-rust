@@ -2,7 +2,8 @@
 
 use crate::client::OpenAI;
 use crate::error::OpenAIError;
-use crate::types::batch::{Batch, BatchCreateRequest, BatchList};
+use crate::pagination::{Page, Paginator};
+use crate::types::batch::{Batch, BatchCreateRequest, BatchList, BatchListParams};
 
 /// Access batch endpoints.
 pub struct Batches<'a> {
@@ -26,6 +27,45 @@ impl<'a> Batches<'a> {
     /// `GET /batches`
     pub async fn list(&self) -> Result<BatchList, OpenAIError> {
         self.client.get("/batches").await
+    }
+
+    /// List batches with pagination parameters.
+    ///
+    /// `GET /batches`
+    pub async fn list_page(&self, params: BatchListParams) -> Result<BatchList, OpenAIError> {
+        self.client
+            .get_with_query("/batches", &params.to_query())
+            .await
+    }
+
+    /// Auto-paginate through all batches.
+    ///
+    /// Returns a [`Paginator`] stream that yields individual [`Batch`] items,
+    /// automatically fetching subsequent pages.
+    pub fn list_auto(&self, params: BatchListParams) -> Paginator<Batch> {
+        let client = self.client.clone();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let list: BatchList = client
+                    .get_with_query("/batches", &params.to_query())
+                    .await?;
+                let after_cursor = list
+                    .last_id
+                    .clone()
+                    .or_else(|| list.data.last().map(|b| b.id.clone()));
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
     }
 
     /// Retrieve a batch.

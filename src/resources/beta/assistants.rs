@@ -3,7 +3,10 @@
 use super::BETA_HEADER;
 use crate::client::OpenAI;
 use crate::error::OpenAIError;
-use crate::types::beta::{Assistant, AssistantCreateRequest, AssistantDeleted, AssistantList};
+use crate::pagination::{Page, Paginator};
+use crate::types::beta::{
+    Assistant, AssistantCreateRequest, AssistantDeleted, AssistantList, AssistantListParams,
+};
 
 /// Access assistant endpoints (beta).
 pub struct Assistants<'a> {
@@ -40,6 +43,54 @@ impl<'a> Assistants<'a> {
             .send()
             .await?;
         OpenAI::handle_response(response).await
+    }
+
+    /// List assistants with pagination parameters.
+    ///
+    /// `GET /assistants`
+    pub async fn list_page(
+        &self,
+        params: AssistantListParams,
+    ) -> Result<AssistantList, OpenAIError> {
+        let response = self
+            .client
+            .request(reqwest::Method::GET, "/assistants")
+            .header(BETA_HEADER.0, BETA_HEADER.1)
+            .query(&params.to_query())
+            .send()
+            .await?;
+        OpenAI::handle_response(response).await
+    }
+
+    /// Auto-paginate through all assistants.
+    pub fn list_auto(&self, params: AssistantListParams) -> Paginator<Assistant> {
+        let client = self.client.clone();
+        let base_params = params;
+        Paginator::new(move |cursor| {
+            let client = client.clone();
+            let mut params = base_params.clone();
+            if cursor.is_some() {
+                params.after = cursor;
+            }
+            async move {
+                let response = client
+                    .request(reqwest::Method::GET, "/assistants")
+                    .header(BETA_HEADER.0, BETA_HEADER.1)
+                    .query(&params.to_query())
+                    .send()
+                    .await?;
+                let list: AssistantList = OpenAI::handle_response(response).await?;
+                let after_cursor = list
+                    .last_id
+                    .clone()
+                    .or_else(|| list.data.last().map(|a| a.id.clone()));
+                Ok(Page {
+                    has_more: list.has_more.unwrap_or(false),
+                    after_cursor,
+                    data: list.data,
+                })
+            }
+        })
     }
 
     /// Retrieve an assistant.
