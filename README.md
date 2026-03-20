@@ -27,6 +27,8 @@ Benchmarked against the official Python SDK and 2 Rust alternatives. All use the
 | Streaming TTFT | **588ms** | 659ms | 11% faster |
 | Parallel 3x fan-out | **926ms** | 1462ms | **37% faster** |
 | Hedged 2x race | **893ms** | 958ms | 7% faster |
+| **WebSocket plain text** | **721ms** | — | -22% vs HTTP |
+| **WebSocket multi-turn** | **1650ms** | — | -19% vs HTTP |
 
 **oxide wins 9/12 tests** vs Python. Biggest wins on parallelism (HTTP/2 multiplex) and streaming.
 

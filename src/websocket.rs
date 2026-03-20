@@ -10,7 +10,7 @@ use futures_core::Stream;
 use futures_util::stream::SplitSink;
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async_with_config};
 
 use crate::config::ClientConfig;
 use crate::error::OpenAIError;
@@ -59,14 +59,34 @@ impl WsSession {
     /// Connect to the OpenAI Responses WebSocket endpoint.
     ///
     /// Builds the WSS URL from the config's `base_url` (replacing `https://`
-    /// with `wss://`) and appends `/responses`. Authentication is passed via
-    /// the URL query parameter `?api_key=...`.
+    /// with `wss://`) and appends `/responses`. Authentication is via
+    /// `Authorization: Bearer` header.
     pub async fn connect(config: &ClientConfig) -> Result<Self, OpenAIError> {
         let ws_url = build_ws_url(config);
 
         tracing::debug!(url = %ws_url, "connecting to WebSocket");
 
-        let (stream, _response) = connect_async(&ws_url)
+        // Build request with Authorization header
+        let request = tokio_tungstenite::tungstenite::http::Request::builder()
+            .uri(&ws_url)
+            .header("Authorization", format!("Bearer {}", config.api_key))
+            .header("Sec-WebSocket-Version", "13")
+            .header(
+                "Sec-WebSocket-Key",
+                tokio_tungstenite::tungstenite::handshake::client::generate_key(),
+            )
+            .header(
+                "Host",
+                reqwest::Url::parse(&ws_url)
+                    .map(|u| u.host_str().unwrap_or("api.openai.com").to_string())
+                    .unwrap_or_else(|_| "api.openai.com".to_string()),
+            )
+            .header("Connection", "Upgrade")
+            .header("Upgrade", "websocket")
+            .body(())
+            .map_err(|e| OpenAIError::WebSocketError(format!("build request: {e}")))?;
+
+        let (stream, _response) = connect_async_with_config(request, None, false)
             .await
             .map_err(|e| OpenAIError::WebSocketError(format!("connection failed: {e}")))?;
 
@@ -150,8 +170,19 @@ impl WsSession {
     }
 
     /// Send a serialized request over the WebSocket.
+    ///
+    /// Wraps the request body with `"type": "response.create"` as required
+    /// by the OpenAI WebSocket protocol.
     async fn send_request(&mut self, request: &ResponseCreateRequest) -> Result<(), OpenAIError> {
-        let text = serde_json::to_string(request)?;
+        // WebSocket API expects: {"type": "response.create", ...request_fields}
+        let mut value = serde_json::to_value(request)?;
+        if let serde_json::Value::Object(ref mut map) = value {
+            map.insert(
+                "type".to_string(),
+                serde_json::Value::String("response.create".to_string()),
+            );
+        }
+        let text = serde_json::to_string(&value)?;
         tracing::debug!(len = text.len(), "sending WS request");
         self.sink
             .send(Message::Text(text.into()))
@@ -287,7 +318,7 @@ impl<'a> Stream for WsEventStream<'a> {
 /// Build the WebSocket URL from a `ClientConfig`.
 ///
 /// Replaces `https://` with `wss://` (or `http://` with `ws://`) in the
-/// base URL, appends `/responses`, and adds the API key as a query parameter.
+/// base URL and appends `/responses`. Auth is via headers, not query params.
 fn build_ws_url(config: &ClientConfig) -> String {
     let base = &config.base_url;
     let ws_base = if base.starts_with("https://") {
@@ -298,7 +329,7 @@ fn build_ws_url(config: &ClientConfig) -> String {
         base.clone()
     };
 
-    format!("{ws_base}/responses?api_key={}", config.api_key)
+    format!("{ws_base}/responses")
 }
 
 #[cfg(test)]
@@ -309,31 +340,28 @@ mod tests {
     fn test_build_ws_url_default() {
         let config = ClientConfig::new("sk-test-key-123");
         let url = build_ws_url(&config);
-        assert_eq!(
-            url,
-            "wss://api.openai.com/v1/responses?api_key=sk-test-key-123"
-        );
+        assert_eq!(url, "wss://api.openai.com/v1/responses");
     }
 
     #[test]
     fn test_build_ws_url_custom_base() {
         let config = ClientConfig::new("sk-abc").base_url("https://custom.api.com/v2");
         let url = build_ws_url(&config);
-        assert_eq!(url, "wss://custom.api.com/v2/responses?api_key=sk-abc");
+        assert_eq!(url, "wss://custom.api.com/v2/responses");
     }
 
     #[test]
     fn test_build_ws_url_http() {
         let config = ClientConfig::new("sk-local").base_url("http://localhost:8080/v1");
         let url = build_ws_url(&config);
-        assert_eq!(url, "ws://localhost:8080/v1/responses?api_key=sk-local");
+        assert_eq!(url, "ws://localhost:8080/v1/responses");
     }
 
     #[test]
     fn test_build_ws_url_no_scheme() {
         let config = ClientConfig::new("sk-x").base_url("wss://already-wss.com/v1");
         let url = build_ws_url(&config);
-        assert_eq!(url, "wss://already-wss.com/v1/responses?api_key=sk-x");
+        assert_eq!(url, "wss://already-wss.com/v1/responses");
     }
 
     #[test]
