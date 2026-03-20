@@ -65,3 +65,7 @@ required-features = ["chat"]
 [[example]]
 name = "responses_api"
 required-features = ["responses"]
+
+[[example]]
+name = "benchmark"
+required-features = ["responses"]

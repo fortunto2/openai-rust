@@ -1,0 +1,106 @@
+  [2msession: f0791782  model: claude-opus-4-6[1m][0m
+  [2m--[0m [36mAgent[0m [2mResearch backlog and context[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/backlog.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/prd.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/roadmap.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [32m$ [0m [33mBash[0m [2mList directories in docs/plan-done/[0m
+  [32m$ [0m [33mBash[0m [2mGet recent 30 commits[0m
+  [32m$ [0m [33mBash[0m [2mList resource files[0m
+  [32m$ [0m [33mBash[0m [2mList type files[0m
+  [36m// [36mGrep[0m [2m"(TODO|FIXME|AI-TODO|AI-NOTE|AI-ASK|AI-PATTERN)" ~/startups/active/openai-rust/src[0m
+  [36m**[0m [36mGlob[0m [2m"docs/backlog*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/roadmap*.md" ~/startups/active/openai-rust[0m
+  [32m$ [0m [33mBash[0m [2mList all markdown files in docs directory[0m
+  [32m$ [0m [33mBash[0m [2mCheck if docs/plan directory exists and list contents[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/workflow.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/README.md[0m
+
+Let me read the roadmap and retro in detail to pick the right next track.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/roadmap.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now let me research the codebase to determine what's actually left for each priority.
+  [36m// [36mGrep[0m [2m"serde_json::Value" ~/startups/active/openai-rust/src[0m
+  [32m$ [0m [33mBash[0m [2mRun OpenAPI coverage test to see current gaps[0m
+  [36m// [36mGrep[0m [2m"#\[non_exhaustive\]" ~/startups/active/openai-rust/src[0m
+  [32m$ [0m [33mBash[0m [2mCount public enums in types[0m
+
+Let me research the current architecture to plan the ergonomics track.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/client.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/config.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/azure.rs[0m
+
+Now let me look at a few resource files to understand current patterns and check what the Python SDK's ergonomics look like.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/completions.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/lib.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/images.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/image.rs[0m
+  [36m**[0m [36mGlob[0m [2m"src/resources/chat/**/*.rs" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/mod.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [32m$ [0m [33mBash[0m [2mList resource files[0m
+
+Now I have all the context needed. Let me create the spec and plan for the **Ergonomics** track — the highest-priority unimplemented item from the roadmap.
+  [2m--[0m [36mToolSearch[0m [2mselect:TodoWrite[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Research codebase and identify highest-priorit[0m
+  [32m$ [0m [33mBash[0m [2mCreate ergonomics track directory[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/ergonomics/spec.md[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Research codebase and identify highest-priorit[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/ergonomics/plan.md[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Research codebase and identify highest-priorit[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Track: ergonomics (Roadmap Priority 2). 4 pha[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Research codebase and identify highest-priorit[0m
+
+```
+Track created: ergonomics
+
+  Type:   Feature
+  Phases: 4
+  Tasks:  16
+  Spec:   docs/plan/ergonomics/spec.md
+  Plan:   docs/plan/ergonomics/plan.md
+
+Research findings:
+  - Roadmap Priority 2 (Ergonomics) is highest unimplemented priority
+  - Type Quality (P1) was completed in type-quality track (17/17 tasks)
+  - Remaining serde_json::Value fields are legitimately dynamic (JSON Schema, function params)
+  - 43 #[non_exhaustive] attrs across 45 enums — nearly complete
+  - Retro recommends focused 10-15 task tracks (zero-waste on runs 3-6)
+  - No deploy infra — skip deploy phase
+
+Phase summary:
+  Phase 1: Feature Flags — gate each resource behind optional Cargo feature (5 tasks)
+  Phase 2: BYOT Methods — create_raw() on Chat, Responses, Embeddings (5 tasks)
+  Phase 3: Image Save Helper — Image::save() with URL/b64 support (3 tasks)
+  Phase 4: Docs & Cleanup (3 tasks)
+
+Next: /build ergonomics
+``````
+Track created: ergonomics
+
+  Type:   Feature
+  Phases: 4
+  Tasks:  16
+  Spec:   docs/plan/ergonomics/spec.md
+  Plan:   docs/plan/ergonomics/plan.md
+
+Research findings:
+  - Roadmap Priority 2 (Ergonomics) is highest unimplemented priority
+  - Type Quality (P1) was completed in type-quality track (17/17 tasks)
+  - Remaining serde_json::Value fields are legitimately dynamic (JSON Schema, function params)
+  - 43 #[non_exhaustive] attrs across 45 enums — nearly complete
+  - Retro recommends focused 10-15 task tracks (zero-waste on runs 3-6)
+  - No deploy infra — skip deploy phase
+
+Phase summary:
+  Phase 1: Feature Flags — gate each resource behind optional Cargo feature (5 tasks)
+  Phase 2: BYOT Methods — create_raw() on Chat, Responses, Embeddings (5 tasks)
+  Phase 3: Image Save Helper — Image::save() with URL/b64 support (3 tasks)
+  Phase 4: Docs & Cleanup (3 tasks)
+
+Next: /build ergonomics
+```

@@ -1,0 +1,94 @@
+  [2msession: 20152910  model: claude-opus-4-6[1m][0m
+  [36m**[0m [36mGlob[0m [2m"docs/backlog*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/prd.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/roadmap*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*.md" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/roadmap.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [32m$ [0m [33mBash[0m [2mRecent commit history[0m
+
+Now let me research the current codebase state to determine what's left in Priority 1 vs what's next.
+  [32m$ [0m [33mBash[0m [2mCount remaining serde_json::Value in public types[0m
+  [32m$ [0m [33mBash[0m [2mCheck current OpenAPI coverage[0m
+  [36m// [36mGrep[0m [2m"serde_json::Value" ~/startups/active/openai-rust/src/types[0m
+
+Let me dig deeper into the type quality state and understand what needs to change.
+  [2m--[0m [36mAgent[0m [2mResearch type quality gaps[0m
+  [36m**[0m [36mGlob[0m [2m"src/types/*.rs" ~/startups/active/openai-rust[0m
+  [32m$ [0m [33mBash[0m [2mList all type files[0m
+  [36m// [36mGrep[0m [2m"serde_json::Value" ~/startups/active/openai-rust/src/types[0m
+  [32m$ [0m [33mBash[0m [2mFind Value fields in types[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/tests/openapi_coverage.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/chat.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/responses.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/beta.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/fine_tuning.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/realtime.rs[0m
+  [36m// [36mGrep[0m [2m"pub \w+: (Option<)?String" ~/startups/active/openai-rust/src/types[0m
+  [32m$ [0m [33mBash[0m [2mCount enums in types[0m
+  [36m// [36mGrep[0m [2m"#\[non_exhaustive\]" ~/startups/active/openai-rust/src/types[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/common.rs[0m
+  [32m$ [0m [33mBash[0m [2mList Python SDK type files[0m
+  [32m$ [0m [33mBash[0m [2mFind relevant Python type files[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/types/chat/chat_completion_message_param.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/types/fine_tuning/fine_tuning_job.py[0m
+  [32m$ [0m [33mBash[0m [2mCheck for Literal types in Python SDK[0m
+  [32m$ [0m [33mBash[0m [2mFind Literal enums in Python chat types[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/types/chat/chat_completion_message_tool_call.py[0m
+  [32m$ [0m [33mBash[0m [2mCheck for AI comments in types[0m
+  [32m$ [0m [33mBash[0m [2mCount total public fields in types[0m
+  [32m$ [0m [33mBash[0m [2mCount doc comments on fields[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/audio.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/embedding.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/moderation.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/image.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/batch.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/upload.rs[0m
+  [32m$ [0m [33mBash[0m [2mCount exact Value field occurrences[0m
+  [32m$ [0m [33mBash[0m [2mCount optional Value fields[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/types/chat/chat_completion_tool_param.py[0m
+  [32m$ [0m [33mBash[0m [2mCheck realtime Python types[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/types/beta/realtime/session_create_params.py[0m
+  [32m$ [0m [33mBash[0m [2mCheck max_response_output_tokens type in Python[0m
+  [32m$ [0m [33mBash[0m [2mCheck file object enums in Python[0m
+  [32m$ [0m [33mBash[0m [2mCheck batch enums in Python[0m
+  [32m$ [0m [33mBash[0m [2mCheck upload enums in Python[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:TodoWrite[0m
+
+Now I have everything needed. Let me create the track.
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Create spec.md for type-quality track', 'statu[0m
+  [32m$ [0m [33mBash[0m [2mCreate track directory[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/type-quality/spec.md[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Create spec.md for type-quality track', 'statu[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/type-quality/plan.md[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Create spec.md for type-quality track', 'statu[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
+
+
+
+Track created: **type-quality_20260320**
+
+```
+Type:   Refactor
+Phases: 4
+Tasks:  15
+Spec:   docs/plan/type-quality/spec.md
+Plan:   docs/plan/type-quality/plan.md
+```
+
+**Research findings:**
+- 21 `serde_json::Value` fields in types/ (8 easy, 7 medium → JSON Schema params stay as Value, 6 hard → deferred)
+- 41 `String` fields should be enums (status, format, quality, voice, etc.)
+- `#[non_exhaustive]` already on all enums — no work needed
+- OpenAPI coverage: 4 schemas tested, expanding to 8+
+- Python SDK uses `Union[Literal["auto"], int]` pattern for hyperparameters → `AutoOrFixed<T>` enum
+
+**Retro-informed decisions:**
+- TDD workflow (proven 80% build success rate in previous runs)
+- Python SDK local-read before implementing (100% field coverage in prior tracks)
+- Scoped to achievable size: hard polymorphic fields deferred to future track
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Plan for type-quality track ready — 4 phases,[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Create spec.md for type-quality track', 'statu[0m
+
+Next: `/build type-quality_20260320`Next: `/build type-quality_20260320`

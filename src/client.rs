@@ -366,29 +366,80 @@ impl OpenAI {
     }
 
     /// Send a request with retry logic for transient errors.
+    ///
+    /// Fast path: first attempt avoids loop overhead and method clone.
+    /// Only enters retry loop on transient errors (429, 5xx).
     async fn send_with_retry<B: serde::Serialize, T: serde::de::DeserializeOwned>(
         &self,
         method: reqwest::Method,
         path: &str,
         body: Option<&B>,
     ) -> Result<T, OpenAIError> {
-        let max_retries = self.config.max_retries;
-        let mut last_error: Option<OpenAIError> = None;
+        // Pre-serialize body once (avoids re-serialization on retry)
+        let body_value = match body {
+            Some(b) if self.options.extra_body.is_some() => Some(self.merge_body_json(b)?),
+            Some(b) => Some(serde_json::to_value(b)?),
+            None => None,
+        };
 
-        for attempt in 0..=max_retries {
+        // Fast path: first attempt — no clone, no loop
+        let mut req = self.request(method.clone(), path);
+        if let Some(ref val) = body_value {
+            req = req.json(val);
+        }
+
+        let response = match req.send().await {
+            Ok(resp) => resp,
+            Err(e) if self.config.max_retries == 0 => return Err(OpenAIError::RequestError(e)),
+            Err(e) => {
+                // Enter retry path
+                return self.retry_loop(method, path, &body_value, e, 1).await;
+            }
+        };
+
+        let status = response.status().as_u16();
+        if !RETRYABLE_STATUS_CODES.contains(&status) {
+            return Self::handle_response(response).await;
+        }
+
+        if self.config.max_retries == 0 {
+            return Self::handle_response(response).await;
+        }
+
+        // Retryable status on first attempt — enter retry loop
+        let retry_after = response
+            .headers()
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<f64>().ok());
+        let last_error = Self::extract_error(status, response).await;
+        tokio::time::sleep(Self::backoff_delay(0, retry_after)).await;
+        self.retry_loop(method, path, &body_value, last_error, 1)
+            .await
+    }
+
+    /// Retry loop — only called when first attempt fails with a transient error.
+    async fn retry_loop<T: serde::de::DeserializeOwned>(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        body_value: &Option<serde_json::Value>,
+        initial_error: impl Into<OpenAIError>,
+        start_attempt: u32,
+    ) -> Result<T, OpenAIError> {
+        let max_retries = self.config.max_retries;
+        let mut last_error: OpenAIError = initial_error.into();
+
+        for attempt in start_attempt..=max_retries {
             let mut req = self.request(method.clone(), path);
-            if let Some(b) = body {
-                if self.options.extra_body.is_some() {
-                    req = req.json(&self.merge_body_json(b)?);
-                } else {
-                    req = req.json(b);
-                }
+            if let Some(val) = body_value {
+                req = req.json(val);
             }
 
             let response = match req.send().await {
                 Ok(resp) => resp,
                 Err(e) => {
-                    last_error = Some(OpenAIError::RequestError(e));
+                    last_error = OpenAIError::RequestError(e);
                     if attempt < max_retries {
                         tokio::time::sleep(Self::backoff_delay(attempt, None)).await;
                         continue;
@@ -398,25 +449,20 @@ impl OpenAI {
             };
 
             let status = response.status().as_u16();
-
             if !RETRYABLE_STATUS_CODES.contains(&status) || attempt == max_retries {
                 return Self::handle_response(response).await;
             }
 
-            // Retryable status — parse Retry-After and sleep
             let retry_after = response
                 .headers()
                 .get("retry-after")
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.parse::<f64>().ok());
-
-            last_error = Some(Self::extract_error(status, response).await);
+            last_error = Self::extract_error(status, response).await;
             tokio::time::sleep(Self::backoff_delay(attempt, retry_after)).await;
         }
 
-        Err(last_error.unwrap_or_else(|| {
-            OpenAIError::InvalidArgument("retry loop exhausted without error".to_string())
-        }))
+        Err(last_error)
     }
 
     /// Calculate backoff delay: max(retry_after, 0.5 * 2^attempt) seconds.

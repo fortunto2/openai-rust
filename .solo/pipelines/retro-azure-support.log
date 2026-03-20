@@ -1,0 +1,125 @@
+  [2msession: 7efa4c5c  model: claude-opus-4-6[1m][0m
+Starting retro for `openai-rust`. Let me gather all artifacts first.
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/*.log" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/iter-*.log" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/solo-pipeline-*.local.md" ~/startups/active/openai-rust[0m
+
+Found 18 iter logs, pipeline.log, and progress.md. Let me parse the pipeline log and read key artifacts.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/pipeline.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/azure-support/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/azure-support/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/eval-dimensions.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/failure-catalog.md[0m
+
+Now let me gather remaining data in parallel — plan-done fidelity, tests, git history, and CLAUDE.md size.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/request-options/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/type-quality/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/remaining/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/spec.md[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+  [32m$ [0m [33mBash[0m [2mRecent commit history[0m
+  [32m$ [0m [33mBash[0m [2mCLAUDE.md size check[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+
+Let me get the full test count, conventional commit percentage, and sample a couple of iter logs for failure pattern analysis.
+  [32m$ [0m [33mBash[0m [2mTotal test count[0m
+  [32m$ [0m [33mBash[0m [2mConventional commit percentage[0m
+  [32m$ [0m [33mBash[0m [2mClippy check[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-003-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-006-review.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/request-options/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/type-quality/plan.md[0m
+
+Now let me check the deploy failure pattern more closely and read the existing retro file.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-005-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-006-deploy.log[0m
+  [36m**[0m [36mGlob[0m [2m"docs/retro/*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/evolution.md" ~/startups/active/openai-rust[0m
+
+Let me read the existing retro and evolution files.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Now let me read the factory skill files and solo-dev.sh for the factory critique, and check existing retro logs from earlier plan tracks.
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/deploy/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/build/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/review/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/scripts/solo-dev.sh[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/scripts/solo-dev.sh[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/scripts/solo-dev.sh[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/scripts/solo-dev.sh[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/scripts/solo-dev.sh[0m
+
+I have all the data. Let me write the comprehensive retro report.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now update the evolution log with the azure-support run data.
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Now let me check the CLAUDE.md — it's already at 10,114 chars (well under 40K), so no trimming needed. Let me verify it's current.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/CLAUDE.md[0m
+
+CLAUDE.md already says v0.6.0 and includes Azure support. No revision needed.
+
+Here's the retro summary:
+
+---
+
+## Pipeline Retro: openai-rust — 7.9/10
+
+**7 tracks completed** across 6 pipeline runs in ~203 min (29 iterations):
+- phase1 → remaining → advanced → request-options → type-quality → azure-support
+
+**Key metrics:**
+- 165 tests, 0 failures, clippy clean
+- 84 commits, 100% conventional format
+- v0.6.0 published on crates.io (Azure support)
+- 10,114 char CLAUDE.md (well under 40K limit)
+
+**Waste analysis:** 10/29 iterations wasted (34.5%), **all from deploy in runs 1-2** (AskUserQuestion blocking on crate name conflict). Runs 3-6 were **zero-waste** (14 iters, 0 waste) — the deploy fix is confirmed working.
+
+**Top 3 findings:**
+1. Deploy AskUserQuestion fix verified — runs 3-6 had no deploy blocking (was CRITICAL in prior retros, now resolved)
+2. Auto-plan successfully generated 3 tracks (request-options, type-quality, azure-support) from backlog — all zero-waste
+3. Build stage 87.5% efficient, review redo limit (2) worked correctly
+
+**Outstanding recommendation:** Add Rust/crate publish strategy to deploy skill (currently web-app biased).
+
+Report written to `docs/retro/2026-03-20-retro.md`, evolution log updated.
+
+<solo:done/>CLAUDE.md already says v0.6.0 and includes Azure support. No revision needed.
+
+Here's the retro summary:
+
+---
+
+## Pipeline Retro: openai-rust — 7.9/10
+
+**7 tracks completed** across 6 pipeline runs in ~203 min (29 iterations):
+- phase1 → remaining → advanced → request-options → type-quality → azure-support
+
+**Key metrics:**
+- 165 tests, 0 failures, clippy clean
+- 84 commits, 100% conventional format
+- v0.6.0 published on crates.io (Azure support)
+- 10,114 char CLAUDE.md (well under 40K limit)
+
+**Waste analysis:** 10/29 iterations wasted (34.5%), **all from deploy in runs 1-2** (AskUserQuestion blocking on crate name conflict). Runs 3-6 were **zero-waste** (14 iters, 0 waste) — the deploy fix is confirmed working.
+
+**Top 3 findings:**
+1. Deploy AskUserQuestion fix verified — runs 3-6 had no deploy blocking (was CRITICAL in prior retros, now resolved)
+2. Auto-plan successfully generated 3 tracks (request-options, type-quality, azure-support) from backlog — all zero-waste
+3. Build stage 87.5% efficient, review redo limit (2) worked correctly
+
+**Outstanding recommendation:** Add Rust/crate publish strategy to deploy skill (currently web-app biased).
+
+Report written to `docs/retro/2026-03-20-retro.md`, evolution log updated.
+
+<solo:done/>

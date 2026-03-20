@@ -1,0 +1,129 @@
+  [2msession: 7e201f67  model: claude-opus-4-6[1m][0m
+Starting retro for openai-rust. Let me gather all artifacts first.
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/*.log" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/iter-*.log" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/solo-pipeline-*.local.md" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/pipeline.log[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/eval-dimensions.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/failure-catalog.md[0m
+
+Found 18 iteration logs across 8 pipeline runs. Let me now read plan fidelity data and run quality checks.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase2/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase3/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/remaining/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/request-options/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/type-quality/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/azure-support/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/ergonomics/spec.md[0m
+  [32m$ [0m [33mBash[0m [2mRecent commit history[0m
+  [32m$ [0m [33mBash[0m [2mTotal commit count[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+  [32m$ [0m [33mBash[0m [2mClippy lint check[0m
+  [32m$ [0m [33mBash[0m [2mCLAUDE.md size check[0m
+
+Now let me get detailed test counts, conventional commit stats, and sample deploy failure logs.
+  [32m$ [0m [33mBash[0m [2mGet test result lines[0m
+  [32m$ [0m [33mBash[0m [2mCount conventional commits[0m
+  [32m$ [0m [33mBash[0m [2mCount non-conventional commits[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-003-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-006-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-006-review.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now let me read the factory skills for Phase 10 evaluation and sample the ergonomics iter logs.
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/deploy/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/build/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/review/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/scripts/solo-dev.sh[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-001-build.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-002-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-003-review.log[0m
+
+I have all the data. Let me find the 1 non-conventional commit and then write the complete retro.
+  [32m$ [0m [33mBash[0m [2mFind non-conventional commits[0m
+
+All 94 commits are conventional (`style:` is also a valid conventional commit type). Now writing the full retro report.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now writing the updated retro with ergonomics track included, then updating evolution.md.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now update the evolution log.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Now Phase 9 — CLAUDE.md is 10,552 chars, well under 40K. No trimming needed. The version is already at v0.7.0. CLAUDE.md looks current.
+
+Here's the retro summary:
+
+## Pipeline Retro: openai-rust -- 7.9/10
+
+**32 iterations across 8 runs, 9 plan tracks, 223 minutes**
+
+### Top 3 Failure Patterns
+1. **Deploy AskUserQuestion blocking** (CRITICAL, resolved) -- 7 wasted deploy iters from crate name conflict. Fixed mid-pipeline. Runs 3-8 zero-waste.
+2. **Redo loops** (3 cycles) -- legitimate review findings, all productive. Redo limit (2) worked correctly.
+3. **Run 7 interrupted** (LOW) -- ergonomics build aborted before first ITER. Clean restart as run 8.
+
+### Key Numbers
+| Metric | Value |
+|--------|-------|
+| Productive/Total | 22/32 (68.8%) |
+| Tests | 171 pass, 0 fail |
+| Commits | 94, 100% conventional |
+| Published | openai-oxide v0.7.0 on crates.io |
+| Best streak | 17 consecutive zero-waste iterations (runs 3-8) |
+
+### Top 3 Recommendations
+1. **[HIGH]** Add Rust/crate publish strategy to `skills/deploy/SKILL.md` -- agent improvised `cargo publish` every time
+2. **[MEDIUM]** Remove `AskUserQuestion` from deploy's `allowed-tools` entirely (not just pipeline prompt suppression)
+3. **[MEDIUM]** Per-track speed normalization in retro rubric (25m/track avg is efficient but penalized by absolute duration)
+
+### What Worked Best
+- Python SDK local-read workflow = 100% OpenAPI field coverage
+- Auto-plan picked up 4 tracks from backlog, all zero-waste
+- Progressive delivery: 7 crates.io releases in a single day
+- Build skill at 90% efficiency (9/10 successful)
+
+<solo:done/>Now Phase 9 — CLAUDE.md is 10,552 chars, well under 40K. No trimming needed. The version is already at v0.7.0. CLAUDE.md looks current.
+
+Here's the retro summary:
+
+## Pipeline Retro: openai-rust -- 7.9/10
+
+**32 iterations across 8 runs, 9 plan tracks, 223 minutes**
+
+### Top 3 Failure Patterns
+1. **Deploy AskUserQuestion blocking** (CRITICAL, resolved) -- 7 wasted deploy iters from crate name conflict. Fixed mid-pipeline. Runs 3-8 zero-waste.
+2. **Redo loops** (3 cycles) -- legitimate review findings, all productive. Redo limit (2) worked correctly.
+3. **Run 7 interrupted** (LOW) -- ergonomics build aborted before first ITER. Clean restart as run 8.
+
+### Key Numbers
+| Metric | Value |
+|--------|-------|
+| Productive/Total | 22/32 (68.8%) |
+| Tests | 171 pass, 0 fail |
+| Commits | 94, 100% conventional |
+| Published | openai-oxide v0.7.0 on crates.io |
+| Best streak | 17 consecutive zero-waste iterations (runs 3-8) |
+
+### Top 3 Recommendations
+1. **[HIGH]** Add Rust/crate publish strategy to `skills/deploy/SKILL.md` -- agent improvised `cargo publish` every time
+2. **[MEDIUM]** Remove `AskUserQuestion` from deploy's `allowed-tools` entirely (not just pipeline prompt suppression)
+3. **[MEDIUM]** Per-track speed normalization in retro rubric (25m/track avg is efficient but penalized by absolute duration)
+
+### What Worked Best
+- Python SDK local-read workflow = 100% OpenAPI field coverage
+- Auto-plan picked up 4 tracks from backlog, all zero-waste
+- Progressive delivery: 7 crates.io releases in a single day
+- Build skill at 90% efficiency (9/10 successful)
+
+<solo:done/>

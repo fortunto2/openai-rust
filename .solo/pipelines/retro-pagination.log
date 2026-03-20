@@ -1,0 +1,113 @@
+  [2msession: 5e6fe518  model: claude-opus-4-6[1m][0m
+Starting retro for openai-rust. Let me locate all artifacts first.
+  [32m$ [0m [33mBash[0m [2mList pipeline artifacts[0m
+  [32m$ [0m [33mBash[0m [2mList completed plan tracks[0m
+  [32m$ [0m [33mBash[0m [2mList active plan tracks[0m
+  [32m$ [0m [33mBash[0m [2mCheck CLAUDE.md size[0m
+  [32m$ [0m [33mBash[0m [2mCount iter logs[0m
+
+Found 18 iter logs, pipeline.log, progress.md, 9 completed tracks, 1 active track. Let me read the key artifacts now.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/pipeline.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/eval-dimensions.md[0m
+
+Now let me read plan fidelity data, run tests/build, and check git history.
+  [32m$ [0m [33mBash[0m [2mCheck plan fidelity across all completed tracks[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+  [32m$ [0m [33mBash[0m [2mRun clippy[0m
+  [32m$ [0m [33mBash[0m [2mShow recent git history[0m
+  [32m$ [0m [33mBash[0m [2mCount total and conventional commits[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+  [32m$ [0m [33mBash[0m [2mCheck active plan fidelity[0m
+  [32m$ [0m [33mBash[0m [2mGet detailed test counts[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Existing retro covers runs 1-8 (through ergonomics, v0.7.0). Pagination track (run 9) completed since then. Let me sample key iter logs and check for factory skill files.
+  [32m$ [0m [33mBash[0m [2mSample last review log (pagination)[0m
+  [32m$ [0m [33mBash[0m [2mTail of last review log[0m
+  [32m$ [0m [33mBash[0m [2mCheck factory skills directory[0m
+  [32m$ [0m [33mBash[0m [2mCheck for observation masking[0m
+
+Now let me read the factory skills that were heavily used for the factory critique.
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/deploy/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/build/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/review/SKILL.md[0m
+  [32m$ [0m [33mBash[0m [2mFind non-conventional commits[0m
+
+All data collected. Now writing the comprehensive retro report covering all 10 tracks including pagination.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now update evolution.md with the final pagination data.
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Now Phase 9 — check CLAUDE.md and trim if needed.
+  [32m$ [0m [33mBash[0m [2mCheck CLAUDE.md size[0m
+
+CLAUDE.md is 11,278 chars — well under 40K limit. No trimming needed. Let me verify the version references are current.
+  [36m// [36mGrep[0m [2m"v0\.[0-9]+\.[0-9]+|version" ~/startups/active/openai-rust/CLAUDE.md[0m
+
+CLAUDE.md is current — v0.8.0, pagination documented. No changes needed.
+
+Here's the retro summary:
+
+---
+
+## Pipeline Retro: openai-rust — Score: 8.0/10
+
+**Pipeline stats:** 35 iterations across 10 plan tracks, 25 productive (71.4%), 10 wasted (28.6%). Total ~250m wall time. Published v0.1.0 through v0.8.0 on crates.io.
+
+**Top 3 failure patterns:**
+1. **Deploy AskUserQuestion blocking** (CRITICAL, resolved) — 7 wasted iterations in runs 1-2. 3rd project with same defect. Fixed by pipeline prompt suppression.
+2. **Redo loops** (expected) — 3 cycles, all productive (real issues fixed). Redo limit correctly capped at 2.
+3. **Ergonomics abort** (LOW) — 1 interrupted run, clean restart.
+
+**Key wins:**
+- Runs 3-9: **20 consecutive zero-waste iterations** after deploy fix
+- 180 tests, 0 failures, clippy clean, 100% conventional commits
+- Auto-plan generated 5 tracks from backlog — all ran flawlessly
+- Plan fidelity: 100% criteria met across all 8 non-folded tracks
+
+**Top 3 recommendations:**
+1. **[HIGH]** Add Rust/crate deploy strategy to `skills/deploy/SKILL.md`
+2. **[MEDIUM]** Plan skill should detect overlapping plans and consolidate
+3. **[MEDIUM]** Retro speed rubric should normalize per-track (25m/track is fast, but absolute 250m scores low)
+
+**Factory score: 7.5/10** — build skill excellent (9/10), deploy needs Rust awareness (6/10), review solid (8/10).
+
+Report written to `docs/retro/2026-03-20-retro.md`, evolution log updated in `docs/evolution.md`.
+
+<solo:done/>CLAUDE.md is current — v0.8.0, pagination documented. No changes needed.
+
+Here's the retro summary:
+
+---
+
+## Pipeline Retro: openai-rust — Score: 8.0/10
+
+**Pipeline stats:** 35 iterations across 10 plan tracks, 25 productive (71.4%), 10 wasted (28.6%). Total ~250m wall time. Published v0.1.0 through v0.8.0 on crates.io.
+
+**Top 3 failure patterns:**
+1. **Deploy AskUserQuestion blocking** (CRITICAL, resolved) — 7 wasted iterations in runs 1-2. 3rd project with same defect. Fixed by pipeline prompt suppression.
+2. **Redo loops** (expected) — 3 cycles, all productive (real issues fixed). Redo limit correctly capped at 2.
+3. **Ergonomics abort** (LOW) — 1 interrupted run, clean restart.
+
+**Key wins:**
+- Runs 3-9: **20 consecutive zero-waste iterations** after deploy fix
+- 180 tests, 0 failures, clippy clean, 100% conventional commits
+- Auto-plan generated 5 tracks from backlog — all ran flawlessly
+- Plan fidelity: 100% criteria met across all 8 non-folded tracks
+
+**Top 3 recommendations:**
+1. **[HIGH]** Add Rust/crate deploy strategy to `skills/deploy/SKILL.md`
+2. **[MEDIUM]** Plan skill should detect overlapping plans and consolidate
+3. **[MEDIUM]** Retro speed rubric should normalize per-track (25m/track is fast, but absolute 250m scores low)
+
+**Factory score: 7.5/10** — build skill excellent (9/10), deploy needs Rust awareness (6/10), review solid (8/10).
+
+Report written to `docs/retro/2026-03-20-retro.md`, evolution log updated in `docs/evolution.md`.
+
+<solo:done/>

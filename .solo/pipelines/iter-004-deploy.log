@@ -1,21 +1,64 @@
-  [2msession: 9f6f0361  model: claude-opus-4-6[1m][0m
-  [35m=>[0m [35msolo:deploy[0m
+  [2msession: 7e789187  model: claude-opus-4-6[1m][0m
+  [32m$ [0m [33mBash[0m [2mRecent commit history[0m
+  [32m$ [0m [33mBash[0m [2mCheck crate name and version[0m
+  [32m$ [0m [33mBash[0m [2mRun tests to verify build health[0m
 
-Проверяю текущее состояние проекта.
-  [32m$ [0m [33mBash[0m [2mRecent git history[0m
-  [32m$ [0m [33mBash[0m [2mGit status[0m
-  [32m$ [0m [33mBash[0m [2mCheck git remotes[0m
+All tests pass. Let me check the deploy configuration and current published state.
+  [32m$ [0m [33mBash[0m [2mRun clippy checks[0m
+  [32m$ [0m [33mBash[0m [2mCheck formatting[0m
+  [32m$ [0m [33mBash[0m [2mList files that would be packaged[0m
+  [32m$ [0m [33mBash[0m [2mList packaged files (allow dirty)[0m
   [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
-  [32m$ [0m [33mBash[0m [2mRun tests[0m
-  [32m$ [0m [33mBash[0m [2mRun clippy[0m
-  [32m$ [0m [33mBash[0m [2mCheck crate name availability[0m
-  [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/README.md[0m
 
+The package includes `.solo/` logs and other non-essential files. Need to clean up the package before publishing. Let me check what's published and fix the packaging.
+  [32m$ [0m [33mBash[0m [2mCheck current crates.io version[0m
+  [32m$ [0m [33mBash[0m [2mCheck .solo and docs directories[0m
+  [32m$ [0m [33mBash[0m [2mCheck gitignore[0m
 
+Current crates.io has v0.2.0, local is v0.3.0. Need to clean up packaging — lots of non-essential files included. Let me fix Cargo.toml and publish.
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [32m$ [0m [33mBash[0m [2mVerify cleaned package contents[0m
+  [32m$ [0m [33mBash[0m [2mCount packaged files[0m
+  [32m$ [0m [33mBash[0m [2mFull package list[0m
 
-Статус: 29/29 тестов pass, clippy чист, код pushed на GitHub.
+Package is clean — only source, examples, tests, README, and LICENSE. Now let me do a dry-run publish.
+  [32m$ [0m [33mBash[0m [2mDry-run publish to verify package[0m
 
-Это Rust-библиотека — деплой = публикация на **crates.io**. Имя `openai-rust` занято. Свободные варианты:
-  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Какое имя использовать для крейта на crates.i[0m
+Dry-run passes cleanly. Package compiles, 52 files at 339KB compressed. Now let me commit the Cargo.toml change and publish.
+  [32m$ [0m [33mBash[0m [2mCommit package cleanup[0m
 
-Жду выбора имени для крейта.Жду выбора имени для крейта.
+All 114 tests pass, clippy clean. Now let me publish to crates.io.
+  [32m$ [0m [33mBash[0m [2mPublish v0.3.0 to crates.io[0m
+
+Published. Now push to GitHub and create a release tag.
+  [32m$ [0m [33mBash[0m [2mPush to GitHub[0m
+  [32m$ [0m [33mBash[0m [2mCreate release tag[0m
+  [32m$ [0m [33mBash[0m [2mPush release tag[0m
+
+Now create a GitHub release with changelog.
+  [32m$ [0m [33mBash[0m [2mChangelog since v0.2.0[0m
+  [32m$ [0m [33mBash[0m [2mList existing tags[0m
+
+No previous tag exists. Let me check the commit range for v0.3.0 changes.
+  [32m$ [0m [33mBash[0m [2mFull commit history for changelog[0m
+  [32m$ [0m [33mBash[0m [2mCreate GitHub release[0m
+
+Verify everything is live.
+  [32m$ [0m [33mBash[0m [2mVerify crates.io listing[0m
+
+**Deploy complete:**
+
+- **crates.io:** `openai-oxide` v0.3.0 published — https://crates.io/crates/openai-oxide
+- **GitHub:** pushed to main + tag v0.3.0 — https://github.com/fortunto2/openai-rust/releases/tag/v0.3.0
+- **docs.rs:** will auto-build at https://docs.rs/openai-oxide/0.3.0
+- **Package:** 52 files, 339KB compressed (cleaned up — excluded .solo/, docs/, CLAUDE.md)
+
+<solo:done/>**Deploy complete:**
+
+- **crates.io:** `openai-oxide` v0.3.0 published — https://crates.io/crates/openai-oxide
+- **GitHub:** pushed to main + tag v0.3.0 — https://github.com/fortunto2/openai-rust/releases/tag/v0.3.0
+- **docs.rs:** will auto-build at https://docs.rs/openai-oxide/0.3.0
+- **Package:** 52 files, 339KB compressed (cleaned up — excluded .solo/, docs/, CLAUDE.md)
+
+<solo:done/>

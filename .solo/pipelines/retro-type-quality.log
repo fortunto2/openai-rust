@@ -1,0 +1,132 @@
+  [2msession: c9a8d7c0  model: claude-opus-4-6[1m][0m
+Starting retro for openai-rust. Let me gather all artifacts in parallel.
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/*.log" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/iter-*.log" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/pipeline.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/**/*" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/eval-dimensions.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.22.0/skills/retro/references/failure-catalog.md[0m
+  [32m$ [0m [33mBash[0m [2mRecent git commits[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+  [32m$ [0m [33mBash[0m [2mCLAUDE.md size check[0m
+
+Good, I have the pipeline log and all artifacts. Found 18 iteration logs across 5 pipeline runs (3 STARTs plus 2 auto-plan restarts). Let me now read plan fidelity data and run quality checks.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/remaining/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/remaining/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/request-options/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/request-options/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/type-quality/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/type-quality/plan.md[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+  [32m$ [0m [33mBash[0m [2mRun clippy[0m
+  [32m$ [0m [33mBash[0m [2mCount conventional commits[0m
+  [32m$ [0m [33mBash[0m [2mTotal commit count[0m
+
+Now let me sample some key iter logs to understand failure patterns, and check the existing retro/evolution files.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-003-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-006-review.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-005-review.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [32m$ [0m [33mBash[0m [2mGet full test pass counts[0m
+  [32m$ [0m [33mBash[0m [2mCount non-conventional commits[0m
+
+Good, I have all the data. Let me read the phase2/phase3 plan-done files for completeness, then generate the full report.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase2/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase3/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/type-quality/plan.md[0m
+
+Now I have everything. Let me write the comprehensive retro report.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now update the evolution log with the comprehensive final data.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Now let me check if CLAUDE.md needs revision (Phase 9).
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/CLAUDE.md[0m
+
+CLAUDE.md is 10,003 chars — well under 40K, current and accurate. No revision needed.
+
+Here's the retro summary:
+
+---
+
+## Pipeline Retro: openai-rust — 7.7/10
+
+**5 runs, 6 tracks, 26 iterations, 183 minutes total**
+
+### Top 3 Failure Patterns
+
+1. **Deploy AskUserQuestion (CRITICAL)** — 7 wasted iters in runs 1-2. Crate name conflict triggered interactive questions in headless pipeline mode. 3rd project with this defect.
+2. **Redo loops** — 3 cycles, but all productive (real fixes). Redo limit (2) worked correctly.
+3. **Deploy signal gap** — self-resolved once naming was sorted. Runs 3-5 were zero-waste.
+
+### Key Numbers
+
+| Metric | Value |
+|--------|-------|
+| Tests | 151 pass, 0 fail |
+| Commits | 77 (98.7% conventional) |
+| Published | openai-oxide v0.5.0 on crates.io |
+| Waste trend | 50% → 67% → 20% → 0% → 0% |
+| Plan fidelity | 100% criteria met across all tracks |
+
+### Top 3 Recommendations
+
+1. **[CRITICAL]** Fix deploy skill — suppress `AskUserQuestion` when `$SOLO_PIPELINE=1`, auto-resolve from `Cargo.toml`
+2. **[HIGH]** Add Rust/crate publish strategy to deploy skill (currently web-app biased)
+3. **[MEDIUM]** `/plan` should detect overlapping plans and consolidate
+
+### What Worked Best
+
+- Python SDK local-read workflow → 100% field coverage
+- Auto-plan picked up 2 additional tracks from backlog, both zero-waste
+- Progressive delivery: 6 crates.io releases (v0.1.0 → v0.5.0)
+- Runs 3-5: 11 iterations, 0 waste
+
+<solo:done/>CLAUDE.md is 10,003 chars — well under 40K, current and accurate. No revision needed.
+
+Here's the retro summary:
+
+---
+
+## Pipeline Retro: openai-rust — 7.7/10
+
+**5 runs, 6 tracks, 26 iterations, 183 minutes total**
+
+### Top 3 Failure Patterns
+
+1. **Deploy AskUserQuestion (CRITICAL)** — 7 wasted iters in runs 1-2. Crate name conflict triggered interactive questions in headless pipeline mode. 3rd project with this defect.
+2. **Redo loops** — 3 cycles, but all productive (real fixes). Redo limit (2) worked correctly.
+3. **Deploy signal gap** — self-resolved once naming was sorted. Runs 3-5 were zero-waste.
+
+### Key Numbers
+
+| Metric | Value |
+|--------|-------|
+| Tests | 151 pass, 0 fail |
+| Commits | 77 (98.7% conventional) |
+| Published | openai-oxide v0.5.0 on crates.io |
+| Waste trend | 50% → 67% → 20% → 0% → 0% |
+| Plan fidelity | 100% criteria met across all tracks |
+
+### Top 3 Recommendations
+
+1. **[CRITICAL]** Fix deploy skill — suppress `AskUserQuestion` when `$SOLO_PIPELINE=1`, auto-resolve from `Cargo.toml`
+2. **[HIGH]** Add Rust/crate publish strategy to deploy skill (currently web-app biased)
+3. **[MEDIUM]** `/plan` should detect overlapping plans and consolidate
+
+### What Worked Best
+
+- Python SDK local-read workflow → 100% field coverage
+- Auto-plan picked up 2 additional tracks from backlog, both zero-waste
+- Progressive delivery: 6 crates.io releases (v0.1.0 → v0.5.0)
+- Runs 3-5: 11 iterations, 0 waste
+
+<solo:done/>

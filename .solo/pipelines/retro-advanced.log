@@ -1,0 +1,132 @@
+  [2msession: e0ff452f  model: claude-opus-4-6[1m][0m
+Starting retro for `openai-rust`. Let me locate all artifacts first.
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/solo-pipeline-openai-rust*" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/retro/references/eval-dimensions.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/retro/references/failure-catalog.md[0m
+
+Found 25 iter logs, pipeline.log, progress.md, 4 plan-done tracks, 1 active plan. Let me parse the core artifacts.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/pipeline.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase2/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase2/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase3/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase3/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/remaining/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/remaining/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/advanced/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/advanced/plan.md[0m
+
+Now let me run git analysis and tests in parallel.
+  [32m$ [0m [33mBash[0m [2mRecent commit history[0m
+  [32m$ [0m [33mBash[0m [2mTotal commit count[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+  [32m$ [0m [33mBash[0m [2mRun clippy[0m
+  [32m$ [0m [33mBash[0m [2mCheck formatting[0m
+  [32m$ [0m [33mBash[0m [2mCommitter breakdown[0m
+  [32m$ [0m [33mBash[0m [2mCount conventional commits[0m
+  [32m$ [0m [33mBash[0m [2mCount test results[0m
+
+Let me sample key iter logs to understand failure patterns better.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-004-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-005-review.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-002-review.log[0m
+
+All data collected. Let me compile the retro report.
+  [32m$ [0m [33mBash[0m [2mCheck retro directory[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Previous retro only covered runs 1-2. Let me write the comprehensive one covering all 3 pipeline runs.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now let me check the factory skills and write the evolution log (Phase 10).
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/deploy/SKILL.md[0m
+  [32m$ [0m [33mBash[0m [2mCheck evolution.md[0m
+  [32m$ [0m [33mBash[0m [2mCheck global evolution.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/deploy/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.solo/evolution.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.solo/evolution.md[0m
+
+The deploy AskUserQuestion spin-loop is a **recurring factory defect** — already flagged in supervox and openwok retros but not fixed. Let me now write the evolution entry and check CLAUDE.md for Phase 9.
+  [32m$ [0m [33mBash[0m [2mCheck CLAUDE.md size[0m
+  [36m// [36mGrep[0m [2m"pipeline|Pipeline|AskUser|pipeline.mode" ~/.claude/plugins/cache/solo/solo/1.19.0/skills/deploy/SKILL.md[0m
+
+CLAUDE.md is 9.3KB — well under limit. Deploy skill still lacks pipeline-mode detection for AskUserQuestion. Let me write the evolution entry and finalize.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+
+Now append to global evolution log.
+  [36m>>[0m [36mRead[0m [2m~/.solo/evolution.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/.solo/evolution.md[0m
+
+Now let me present the summary and ask about patches.
+
+---
+
+## Retro Complete: openai-rust | Score: 6.7/10
+
+### Top 3 Failure Patterns
+
+1. **Deploy AskUserQuestion Blocking** — 7/10 wasted iterations. Deploy kept asking for crate name in pipeline mode where no user can answer. This is the **3rd project** with this exact defect (supervox, openwok, openai-rust).
+
+2. **Redo Loops** — 3 build-review cycles. Review found real issues (#[non_exhaustive], serde_json::Value, stale README version) and correctly sent back to build. Cost ~5 extra iterations but produced quality improvements.
+
+3. **No Rust Deploy Strategy** — Deploy skill has no `cargo publish` workflow. Agent improvised crate naming, LICENSE, README, versioning, and publishing each time.
+
+### Top 3 Recommendations
+
+1. **[CRITICAL]** Add Pipeline Mode to `skills/deploy/SKILL.md` — when `.solo/states/` exists, never use AskUserQuestion. Auto-resolve naming conflicts from Cargo.toml.
+2. **[HIGH]** Create `rust-crate` stack YAML template with cargo publish, docs.rs, crates.io, GitHub releases workflow.
+3. **[MEDIUM]** When forcing done at redo limit, append remaining issues to plan.md so they're not lost.
+
+### What Worked Brilliantly
+
+- 100% conventional commits (58/58)
+- 123 tests, all passing, zero clippy warnings
+- Python SDK local-read workflow → 100% OpenAPI field coverage
+- Progressive delivery: 4 crate versions published (v0.1.0 → v0.3.0)
+- Build skill: 80% productive, TDD followed throughout
+
+Reports saved:
+- `docs/retro/2026-03-20-retro.md`
+- `docs/evolution.md`
+- `~/.solo/evolution.md` (global, appended)
+
+<solo:done/>Now let me present the summary and ask about patches.
+
+---
+
+## Retro Complete: openai-rust | Score: 6.7/10
+
+### Top 3 Failure Patterns
+
+1. **Deploy AskUserQuestion Blocking** — 7/10 wasted iterations. Deploy kept asking for crate name in pipeline mode where no user can answer. This is the **3rd project** with this exact defect (supervox, openwok, openai-rust).
+
+2. **Redo Loops** — 3 build-review cycles. Review found real issues (#[non_exhaustive], serde_json::Value, stale README version) and correctly sent back to build. Cost ~5 extra iterations but produced quality improvements.
+
+3. **No Rust Deploy Strategy** — Deploy skill has no `cargo publish` workflow. Agent improvised crate naming, LICENSE, README, versioning, and publishing each time.
+
+### Top 3 Recommendations
+
+1. **[CRITICAL]** Add Pipeline Mode to `skills/deploy/SKILL.md` — when `.solo/states/` exists, never use AskUserQuestion. Auto-resolve naming conflicts from Cargo.toml.
+2. **[HIGH]** Create `rust-crate` stack YAML template with cargo publish, docs.rs, crates.io, GitHub releases workflow.
+3. **[MEDIUM]** When forcing done at redo limit, append remaining issues to plan.md so they're not lost.
+
+### What Worked Brilliantly
+
+- 100% conventional commits (58/58)
+- 123 tests, all passing, zero clippy warnings
+- Python SDK local-read workflow → 100% OpenAPI field coverage
+- Progressive delivery: 4 crate versions published (v0.1.0 → v0.3.0)
+- Build skill: 80% productive, TDD followed throughout
+
+Reports saved:
+- `docs/retro/2026-03-20-retro.md`
+- `docs/evolution.md`
+- `~/.solo/evolution.md` (global, appended)
+
+<solo:done/>

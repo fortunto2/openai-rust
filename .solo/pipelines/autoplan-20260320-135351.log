@@ -1,0 +1,100 @@
+  [2msession: c1f3bb5e  model: claude-opus-4-6[1m][0m
+Let me start by gathering context — reading the backlog, completed plans, retro, and recent git history.
+  [36m**[0m [36mGlob[0m [2m"docs/backlog*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/prd.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/roadmap*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/*/plan.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/retro/*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/evolution.md" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/roadmap.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/evolution.md[0m
+  [32m$ [0m [33mBash[0m [2mRecent commit history[0m
+
+Good. Priority 1 (Type Quality) is done. Priority 2 (Ergonomics) is next. The `request-options` track covered per-request `.query()`/`.header()` — the remaining ergonomics items are:
+
+1. `dyn Config` trait for provider-agnostic code
+2. Azure OpenAI support
+3. Granular feature flags
+4. BYOT methods
+5. Image save helper
+
+Let me research the codebase to understand the current architecture and plan the next track.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/client.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/config.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/lib.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+
+Now let me look at the Python SDK's Azure and config patterns, plus a sample resource to understand the current coupling.
+  [36m**[0m [36mGlob[0m [2m"**/*.rs" ~/startups/active/openai-rust/src/resources[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/completions.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/error.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/request_options.rs[0m
+
+Let me look at a sample resource and the Python SDK's config pattern for Azure.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/models.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/embeddings.rs[0m
+  [32m$ [0m [33mBash[0m [2mList Python SDK top-level structure[0m
+  [36m**[0m [36mGlob[0m [2m"*azure*" ~/startups/shared/openai-python/src/openai[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/lib/azure.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_client.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/streaming.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/lib/azure.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/mod.rs[0m
+  [32m$ [0m [33mBash[0m [2mRun existing tests to verify baseline[0m
+
+All 151 tests pass. I now have a thorough understanding of the codebase. Let me create the plan.
+
+**Summary of research:**
+- Priority 1 (Type Quality) is complete. Priority 2 (Ergonomics) is next.
+- `request-options` track already covered per-request customization
+- Next highest-impact item: **Azure OpenAI support** — the #1 requested feature for OpenAI client libraries
+- Python SDK uses `AzureOpenAI` class with URL rewriting for `/deployments/{model}`, `api-version` query param, and Azure AD token auth
+- Current architecture: all resources borrow `&'a OpenAI` — can support Azure as a constructor variant without a full generic refactor
+- The `dyn Config` trait can come as a follow-up track; Azure can be done pragmatically first
+  [32m$ [0m [33mBash[0m [2mCreate track directory[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/azure-support/spec.md[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/azure-support/plan.md[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:TodoWrite[0m
+
+
+
+Now let me present the plan for approval.
+  [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Track: azure-support (Feature, 3 phases, 15 t[0m
+
+Track created: **azure-support**
+
+```
+Type:   Feature
+Phases: 3
+Tasks:  15
+Spec:   docs/plan/azure-support/spec.md
+Plan:   docs/plan/azure-support/plan.md
+```
+
+**Research findings:**
+- Python SDK `AzureOpenAI` uses inheritance to override URL construction + auth — we can achieve the same with a constructor variant
+- Azure auth uses `api-key` header (not `Authorization: Bearer`) — needs a small change in `client.rs::request()`
+- `api-version` passed as query param — existing `default_query` in `ClientConfig` handles this perfectly
+- No resource files need to change — `AzureConfig.build()` returns a normal `OpenAI` client
+- All 151 existing tests pass — clean baseline
+
+**Next:** `/build azure-support`Track created: **azure-support**
+
+```
+Type:   Feature
+Phases: 3
+Tasks:  15
+Spec:   docs/plan/azure-support/spec.md
+Plan:   docs/plan/azure-support/plan.md
+```
+
+**Research findings:**
+- Python SDK `AzureOpenAI` uses inheritance to override URL construction + auth — we can achieve the same with a constructor variant
+- Azure auth uses `api-key` header (not `Authorization: Bearer`) — needs a small change in `client.rs::request()`
+- `api-version` passed as query param — existing `default_query` in `ClientConfig` handles this perfectly
+- No resource files need to change — `AzureConfig.build()` returns a normal `OpenAI` client
+- All 151 existing tests pass — clean baseline
+
+**Next:** `/build azure-support`

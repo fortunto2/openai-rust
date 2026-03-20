@@ -4,11 +4,11 @@ Factory defects and improvements from pipeline retros.
 
 ---
 
-## 2026-03-20 | openai-rust | Factory Score: 7.0/10
+## 2026-03-20 | openai-rust | Factory Score: 7.5/10
 
-Pipeline: setup→build→deploy→review (x5 runs, 6 tracks) | Iters: 26 | Waste: 38%
-Tracks: phase1 (27m) → remaining (48m) → advanced (49m) → request-options (18m) → type-quality (41m)
-Total: 77 commits, 151 tests, v0.5.0 published on crates.io, ~183 min wall time
+Pipeline: setup→build→deploy→review (x9 runs, 10 tracks) | Iters: 35 | Waste: 28.6%
+Tracks: phase1 (27m) → remaining (48m) → advanced (49m) → request-options (18m) → type-quality (46m) → azure-support (20m) → ergonomics (19m) → pagination (23m)
+Total: 101 commits, 180 tests, v0.8.0 published on crates.io, ~250 min wall time
 
 ### Defects
 - **CRITICAL** — FIXED (0462049) | deploy (skills/deploy/SKILL.md): AskUserQuestion spin-loop in pipeline mode — 7 wasted deploy iterations (64% deploy waste). Crate name conflict (`openai-rust` taken on crates.io) triggered repeated user questions that can't be answered in pipeline. **3rd project with this exact defect** (supervox, openwok, openai-rust).
@@ -36,8 +36,13 @@ Total: 77 commits, 151 tests, v0.5.0 published on crates.io, ~183 min wall time
 - **Python SDK reference workflow:** Reading local Python source produced 100% field coverage
 - **OpenAPI validation tests:** tests/openapi_coverage.rs caught missing fields proactively
 - **Redo limit (2):** Prevented infinite review-build cycling, forced progress
-- **Conventional commits:** 76/77 = 98.7% adherence
-- **Progressive delivery:** v0.1.0 → v0.1.1 → v0.2.0 → v0.3.0 → v0.4.0 → v0.5.0
-- **Auto-plan:** Correctly picked up request-options AND type-quality from backlog, both zero-waste (6 iters, 0 waste)
-- **Runs 3-5 zero-waste:** Once deploy naming was resolved, pipeline ran cleanly (11 iters, 0 waste)
+- **Conventional commits:** 94/94 = 100% adherence
+- **Progressive delivery:** v0.1.0 → v0.2.0 → v0.3.0 → v0.4.0 → v0.5.0 → v0.6.0 → v0.7.0
+- **Auto-plan:** Correctly picked up 4 tracks from backlog (request-options, type-quality, azure-support, ergonomics), all zero-waste
+- **Runs 3-9 zero-waste:** Once deploy naming was resolved, pipeline ran cleanly (20 iters, 0 waste)
 - **Type-quality track:** 19 new enums + 5 typed structs replacing weak types in a single clean 3-iter run
+- **Azure-support track:** Clean 3-iter, 20m run — AzureConfig builder, 14 tests, v0.6.0 published
+- **Ergonomics track:** Clean 3-iter, 19m run — feature flags, BYOT methods, Image::save(), v0.7.0 published
+- **Pagination track:** Clean 3-iter, 23m run — Paginator<T> async stream, list_page/list_auto on 7 resources, v0.8.0 published
+- **Deploy fix verified:** Pipeline prompt "Do NOT use AskUserQuestion" eliminated the #1 waste source
+- **Auto-plan:** 5 tracks auto-generated from backlog (request-options, type-quality, azure-support, ergonomics, pagination) — all zero-waste

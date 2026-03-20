@@ -1,0 +1,81 @@
+  [2msession: bc9f4a3f  model: claude-opus-4-6[1m][0m
+Let me research the project state to find the next highest-priority item.
+  [36m**[0m [36mGlob[0m [2m"docs/backlog*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/prd.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/roadmap*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/retro/*.md" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/roadmap.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/advanced/plan.md[0m
+
+Good. Priority 1 (Type Quality) is essentially complete from the advanced track. **Priority 2: Ergonomics** is next. Let me research the codebase.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/client.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/config.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/lib.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/error.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+
+Now let me examine a sample resource to understand the pattern, check the Python SDK's approach to custom configs, and look at deploy infra.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/completions.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/streaming.rs[0m
+  [32m$ [0m [33mBash[0m [2mList resource files[0m
+  [32m$ [0m [33mBash[0m [2mCheck for deploy infrastructure[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/mod.rs[0m
+  [36m**[0m [36mGlob[0m [2m"src/resources/chat/*.rs" ~/startups/active/openai-rust[0m
+
+Now let me check the Python SDK's approach to custom configs, Azure, and per-request options.
+  [2m--[0m [36mAgent[0m [2mResearch Python SDK config patterns[0m
+  [32m$ [0m [33mBash[0m [2mRecent git history[0m
+  [32m$ [0m [33mBash[0m [2mList files in OpenAI Python SDK root[0m
+  [36m**[0m [36mGlob[0m [2m"*client*.py" ~/startups/shared/openai-python/src/openai[0m
+  [36m**[0m [36mGlob[0m [2m"*azure*.py" ~/startups/shared/openai-python/src/openai[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_client.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_base_client.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/lib/azure.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_types.py[0m
+  [36m// [36mGrep[0m [2m"def create\(" ~/startups/shared/openai-python/src/openai/resources/chat[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_models.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/resources/chat/completions/completions.py[0m
+  [36m// [36mGrep[0m [2m"extra_headers|extra_query|extra_body" ~/startups/shared/openai-python/src/openai/resources/chat/completions[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/resources/chat/completions/completions.py[0m
+  [36m// [36mGrep[0m [2m"def make_request_options" ~/startups/shared/openai-python/src/openai[0m
+  [36m// [36mGrep[0m [2m"^def make_request_options" ~/startups/shared/openai-python/src/openai/_base_client.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/resources/chat/completions/completions.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_resource.py[0m
+  [36m// [36mGrep[0m [2m"_post\(|_get\(|_delete\(" ~/startups/shared/openai-python/src/openai/_base_client.py[0m
+  [36m// [36mGrep[0m [2m"def post\(" ~/startups/shared/openai-python/src/openai/_base_client.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/_base_client.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/resources/chat/completions/completions.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/resources/chat/completions/completions.py[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/shared/openai-python/src/openai/resources/chat/completions/completions.py[0m
+
+Now I have all the context needed. Let me create the plan.
+  [32m$ [0m [33mBash[0m [2mCreate plan directory[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/request-options/spec.md[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/plan/request-options/plan.md[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:TodoWrite,AskUserQuestion[0m
+
+
+
+Track created: **request-options_20260320**
+
+```
+Type:   Feature
+Phases: 3
+Tasks:  15
+Spec:   docs/plan/request-options/spec.md
+Plan:   docs/plan/request-options/plan.md
+```
+
+**Research findings:**
+- Python SDK uses `extra_headers`, `extra_query`, `extra_body`, `timeout` on every method + `with_options()` / `copy()` on client
+- In Rust, `client.with_options(opts).chat().completions().create(req)` covers all 40+ resource methods without modifying each one — `reqwest::Client` is Arc-cloned cheaply
+- `ClientConfig` needs `default_headers` and `default_query` to match Python SDK constructor
+- `extra_body` requires JSON merge at the `request()` level — internal only, doesn't pollute public types
+- No deploy infrastructure found — no deploy phase needed
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Priority 2 (Ergonomics) from roadmap — starti[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Priority 2 (Ergonomics) from roadmap — starti[0m
+
+Next: `/build request-options_20260320`Next: `/build request-options_20260320`
