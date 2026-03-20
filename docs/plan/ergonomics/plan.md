@@ -46,15 +46,15 @@ Add `create_raw()` methods on key endpoints that accept any serializable request
 - [x] Existing typed methods still work unchanged
 - [x] Tests pass for all three endpoints
 
-## Phase 3: Image Save Helper
+## Phase 3: Image Save Helper <!-- checkpoint:34f4a35 -->
 
 Add `Image::save(path)` convenience method that handles both URL download and b64_json decode.
 
 ### Tasks
 
-- [x] Task 3.1: Add `base64` crate (v0.22) to `[dependencies]` in `Cargo.toml`, gated behind `images` feature.
-- [x] Task 3.2: Implement `Image::save(&self, path: impl AsRef<Path>) -> Result<(), OpenAIError>` in `src/types/image.rs`. If `b64_json` is set, decode and write. If `url` is set, download via reqwest and write. Error if neither is set.
-- [x] Task 3.3: Add tests for `Image::save()` — test b64_json decode path (unit test with known base64 data), test error when no data present. URL download test with mockito.
+- [x] Task 3.1: Add `base64` crate (v0.22) to `[dependencies]` in `Cargo.toml`, gated behind `images` feature. <!-- sha:34f4a35 -->
+- [x] Task 3.2: Implement `Image::save(&self, path: impl AsRef<Path>) -> Result<(), OpenAIError>` in `src/types/image.rs`. If `b64_json` is set, decode and write. If `url` is set, download via reqwest and write. Error if neither is set. <!-- sha:34f4a35 -->
+- [x] Task 3.3: Add tests for `Image::save()` — test b64_json decode path (unit test with known base64 data), test error when no data present. URL download test with mockito. <!-- sha:34f4a35 -->
 
 ### Verification
 
@@ -66,15 +66,15 @@ Add `Image::save(path)` convenience method that handles both URL download and b6
 
 ### Tasks
 
-- [ ] Task 4.1: Update CLAUDE.md — add feature flags documentation, BYOT methods, image save helper to architecture section and implemented APIs table.
-- [ ] Task 4.2: Update README.md — add feature flags usage example, BYOT example, image save example.
-- [ ] Task 4.3: Update `docs/roadmap.md` — check off completed Priority 2 items (feature flags, BYOT, image save helper).
+- [x] Task 4.1: Update CLAUDE.md — add feature flags documentation, BYOT methods, image save helper to architecture section and implemented APIs table.
+- [x] Task 4.2: Update README.md — add feature flags usage example, BYOT example, image save example.
+- [x] Task 4.3: Update `docs/roadmap.md` — check off completed Priority 2 items (feature flags, BYOT, image save helper).
 
 ### Verification
 
-- [ ] CLAUDE.md reflects current project state
-- [ ] README.md shows new features
-- [ ] Linter clean, tests pass
+- [x] CLAUDE.md reflects current project state
+- [x] README.md shows new features
+- [x] Linter clean, tests pass
 
 ## Final Verification
 

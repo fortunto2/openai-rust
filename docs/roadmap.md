@@ -17,23 +17,19 @@ Reference: https://github.com/64bit/async-openai (competitor), ~/startups/shared
 - [x] OpenAPI coverage tests (88% overall)
 - [x] Builder pattern for ChatCompletionRequest and ResponseCreateRequest
 - [x] Pre-commit: tests + OpenAPI coverage + clippy + quality checks
-
-## Priority 1: Type Quality (current — make Knuth proud)
-- [ ] Replace ALL `serde_json::Value` in public types with typed structs/enums (currently 27 → target 0)
-- [ ] Replace `String` with enums where appropriate (Role, Status, FinishReason, Object type)
-- [ ] Add `#[non_exhaustive]` to all public enums
-- [ ] Doc comments on every public field
-- [ ] OpenAPI coverage ≥95% (currently 88%, Images at 57%)
-
-## Priority 2: Ergonomics (match async-openai)
-- [ ] Per-request customization: `.query()`, `.header()`, `.headers()` on resource groups
-- [ ] `dyn Config` trait for provider-agnostic code (OpenAI, Azure, custom)
+- [x] Type quality: 19 typed enums + 5 typed structs replacing `serde_json::Value` (type-quality track)
+- [x] `#[non_exhaustive]` on all public enums
+- [x] RequestOptions: per-request headers, query, extra_body, timeout via `with_options()`
 - [x] Azure OpenAI support (`AzureConfig` builder, `OpenAI::azure()`, api-key/AD token auth)
-- [ ] Granular feature flags: `chat-types`, `response-types`, `embedding-types` (compile-time savings)
-- [ ] BYOT (bring your own types): `_byot` methods accepting `impl Serialize` / `DeserializeOwned`
-- [ ] Image save helper: `response.save("./output").await`
+- [x] Granular feature flags: 12 resource features, `default` and `full` aliases
 
-## Priority 3: Production Hardening
+## Priority 1: Ergonomics (ergonomics track — complete)
+- [x] Feature flags (`cargo check --no-default-features` compiles)
+- [x] BYOT `create_raw()` methods: Chat, Responses, Embeddings (accept `impl Serialize`, return `serde_json::Value`)
+- [x] Image save helper: `Image::save(path)` — URL download + b64_json decode
+- [ ] `dyn Config` trait for provider-agnostic code (OpenAI, Azure, custom) — separate track
+
+## Priority 2: Production Hardening
 - [ ] Middleware/interceptor trait: logging, metrics, custom headers, rate limit tracking
 - [ ] Rate limit info from headers: `x-ratelimit-remaining`, `x-ratelimit-reset`
 - [ ] Automatic pagination for list endpoints (cursor-based iterator)
@@ -42,7 +38,7 @@ Reference: https://github.com/64bit/async-openai (competitor), ~/startups/shared
 - [ ] Webhook signature verification (for Responses API webhooks)
 - [ ] Request ID tracking (`x-request-id` header)
 
-## Priority 4: Ecosystem
+## Priority 3: Ecosystem
 - [ ] `openai-oxide-macros`: derive macro for function tool definitions
 - [ ] WASM support (feature-gated, no tokio — use wasm-bindgen-futures)
 - [ ] OpenRouter / Ollama / vLLM compatibility (custom base URL + model mapping)
@@ -51,13 +47,17 @@ Reference: https://github.com/64bit/async-openai (competitor), ~/startups/shared
 - [ ] Published docs on docs.rs with comprehensive examples
 
 ## Competitive Edge vs async-openai
-| Area | async-openai | openai-oxide (target) |
+| Area | async-openai | openai-oxide |
 |------|-------------|----------------------|
 | Types | Generated from spec | Hand-crafted from Python SDK + OpenAPI validation |
-| Value fields | Some `serde_json::Value` | Zero — fully typed |
+| Value fields | Some `serde_json::Value` | Fully typed (19 enums, 5 structs) |
 | Python parity | No | Yes — same field names, same behavior |
 | OpenAPI tests | No | Auto-validates against spec on every commit |
 | Pre-commit | No | Tests + coverage + clippy + quality audit |
+| Azure | No | AzureConfig builder, AD token + api-key auth |
+| Feature flags | No | 12 granular resource features |
+| BYOT methods | No | `create_raw()` for custom types |
+| Image save | No | `Image::save(path)` with b64/URL |
 
 ## Method
 

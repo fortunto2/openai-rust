@@ -28,6 +28,7 @@ Replicate the official Python SDK in Rust:
 | Streaming | reqwest streaming + SSE parsing |
 | Errors | thiserror |
 | Builder | typed builder pattern (no derive macro) |
+| Base64 | base64 0.22 (optional, `images` feature) |
 | Testing | cargo test + mockito (HTTP mocking) |
 
 ## Architecture
@@ -45,14 +46,14 @@ src/
     audio.rs          — transcriptions, translations, speech
     batches.rs        — batch create/list/retrieve/cancel
     beta/             — assistants, threads, runs, vector_stores (v2 header)
-    chat/             — chat.completions.create() + create_stream()
-    embeddings.rs     — embeddings.create()
+    chat/             — chat.completions.create() + create_stream() + create_raw()
+    embeddings.rs     — embeddings.create() + create_raw()
     files.rs          — file CRUD + content download
     fine_tuning.rs    — fine_tuning.jobs CRUD + events
     images.rs         — generate, edit, create_variation
     models.rs         — list, retrieve, delete
     moderations.rs    — moderations.create()
-    responses.rs      — responses create/retrieve/delete
+    responses.rs      — responses create/retrieve/delete + create_raw()
     uploads.rs        — upload create/cancel/complete
   types/
     audio.rs          — Transcription, Translation, Speech types + AudioVoice, AudioResponseFormat, SpeechResponseFormat enums
@@ -63,7 +64,7 @@ src/
     embedding.rs      — Embedding types + EncodingFormat enum
     file.rs           — FileObject, FileDeleted types + FilePurpose, FileStatus enums
     fine_tuning.rs    — FineTuningJob types + FineTuningStatus, FineTuningEventLevel enums
-    image.rs          — Image types + ImageQuality, ImageSize, ImageStyle, ImageOutputFormat, ImageBackground, ImageModeration enums
+    image.rs          — Image types + ImageQuality, ImageSize, ImageStyle, ImageOutputFormat, ImageBackground, ImageModeration enums + Image::save()
     model.rs          — Model types
     moderation.rs     — Moderation types
     responses.rs      — Response types
@@ -95,6 +96,8 @@ src/
 | Realtime (beta) | `client.beta().realtime().sessions().create()` | Done |
 
 **Current version:** v0.6.0 on crates.io
+
+**Feature flags:** Each resource is gated behind an optional Cargo feature (`chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`). All enabled by default. `cargo check --no-default-features` compiles with zero resources (just client + types).
 
 Remaining (experimental/newer): Evals, Skills, Videos, Containers, legacy Completions.
 

@@ -16,13 +16,27 @@ Idiomatic Rust client for the OpenAI API — 1:1 parity with the [official Pytho
 - 100% OpenAPI field coverage for Chat Completions
 - Same resource structure as Python SDK: `client.chat().completions().create()`
 
+## Feature Flags
+
+Each API resource is behind an optional Cargo feature (all enabled by default):
+
+```toml
+# All resources (default)
+openai-oxide = "0.6"
+
+# Only chat + embeddings
+openai-oxide = { version = "0.6", default-features = false, features = ["chat", "embeddings"] }
+```
+
+Available features: `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`.
+
 ## Quick Start
 
 Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-openai-oxide = "0.3"
+openai-oxide = "0.6"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -79,6 +93,42 @@ async fn main() -> Result<(), openai_oxide::OpenAIError> {
         }
     }
     Ok(())
+}
+```
+
+## BYOT (Bring Your Own Types)
+
+Send custom fields or get raw JSON responses using `create_raw()`:
+
+```rust
+use openai_oxide::OpenAI;
+use serde_json::json;
+
+#[tokio::main]
+async fn main() -> Result<(), openai_oxide::OpenAIError> {
+    let client = OpenAI::from_env()?;
+
+    let raw = client.chat().completions().create_raw(&json!({
+        "model": "gpt-4o",
+        "messages": [{"role": "user", "content": "Hi"}],
+        "custom_field": true
+    })).await?;
+
+    println!("{}", raw["choices"][0]["message"]["content"]);
+    Ok(())
+}
+```
+
+Also available on `client.responses().create_raw()` and `client.embeddings().create_raw()`.
+
+## Image Save Helper
+
+Save generated images directly to disk:
+
+```rust
+let resp = client.images().generate(req).await?;
+if let Some(images) = &resp.data {
+    images[0].save("output.png").await?;  // handles both URL and b64_json
 }
 ```
 
