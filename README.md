@@ -74,7 +74,7 @@ Each API resource is behind an optional Cargo feature (all enabled by default):
 
 ```toml
 # All resources (default)
-openai-oxide = "0.8"
+openai-oxide = "0.9"
 
 # Only chat + embeddings
 openai-oxide = { version = "0.8", default-features = false, features = ["chat", "embeddings"] }
@@ -88,7 +88,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-openai-oxide = "0.8"
+openai-oxide = "0.9"
 tokio = { version = "1", features = ["full"] }
 ```
 
