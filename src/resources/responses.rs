@@ -83,6 +83,118 @@ impl<'a> Responses<'a> {
         Ok(SseStream::new(response))
     }
 
+    /// Stream a response and yield function calls as soon as their arguments are complete.
+    ///
+    /// Returns a channel receiver that emits [`FunctionCall`](crate::types::responses::FunctionCall)
+    /// items as each one finishes streaming (on `response.function_call_arguments.done`),
+    /// WITHOUT waiting for `response.completed`.
+    ///
+    /// This lets you start executing tools ~200-500ms earlier per call in agent loops.
+    ///
+    /// Also returns the response_id (available after `response.created`).
+    ///
+    /// ```ignore
+    /// let (mut rx, response_id) = client.responses()
+    ///     .create_stream_fc(request)
+    ///     .await?;
+    ///
+    /// while let Some(fc) = rx.recv().await {
+    ///     // Start executing tool immediately — don't wait for response.completed
+    ///     let result = execute_tool(&fc.name, &fc.arguments).await;
+    /// }
+    /// ```
+    pub async fn create_stream_fc(
+        &self,
+        request: ResponseCreateRequest,
+    ) -> Result<
+        (
+            tokio::sync::mpsc::Receiver<crate::types::responses::FunctionCall>,
+            tokio::sync::watch::Receiver<Option<String>>,
+        ),
+        OpenAIError,
+    > {
+        use futures_util::StreamExt;
+
+        let mut stream = self.create_stream(request).await?;
+
+        let (fc_tx, fc_rx) = tokio::sync::mpsc::channel(16);
+        let (id_tx, id_rx) = tokio::sync::watch::channel(None);
+
+        // Track in-flight function calls by output_index
+        tokio::spawn(async move {
+            let mut pending_name: std::collections::HashMap<i64, String> = Default::default();
+            let mut pending_call_id: std::collections::HashMap<i64, String> = Default::default();
+
+            while let Some(event) = stream.next().await {
+                let ev = match event {
+                    Ok(ev) => ev,
+                    Err(_) => break,
+                };
+
+                match ev.type_.as_str() {
+                    "response.created" => {
+                        if let Some(id) = ev
+                            .data
+                            .get("response")
+                            .and_then(|r| r.get("id"))
+                            .and_then(|id| id.as_str())
+                        {
+                            let _ = id_tx.send(Some(id.to_string()));
+                        }
+                    }
+                    "response.output_item.added" => {
+                        // Track new function_call items
+                        if let Some(item) = ev.data.get("item")
+                            && item.get("type").and_then(|t| t.as_str()) == Some("function_call")
+                        {
+                            let idx = ev
+                                .data
+                                .get("output_index")
+                                .and_then(|i| i.as_i64())
+                                .unwrap_or(-1);
+                            if let Some(name) = item.get("name").and_then(|n| n.as_str()) {
+                                pending_name.insert(idx, name.to_string());
+                            }
+                            if let Some(cid) = item.get("call_id").and_then(|c| c.as_str()) {
+                                pending_call_id.insert(idx, cid.to_string());
+                            }
+                        }
+                    }
+                    "response.function_call_arguments.done" => {
+                        // Arguments are complete — emit FunctionCall immediately
+                        let idx = ev
+                            .data
+                            .get("output_index")
+                            .and_then(|i| i.as_i64())
+                            .unwrap_or(-1);
+                        let name = pending_name.remove(&idx).unwrap_or_default();
+                        let call_id = pending_call_id.remove(&idx).unwrap_or_default();
+                        let arguments = ev
+                            .data
+                            .get("arguments")
+                            .and_then(|a| a.as_str())
+                            .and_then(|s| serde_json::from_str(s).ok())
+                            .unwrap_or(serde_json::Value::Object(Default::default()));
+
+                        let fc = crate::types::responses::FunctionCall {
+                            call_id,
+                            name,
+                            arguments,
+                        };
+
+                        if fc_tx.send(fc).await.is_err() {
+                            break; // receiver dropped
+                        }
+                    }
+                    "response.completed" | "response.failed" => break,
+                    _ => {}
+                }
+            }
+        });
+
+        Ok((fc_rx, id_rx))
+    }
+
     /// Retrieve a response by ID.
     ///
     /// `GET /responses/{response_id}`

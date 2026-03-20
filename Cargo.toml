@@ -77,3 +77,7 @@ required-features = ["responses"]
 [[example]]
 name = "websocket"
 required-features = ["websocket", "responses"]
+
+[[example]]
+name = "test_stream_fc"
+required-features = ["responses"]
