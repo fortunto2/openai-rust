@@ -1,6 +1,19 @@
-// Shared types (Usage, etc.)
+// Shared types (Usage, Role, etc.)
 
 use serde::{Deserialize, Serialize};
+
+/// Message role in chat/thread conversations.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum Role {
+    System,
+    Developer,
+    User,
+    Assistant,
+    Tool,
+    Function,
+}
 
 /// Token usage information returned by the API.
 #[derive(Debug, Clone, Serialize, Deserialize)]

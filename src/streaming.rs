@@ -155,7 +155,10 @@ data: [DONE]
         assert_eq!(events.len(), 4);
 
         let chunk0 = events[0].as_ref().unwrap();
-        assert_eq!(chunk0.choices[0].delta.role.as_deref(), Some("assistant"));
+        assert_eq!(
+            chunk0.choices[0].delta.role,
+            Some(crate::types::common::Role::Assistant)
+        );
 
         let chunk1 = events[1].as_ref().unwrap();
         assert_eq!(chunk1.choices[0].delta.content.as_deref(), Some("Hello"));

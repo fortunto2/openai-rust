@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::common::Role;
+
 // ── Request types ──
 
 /// Input for the Responses API.
@@ -28,7 +30,7 @@ impl From<String> for ResponseInput {
 /// An input message for the Responses API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResponseInputItem {
-    pub role: String,
+    pub role: Role,
     pub content: serde_json::Value,
 }
 
@@ -385,7 +387,7 @@ pub struct ResponseOutputItem {
     #[serde(default)]
     pub id: Option<String>,
     #[serde(default)]
-    pub role: Option<String>,
+    pub role: Option<Role>,
     #[serde(default)]
     pub content: Option<Vec<ResponseOutputContent>>,
     #[serde(default)]

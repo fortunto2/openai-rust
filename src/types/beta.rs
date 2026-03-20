@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::common::Role;
+
 // ── Tool types ──
 
 /// A tool available to an assistant or run.
@@ -180,7 +182,7 @@ pub struct ThreadCreateRequest {
 /// A message in a thread creation request.
 #[derive(Debug, Clone, Serialize)]
 pub struct ThreadMessage {
-    pub role: String,
+    pub role: Role,
     pub content: String,
 }
 
@@ -209,7 +211,7 @@ pub struct Message {
     pub object: String,
     pub created_at: i64,
     pub thread_id: String,
-    pub role: String,
+    pub role: Role,
     pub content: Vec<MessageContent>,
     #[serde(default)]
     pub assistant_id: Option<String>,
@@ -239,7 +241,7 @@ pub struct MessageText {
 /// Request body for creating a message.
 #[derive(Debug, Clone, Serialize)]
 pub struct MessageCreateRequest {
-    pub role: String,
+    pub role: Role,
     pub content: String,
 }
 

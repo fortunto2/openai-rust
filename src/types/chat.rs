@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::common::Usage;
+use super::common::{Role, Usage};
 
 // ── Request types ──
 
@@ -535,7 +535,7 @@ pub struct ChatCompletionChoice {
 /// The assistant's message in a response.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChatCompletionMessage {
-    pub role: String,
+    pub role: Role,
     #[serde(default)]
     pub content: Option<String>,
     #[serde(default)]
@@ -627,7 +627,7 @@ pub struct ChoiceDelta {
     #[serde(default)]
     pub content: Option<String>,
     #[serde(default)]
-    pub role: Option<String>,
+    pub role: Option<Role>,
     #[serde(default)]
     pub refusal: Option<String>,
     #[serde(default)]
@@ -692,7 +692,7 @@ mod tests {
             resp.choices[0].message.content.as_deref(),
             Some("Hello! How can I help you today?")
         );
-        assert_eq!(resp.choices[0].message.role, "assistant");
+        assert_eq!(resp.choices[0].message.role, Role::Assistant);
         let usage = resp.usage.as_ref().unwrap();
         assert_eq!(usage.prompt_tokens, Some(13));
         assert_eq!(usage.completion_tokens, Some(7));
@@ -848,7 +848,7 @@ mod tests {
         assert_eq!(chunk.id, "chatcmpl-abc123");
         assert_eq!(chunk.object, "chat.completion.chunk");
         assert_eq!(chunk.choices[0].delta.content.as_deref(), Some("Hello"));
-        assert_eq!(chunk.choices[0].delta.role.as_deref(), Some("assistant"));
+        assert_eq!(chunk.choices[0].delta.role, Some(Role::Assistant));
         assert!(chunk.choices[0].finish_reason.is_none());
     }
 
