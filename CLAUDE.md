@@ -1,25 +1,22 @@
-# CLAUDE.md — openai-rust
+# CLAUDE.md — openai-oxide
 
-Idiomatic Rust client for the OpenAI API. 1:1 parity with [openai-python](https://github.com/openai/openai-python).
+Idiomatic Rust client for the OpenAI API. Published on [crates.io](https://crates.io/crates/openai-oxide). 1:1 parity with [openai-python](https://github.com/openai/openai-python).
+
+## Crate Name
+
+- **crates.io:** `openai-oxide`
+- **Rust import:** `use openai_oxide::...`
+- **GitHub repo:** `fortunto2/openai-rust` (repo name kept as-is)
 
 ## Goal
 
 Replicate the official Python SDK in Rust:
-- Same resource structure: `client.chat.completions.create()`
+- Same resource structure: `client.chat().completions().create(params).await`
 - Same parameter names and types
 - Streaming support (SSE)
-- All endpoints: Chat, Completions, Embeddings, Images, Audio, Files, Fine-tuning, Moderations, Models, Assistants, Threads, Messages, Runs, Vector Stores, Responses
+- All endpoints (see plan for remaining work)
 - Async-first (tokio + reqwest)
-- Builder pattern for requests
 - Strongly typed responses (serde)
-
-## Reference
-
-Study the Python SDK structure at https://github.com/openai/openai-python:
-- `src/openai/resources/` — one module per API resource
-- `src/openai/types/` — Pydantic models for requests/responses
-- `src/openai/_client.py` — base client with auth, retries, base URL
-- `src/openai/_streaming.py` — SSE stream handling
 
 ## Tech Stack
 
@@ -36,46 +33,43 @@ Study the Python SDK structure at https://github.com/openai/openai-python:
 ## Architecture
 
 ```
-openai-rust/
-  src/
-    lib.rs              — pub mod, re-exports
-    client.rs           — OpenAI client (api_key, base_url, org, retries)
-    error.rs            — OpenAIError enum
-    config.rs           — ClientConfig (timeouts, retries, base_url)
-    streaming.rs        — SSE stream parser
-    resources/
-      chat/             — chat.completions.create()
-      embeddings.rs     — embeddings.create()
-      images.rs         — images.generate()
-      audio/            — audio.transcriptions, audio.speech
-      files.rs          — files.create(), list(), retrieve(), delete()
-      models.rs         — models.list(), retrieve(), delete()
-      moderations.rs    — moderations.create()
-      fine_tuning/      — fine_tuning.jobs.*
-      responses.rs      — responses.create() (new Responses API)
-    types/
-      chat.rs           — ChatCompletionRequest, ChatCompletionResponse, ...
-      embedding.rs      — EmbeddingRequest, EmbeddingResponse
-      image.rs          — ImageGenerateRequest, ...
-      audio.rs          — TranscriptionRequest, SpeechRequest, ...
-      common.rs         — Usage, Model, shared types
+src/
+  lib.rs              — pub mod, re-exports
+  client.rs           — OpenAI client (api_key, base_url, org, retries)
+  error.rs            — OpenAIError enum
+  config.rs           — ClientConfig (timeouts, retries, base_url)
+  streaming.rs        — SSE stream parser
+  resources/
+    chat/             — chat.completions.create() + create_stream()
+  types/
+    chat.rs           — ChatCompletionRequest, ChatCompletionResponse, ...
+    common.rs         — Usage, shared types
 ```
 
-## Naming Convention
+## Implemented APIs
 
-Follow Python SDK names exactly:
-- `client.chat.completions.create()` → `client.chat().completions().create(params).await`
-- `ChatCompletionMessage` → `ChatCompletionMessage`
-- `stream=True` → `.stream(true)` or `create_stream()`
+| API | Method | Status |
+|-----|--------|--------|
+| Chat Completions | `client.chat().completions().create()` | Done |
+| Chat Completions (streaming) | `client.chat().completions().create_stream()` | Done |
+
+Remaining: Embeddings, Images, Audio, Files, Models, Fine-tuning, Moderations, Responses, Assistants, Threads, Runs, Vector Stores (see `docs/plan/remaining/plan.md`).
 
 ## Essential Commands
 
 ```bash
-cargo test                          # all tests
+make check                          # fmt + clippy + test
+make test                           # all tests
 cargo test --features "live-tests"  # tests hitting real API (needs OPENAI_API_KEY)
 cargo clippy -- -D warnings
 cargo fmt -- --check
 ```
+
+## Reference
+
+Study the Python SDK at https://github.com/openai/openai-python:
+- `src/openai/resources/` — one module per API resource
+- `src/openai/types/` — Pydantic models for requests/responses
 
 ## Don't
 
