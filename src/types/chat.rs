@@ -177,6 +177,96 @@ impl ChatCompletionRequest {
             function_call: None,
         }
     }
+
+    /// Set the model.
+    pub fn model(mut self, model: impl Into<String>) -> Self {
+        self.model = model.into();
+        self
+    }
+
+    /// Set the messages.
+    pub fn messages(mut self, messages: Vec<ChatCompletionMessageParam>) -> Self {
+        self.messages = messages;
+        self
+    }
+
+    /// Set the temperature (0–2).
+    pub fn temperature(mut self, temperature: f64) -> Self {
+        self.temperature = Some(temperature);
+        self
+    }
+
+    /// Set max completion tokens.
+    pub fn max_completion_tokens(mut self, max: i64) -> Self {
+        self.max_completion_tokens = Some(max);
+        self
+    }
+
+    /// Set the tools.
+    pub fn tools(mut self, tools: Vec<Tool>) -> Self {
+        self.tools = Some(tools);
+        self
+    }
+
+    /// Set the tool choice.
+    pub fn tool_choice(mut self, choice: ToolChoice) -> Self {
+        self.tool_choice = Some(choice);
+        self
+    }
+
+    /// Set the response format.
+    pub fn response_format(mut self, format: ResponseFormat) -> Self {
+        self.response_format = Some(format);
+        self
+    }
+
+    /// Set reasoning effort for o-series models.
+    pub fn reasoning_effort(mut self, effort: impl Into<String>) -> Self {
+        self.reasoning_effort = Some(effort.into());
+        self
+    }
+
+    /// Set prediction content for Predicted Outputs.
+    pub fn prediction(mut self, prediction: PredictionContent) -> Self {
+        self.prediction = Some(prediction);
+        self
+    }
+
+    /// Set top_p (nucleus sampling).
+    pub fn top_p(mut self, top_p: f64) -> Self {
+        self.top_p = Some(top_p);
+        self
+    }
+
+    /// Set seed for deterministic sampling.
+    pub fn seed(mut self, seed: i64) -> Self {
+        self.seed = Some(seed);
+        self
+    }
+
+    /// Set stop sequences.
+    pub fn stop(mut self, stop: Stop) -> Self {
+        self.stop = Some(stop);
+        self
+    }
+
+    /// Set user identifier.
+    pub fn user(mut self, user: impl Into<String>) -> Self {
+        self.user = Some(user.into());
+        self
+    }
+
+    /// Enable storage for evals/distillation.
+    pub fn store(mut self, store: bool) -> Self {
+        self.store = Some(store);
+        self
+    }
+
+    /// Set number of completions.
+    pub fn n(mut self, n: i32) -> Self {
+        self.n = Some(n);
+        self
+    }
 }
 
 /// Stop sequences: either a single string or up to 4 strings.
@@ -838,5 +928,37 @@ mod tests {
         let multi = Stop::Multiple(vec!["END".into(), "STOP".into()]);
         let json = serde_json::to_value(&multi).unwrap();
         assert_eq!(json, serde_json::json!(["END", "STOP"]));
+    }
+
+    #[test]
+    fn test_builder_pattern() {
+        let req = ChatCompletionRequest::new(
+            "gpt-4o",
+            vec![ChatCompletionMessageParam::User {
+                content: UserContent::Text("Hello".into()),
+                name: None,
+            }],
+        )
+        .temperature(0.7)
+        .max_completion_tokens(1000)
+        .reasoning_effort("high")
+        .top_p(0.9)
+        .seed(42)
+        .store(true)
+        .n(2)
+        .user("user-123")
+        .response_format(ResponseFormat::JsonObject);
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["model"], "gpt-4o");
+        assert_eq!(json["temperature"], 0.7);
+        assert_eq!(json["max_completion_tokens"], 1000);
+        assert_eq!(json["reasoning_effort"], "high");
+        assert_eq!(json["top_p"], 0.9);
+        assert_eq!(json["seed"], 42);
+        assert_eq!(json["store"], true);
+        assert_eq!(json["n"], 2);
+        assert_eq!(json["user"], "user-123");
+        assert_eq!(json["response_format"]["type"], "json_object");
     }
 }

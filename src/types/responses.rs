@@ -134,6 +134,66 @@ impl ResponseCreateRequest {
             text: None,
         }
     }
+
+    /// Set the input text or messages.
+    pub fn input(mut self, input: impl Into<ResponseInput>) -> Self {
+        self.input = Some(input.into());
+        self
+    }
+
+    /// Set system instructions.
+    pub fn instructions(mut self, instructions: impl Into<String>) -> Self {
+        self.instructions = Some(instructions.into());
+        self
+    }
+
+    /// Set the tools.
+    pub fn tools(mut self, tools: Vec<ResponseTool>) -> Self {
+        self.tools = Some(tools);
+        self
+    }
+
+    /// Set previous response ID for multi-turn.
+    pub fn previous_response_id(mut self, id: impl Into<String>) -> Self {
+        self.previous_response_id = Some(id.into());
+        self
+    }
+
+    /// Set the temperature (0–2).
+    pub fn temperature(mut self, temperature: f64) -> Self {
+        self.temperature = Some(temperature);
+        self
+    }
+
+    /// Set max output tokens.
+    pub fn max_output_tokens(mut self, max: i64) -> Self {
+        self.max_output_tokens = Some(max);
+        self
+    }
+
+    /// Set reasoning configuration.
+    pub fn reasoning(mut self, reasoning: Reasoning) -> Self {
+        self.reasoning = Some(reasoning);
+        self
+    }
+
+    /// Set truncation strategy.
+    pub fn truncation(mut self, truncation: impl Into<String>) -> Self {
+        self.truncation = Some(truncation.into());
+        self
+    }
+
+    /// Enable storage for evals/distillation.
+    pub fn store(mut self, store: bool) -> Self {
+        self.store = Some(store);
+        self
+    }
+
+    /// Set model.
+    pub fn model(mut self, model: impl Into<String>) -> Self {
+        self.model = model.into();
+        self
+    }
 }
 
 /// Reasoning configuration for o-series models.
@@ -520,5 +580,33 @@ mod tests {
         let event: ResponseStreamEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.type_, "response.output_text.delta");
         assert_eq!(event.data["delta"], "Hello");
+    }
+
+    #[test]
+    fn test_builder_pattern() {
+        let req = ResponseCreateRequest::new("o3")
+            .input("Explain quantum computing")
+            .instructions("Be concise")
+            .temperature(0.5)
+            .max_output_tokens(2048)
+            .reasoning(Reasoning {
+                effort: Some("high".into()),
+                summary: Some("concise".into()),
+            })
+            .truncation("auto")
+            .store(true)
+            .previous_response_id("resp-prev");
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["model"], "o3");
+        assert_eq!(json["input"], "Explain quantum computing");
+        assert_eq!(json["instructions"], "Be concise");
+        assert_eq!(json["temperature"], 0.5);
+        assert_eq!(json["max_output_tokens"], 2048);
+        assert_eq!(json["reasoning"]["effort"], "high");
+        assert_eq!(json["reasoning"]["summary"], "concise");
+        assert_eq!(json["truncation"], "auto");
+        assert_eq!(json["store"], true);
+        assert_eq!(json["previous_response_id"], "resp-prev");
     }
 }
