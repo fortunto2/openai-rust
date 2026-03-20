@@ -1,6 +1,6 @@
 # openai-sdk — Remaining Endpoints
 
-**Status:** [~] In Progress
+**Status:** [x] Complete
 **Track:** remaining
 
 ## Context Handoff
@@ -49,4 +49,4 @@
 - [x] Task 1.14: WebFetch Python `resources/beta/threads/runs/` <!-- sha:65eb210 -->. Implement `src/resources/runs.rs`. Methods: `create()`, `retrieve()`, `cancel()`, `submit_tool_outputs()`. Mockito tests.
 - [x] Task 1.15: WebFetch Python `resources/beta/vector_stores/` <!-- sha:65eb210 -->. Implement `src/resources/vector_stores.rs`. Methods: `create()`, `list()`, `retrieve()`, `delete()`. Sub: `file_batches.create()`. Mockito tests.
 - [x] Task 1.16: WebFetch Python SDK <!-- sha:0af88a3 --> `src/openai/resources/` directory listing. Compare ALL modules vs what we have. If ANY resource is missing — implement it. This is the final coverage check.
-- [~] Task 1.17: Update README.md with ALL endpoints table. Run `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt -- --check`. Final commit.
+- [x] Task 1.17: Update README.md with ALL endpoints table <!-- sha:a4d240d -->. Run `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt -- --check`. Final commit.
