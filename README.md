@@ -4,15 +4,15 @@ Idiomatic Rust client for the OpenAI API — 1:1 parity with the [official Pytho
 
 ## Performance
 
-Benchmarked against Python `openai` SDK v2.29 and `async-openai` v0.33. All clients use the Responses API (`POST /responses`), GPT-5.4, warm connections, 5 iterations, median reported.
+Benchmarked against 3 Rust clients and the official Python SDK. All use the Responses API (`POST /responses`), GPT-5.4, warm connections, 5 iterations, median.
 
-| Test | openai-oxide | Python openai | async-openai | Winner |
-|------|:-----------:|:-------------:|:------------:|:------:|
-| Plain text | **857ms** | 1062ms | 968ms | Rust |
-| Structured output | **1306ms** | 1251ms | 3407ms | ~Tie |
-| Function calling | **1086ms** | 1225ms | 1244ms | Rust |
-| Multi-turn (2 reqs) | **1998ms** | 2196ms | 2289ms | Rust |
-| Web search | **2968ms** | 3671ms | — | Rust |
+| Test | openai-oxide | genai 0.6 | async-openai 0.33 | Python openai 2.29 |
+|------|:-----------:|:---------:|:-----------------:|:------------------:|
+| Plain text | **857ms** | 948ms | 968ms | 1062ms |
+| Structured output | **1306ms** | 1428ms | 3407ms | 1251ms |
+| Function calling | **1086ms** | 1044ms | 1244ms | 1225ms |
+| Multi-turn (2 reqs) | **1998ms** | 2303ms | 2289ms | 2196ms |
+| Web search | **2968ms** | — | — | 3671ms |
 
 Why it's fast:
 - **HTTP/2** with keep-alive while idle (connections stay warm between requests)
