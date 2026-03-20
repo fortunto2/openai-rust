@@ -37,6 +37,30 @@ pub struct ImageGenerateRequest {
     /// End user identifier.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
+
+    /// Output format: "png", "jpeg", or "webp" (GPT image models only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_format: Option<String>,
+
+    /// Compression level 0–100 for webp/jpeg output (GPT image models only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_compression: Option<i64>,
+
+    /// Background transparency: "transparent", "opaque", or "auto" (GPT image models only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background: Option<String>,
+
+    /// Content moderation level: "low" or "auto" (GPT image models only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub moderation: Option<String>,
+
+    /// Number of partial images for streaming (0–3, GPT image models only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub partial_images: Option<i64>,
+
+    /// Whether to stream the image generation (GPT image models only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stream: Option<bool>,
 }
 
 impl ImageGenerateRequest {
@@ -50,6 +74,12 @@ impl ImageGenerateRequest {
             size: None,
             style: None,
             user: None,
+            output_format: None,
+            output_compression: None,
+            background: None,
+            moderation: None,
+            partial_images: None,
+            stream: None,
         }
     }
 }
@@ -142,6 +172,26 @@ mod tests {
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(json["prompt"], "A cute baby sea otter");
         assert!(json.get("model").is_none());
+    }
+
+    #[test]
+    fn test_serialize_image_generate_gpt_image_fields() {
+        let mut req = ImageGenerateRequest::new("A futuristic city");
+        req.model = Some("gpt-image-1".into());
+        req.output_format = Some("webp".into());
+        req.output_compression = Some(80);
+        req.background = Some("transparent".into());
+        req.moderation = Some("low".into());
+        req.partial_images = Some(2);
+        req.stream = Some(true);
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["output_format"], "webp");
+        assert_eq!(json["output_compression"], 80);
+        assert_eq!(json["background"], "transparent");
+        assert_eq!(json["moderation"], "low");
+        assert_eq!(json["partial_images"], 2);
+        assert_eq!(json["stream"], true);
     }
 
     #[test]
