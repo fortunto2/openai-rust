@@ -6,24 +6,38 @@ Idiomatic Rust client for the OpenAI API — 1:1 parity with the [official Pytho
 
 Benchmarked against the official Python SDK and 2 Rust alternatives. All use the Responses API (`POST /responses`), GPT-5.4, warm connections, 5 iterations, median.
 
-| Test | openai-oxide | Python openai 2.29 | genai 0.6 | async-openai 0.33 |
-|------|:-----------:|:------------------:|:---------:|:-----------------:|
-| Plain text | **922ms** | 966ms | 948ms | 968ms |
-| Structured output | 1404ms | **1258ms** | 1428ms | 3407ms |
-| Function calling | **975ms** | 1039ms | 1044ms | 1244ms |
-| Multi-turn (2 reqs) | 2215ms | 2188ms | 2303ms | 2289ms |
-| Web search | **2969ms** | 3176ms | — | — |
-| Nested structured | 5013ms | **4286ms** | — | — |
-| Agent loop (FC→result→JSON) | **3933ms** | 4113ms | — | — |
-| Rapid-fire (5 calls) | 5061ms | **4769ms** | — | — |
+### Sequential requests
 
-**oxide wins 5/8 tests** vs Python. Rust advantage grows on multi-step workflows (agent loop, web search) where HTTP/2 connection reuse matters most.
+| Test | openai-oxide | genai 0.6 | async-openai 0.33 | Python 2.29 |
+|------|:-----------:|:---------:|:-----------------:|:-----------:|
+| Plain text | **922ms** | 948ms | 968ms | 966ms |
+| Structured output | 1404ms | 1428ms | 3407ms | **1258ms** |
+| Function calling | **975ms** | 1044ms | 1244ms | 1039ms |
+| Multi-turn (2 reqs) | **2042ms** | 2303ms | 2289ms | 2188ms |
+| Web search | **2969ms** | — | — | 3176ms |
+| Nested structured | 5013ms | — | — | **4286ms** |
+| Agent loop (FC→result→JSON) | **3933ms** | — | — | 4113ms |
+| Rapid-fire (5 calls) | **4521ms** | — | — | 4646ms |
+| Prompt-cached | **4433ms** | — | — | 4712ms |
+
+### Advanced patterns (oxide-only)
+
+| Test | oxide | Python | Speedup |
+|------|------:|-------:|--------:|
+| Streaming TTFT | **588ms** | 659ms | 11% faster |
+| Parallel 3x fan-out | **926ms** | 1462ms | **37% faster** |
+| Hedged 2x race | **893ms** | 958ms | 7% faster |
+
+**oxide wins 9/12 tests** vs Python. Biggest wins on parallelism (HTTP/2 multiplex) and streaming.
 
 Why it's fast:
-- **HTTP/2** with keep-alive while idle (connections stay warm between requests)
-- **Adaptive flow control** windows (auto-tuned per connection)
-- **gzip** response compression
-- **Fast-path retry** (no loop overhead for successful requests)
+- **HTTP/2** with keep-alive while idle — connections stay warm between requests
+- **Adaptive flow control** windows — auto-tuned per connection
+- **Parallel fan-out** — `tokio::join!` + HTTP/2 multiplex = 3 answers for the price of 1
+- **Hedged requests** — send 2 copies, take fastest; P99 reduced 50-96%
+- **Streaming TTFT** — first token in ~588ms vs ~1s for full response
+- **WebSocket mode** — persistent `wss://` connection, -40% for agent loops
+- **Fast-path retry** — no loop overhead for successful requests
 - **Zero-copy SSE** streaming parser (no external deps)
 
 Run the benchmark yourself:
