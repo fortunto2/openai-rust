@@ -9,5 +9,6 @@ pub mod fine_tuning;
 pub mod image;
 pub mod model;
 pub mod moderation;
+pub mod realtime;
 pub mod responses;
 pub mod upload;

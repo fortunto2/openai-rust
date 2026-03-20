@@ -6,9 +6,14 @@ Idiomatic Rust client for the OpenAI API — 1:1 parity with the [official Pytho
 
 - Async-first (tokio + reqwest)
 - Strongly typed requests and responses (serde)
-- SSE streaming support
+- SSE streaming for Chat Completions and Responses API
 - Automatic retries with exponential backoff
-- Builder pattern for requests
+- Chainable builder pattern for requests
+- Responses API with tool support (WebSearch, FileSearch, MCP, etc.)
+- Structured outputs (JSON Schema with strict mode)
+- Reasoning model support (o-series: effort, summary)
+- Realtime API session creation (ephemeral tokens)
+- 100% OpenAPI field coverage for Chat Completions
 - Same resource structure as Python SDK: `client.chat().completions().create()`
 
 ## Quick Start
@@ -17,7 +22,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-openai-oxide = "0.2"
+openai-oxide = "0.3"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -102,7 +107,8 @@ let client = OpenAI::with_config(config);
 |-----|--------|--------|
 | Chat Completions | `client.chat().completions().create()` | Done |
 | Chat Completions (streaming) | `client.chat().completions().create_stream()` | Done |
-| Responses | `client.responses().create()` | Done |
+| Responses | `client.responses().create()` / `create_stream()` | Done |
+| Responses Tools | Function, WebSearch, FileSearch, CodeInterpreter, ComputerUse, Mcp | Done |
 | Embeddings | `client.embeddings().create()` | Done |
 | Models | `client.models().list()` / `retrieve()` / `delete()` | Done |
 | Images | `client.images().generate()` / `edit()` / `create_variation()` | Done |
@@ -118,6 +124,7 @@ let client = OpenAI::with_config(config);
 | Threads (beta) | `client.beta().threads().create()` / `retrieve()` / `delete()` / `messages()` | Done |
 | Runs (beta) | `client.beta().runs(thread_id).create()` / `retrieve()` / `cancel()` | Done |
 | Vector Stores (beta) | `client.beta().vector_stores().create()` / `list()` / `retrieve()` / `delete()` | Done |
+| Realtime (beta) | `client.beta().realtime().sessions().create()` | Done |
 
 ## Development
 

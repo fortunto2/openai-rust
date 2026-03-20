@@ -7,6 +7,7 @@ use crate::error::{ErrorResponse, OpenAIError};
 use crate::resources::audio::Audio;
 use crate::resources::batches::Batches;
 use crate::resources::beta::assistants::Assistants;
+use crate::resources::beta::realtime::Realtime;
 use crate::resources::beta::runs::Runs;
 use crate::resources::beta::threads::Threads;
 use crate::resources::beta::vector_stores::VectorStores;
@@ -323,6 +324,11 @@ impl<'a> Beta<'a> {
     /// Access the Vector Stores resource.
     pub fn vector_stores(&self) -> VectorStores<'_> {
         VectorStores::new(self.client)
+    }
+
+    /// Access the Realtime resource.
+    pub fn realtime(&self) -> Realtime<'_> {
+        Realtime::new(self.client)
     }
 }
 
