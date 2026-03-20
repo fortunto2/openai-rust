@@ -751,4 +751,220 @@ mod tests {
         }
         mock.assert_async().await;
     }
+
+    // --- with_options() tests ---
+
+    #[tokio::test]
+    async fn test_with_options_sends_extra_headers() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/test")
+            .match_header("X-Custom", "test-value")
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
+        let custom = client.with_options(RequestOptions::new().header("X-Custom", "test-value"));
+
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            ok: bool,
+        }
+
+        let resp: Resp = custom.get("/test").await.unwrap();
+        assert!(resp.ok);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_with_options_sends_query_params() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/test")
+            .match_query(mockito::Matcher::AllOf(vec![mockito::Matcher::UrlEncoded(
+                "foo".into(),
+                "bar".into(),
+            )]))
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
+        let custom = client.with_options(RequestOptions::new().query_param("foo", "bar"));
+
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            ok: bool,
+        }
+
+        let resp: Resp = custom.get("/test").await.unwrap();
+        assert!(resp.ok);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_extra_body_merge() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/test")
+            .match_body(mockito::Matcher::Json(serde_json::json!({
+                "model": "gpt-4",
+                "extra_field": "injected"
+            })))
+            .with_status(200)
+            .with_body(r#"{"id":"ok"}"#)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
+        let custom = client.with_options(
+            RequestOptions::new().extra_body(serde_json::json!({"extra_field": "injected"})),
+        );
+
+        #[derive(serde::Serialize)]
+        struct Req {
+            model: String,
+        }
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            id: String,
+        }
+
+        let resp: Resp = custom
+            .post(
+                "/test",
+                &Req {
+                    model: "gpt-4".into(),
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.id, "ok");
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_timeout_override() {
+        let mut server = mockito::Server::new_async().await;
+        // Mock with a 5s delay — our timeout is 100ms, so it should fail
+        let _mock = server
+            .mock("GET", "/test")
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .with_chunked_body(|_w| -> std::io::Result<()> {
+                std::thread::sleep(std::time::Duration::from_secs(5));
+                Ok(())
+            })
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(0),
+        );
+        let custom = client.with_options(RequestOptions::new().timeout(Duration::from_millis(100)));
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Resp {
+            _ok: bool,
+        }
+
+        let err = custom.get::<Resp>("/test").await.unwrap_err();
+        assert!(
+            matches!(err, OpenAIError::RequestError(_)),
+            "expected timeout error, got: {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_options_merge_precedence() {
+        let mut server = mockito::Server::new_async().await;
+        // with_options header should override the default
+        let mock = server
+            .mock("GET", "/test")
+            .match_header("X-A", "2")
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
+        let base = client.with_options(RequestOptions::new().header("X-A", "1"));
+        let custom = base.with_options(RequestOptions::new().header("X-A", "2"));
+
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            ok: bool,
+        }
+
+        let resp: Resp = custom.get("/test").await.unwrap();
+        assert!(resp.ok);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_default_headers_and_query_on_config() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/test")
+            .match_header("X-Default", "from-config")
+            .match_query(mockito::Matcher::AllOf(vec![mockito::Matcher::UrlEncoded(
+                "cfg_param".into(),
+                "cfg_val".into(),
+            )]))
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .create_async()
+            .await;
+
+        let mut default_headers = reqwest::header::HeaderMap::new();
+        default_headers.insert("X-Default", "from-config".parse().unwrap());
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .default_headers(default_headers)
+                .default_query(vec![("cfg_param".into(), "cfg_val".into())]),
+        );
+
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            ok: bool,
+        }
+
+        let resp: Resp = client.get("/test").await.unwrap();
+        assert!(resp.ok);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_chained_with_options_merges() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/test")
+            .match_header("X-A", "from-a")
+            .match_header("X-B", "from-b")
+            .with_status(200)
+            .with_body(r#"{"ok":true}"#)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(ClientConfig::new("sk-test").base_url(server.url()));
+        let chained = client
+            .with_options(RequestOptions::new().header("X-A", "from-a"))
+            .with_options(RequestOptions::new().header("X-B", "from-b"));
+
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            ok: bool,
+        }
+
+        let resp: Resp = chained.get("/test").await.unwrap();
+        assert!(resp.ok);
+        mock.assert_async().await;
+    }
 }
