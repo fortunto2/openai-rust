@@ -6,6 +6,7 @@ use crate::config::ClientConfig;
 use crate::error::{ErrorResponse, OpenAIError};
 use crate::resources::chat::Chat;
 use crate::resources::embeddings::Embeddings;
+use crate::resources::images::Images;
 use crate::resources::models::Models;
 use crate::resources::moderations::Moderations;
 
@@ -47,6 +48,11 @@ impl OpenAI {
     /// Access the Models resource.
     pub fn models(&self) -> Models<'_> {
         Models::new(self)
+    }
+
+    /// Access the Images resource.
+    pub fn images(&self) -> Images<'_> {
+        Images::new(self)
     }
 
     /// Access the Moderations resource.
@@ -95,6 +101,20 @@ impl OpenAI {
     ) -> Result<T, OpenAIError> {
         self.send_with_retry(reqwest::Method::POST, path, Some(body))
             .await
+    }
+
+    /// Send a POST request with a multipart form body and deserialize the response.
+    pub(crate) async fn post_multipart<T: serde::de::DeserializeOwned>(
+        &self,
+        path: &str,
+        form: reqwest::multipart::Form,
+    ) -> Result<T, OpenAIError> {
+        let response = self
+            .request(reqwest::Method::POST, path)
+            .multipart(form)
+            .send()
+            .await?;
+        Self::handle_response(response).await
     }
 
     /// Send a DELETE request and deserialize the response.
