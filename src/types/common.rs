@@ -94,6 +94,69 @@ pub enum SearchContextSize {
     High,
 }
 
+/// A value that is either "auto" or a fixed number.
+///
+/// Used for hyperparameters like `n_epochs`, `batch_size`, `learning_rate_multiplier`.
+/// Serializes as the string `"auto"` or a bare number.
+#[derive(Debug, Clone, PartialEq)]
+pub enum AutoOrFixed<T> {
+    Auto,
+    Fixed(T),
+}
+
+impl<T: Serialize> Serialize for AutoOrFixed<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Auto => serializer.serialize_str("auto"),
+            Self::Fixed(v) => v.serialize(serializer),
+        }
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for AutoOrFixed<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match &value {
+            serde_json::Value::String(s) if s == "auto" => Ok(Self::Auto),
+            _ => T::deserialize(value)
+                .map(Self::Fixed)
+                .map_err(serde::de::Error::custom),
+        }
+    }
+}
+
+/// Token limit that is either "inf" (unlimited) or a fixed integer.
+///
+/// Used for `max_response_output_tokens` in the Realtime API.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MaxResponseTokens {
+    Inf,
+    Fixed(i64),
+}
+
+impl Serialize for MaxResponseTokens {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Inf => serializer.serialize_str("inf"),
+            Self::Fixed(v) => serializer.serialize_i64(*v),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for MaxResponseTokens {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match &value {
+            serde_json::Value::String(s) if s == "inf" => Ok(Self::Inf),
+            serde_json::Value::Number(n) => n
+                .as_i64()
+                .map(Self::Fixed)
+                .ok_or_else(|| serde::de::Error::custom("expected integer")),
+            _ => Err(serde::de::Error::custom("expected \"inf\" or integer")),
+        }
+    }
+}
+
 /// Detailed breakdown of completion token usage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompletionTokensDetails {

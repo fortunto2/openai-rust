@@ -67,7 +67,7 @@ pub struct SessionCreateRequest {
 
     /// Maximum output tokens (1–4096 or "inf").
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_response_output_tokens: Option<serde_json::Value>,
+    pub max_response_output_tokens: Option<crate::types::common::MaxResponseTokens>,
 
     /// Tools (functions) available to the model.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -216,7 +216,7 @@ pub struct SessionCreateResponse {
     #[serde(default)]
     pub temperature: Option<f64>,
     #[serde(default)]
-    pub max_response_output_tokens: Option<serde_json::Value>,
+    pub max_response_output_tokens: Option<crate::types::common::MaxResponseTokens>,
     #[serde(default)]
     pub input_audio_format: Option<RealtimeAudioFormat>,
     #[serde(default)]

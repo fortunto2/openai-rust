@@ -70,11 +70,11 @@ impl FineTuningJobCreateRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Hyperparameters {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub n_epochs: Option<serde_json::Value>,
+    pub n_epochs: Option<crate::types::common::AutoOrFixed<i64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub batch_size: Option<serde_json::Value>,
+    pub batch_size: Option<crate::types::common::AutoOrFixed<i64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub learning_rate_multiplier: Option<serde_json::Value>,
+    pub learning_rate_multiplier: Option<crate::types::common::AutoOrFixed<f64>>,
 }
 
 // ── Response types ──
