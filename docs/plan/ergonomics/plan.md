@@ -15,11 +15,11 @@ Gate each API resource behind an optional Cargo feature so users can minimize co
 
 ### Tasks
 
-- [x] Task 1.1: Add feature flags to `Cargo.toml` — define features: `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`. Add `default = ["chat", "responses", "embeddings", "images", "audio", "files", "fine-tuning", "models", "moderations", "batches", "uploads", "beta"]`. Add `full = ["chat", "responses", "embeddings", "images", "audio", "files", "fine-tuning", "models", "moderations", "batches", "uploads", "beta"]` alias.
-- [x] Task 1.2: Gate resource modules in `src/resources/mod.rs` — wrap each `pub mod` with `#[cfg(feature = "...")]`. Gate sub-resources: `chat/` behind `chat`, `beta/` submodules behind `beta`.
-- [x] Task 1.3: Gate resource accessor methods on `OpenAI` struct in `src/client.rs` — wrap `pub fn chat()`, `pub fn images()`, etc. with `#[cfg(feature = "...")]`. Gate `Beta` struct methods similarly behind `beta` feature.
-- [x] Task 1.4: Gate resource imports in `src/client.rs` — wrap `use crate::resources::chat::Chat` etc. with matching `#[cfg(feature = "...")]` so unused imports don't error.
-- [ ] Task 1.5: Verify minimal compilation — test that `cargo check --no-default-features` compiles (just client + types, no resources). Test `cargo test --no-default-features --features chat` passes chat tests only.
+- [x] Task 1.1: Add feature flags to `Cargo.toml` <!-- sha:596f8f3 --> — define features: `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`. Add `default = ["chat", "responses", "embeddings", "images", "audio", "files", "fine-tuning", "models", "moderations", "batches", "uploads", "beta"]`. Add `full = ["chat", "responses", "embeddings", "images", "audio", "files", "fine-tuning", "models", "moderations", "batches", "uploads", "beta"]` alias.
+- [x] Task 1.2: Gate resource modules in `src/resources/mod.rs` <!-- sha:596f8f3 --> — wrap each `pub mod` with `#[cfg(feature = "...")]`. Gate sub-resources: `chat/` behind `chat`, `beta/` submodules behind `beta`.
+- [x] Task 1.3: Gate resource accessor methods on `OpenAI` struct in `src/client.rs` <!-- sha:596f8f3 --> — wrap `pub fn chat()`, `pub fn images()`, etc. with `#[cfg(feature = "...")]`. Gate `Beta` struct methods similarly behind `beta` feature.
+- [x] Task 1.4: Gate resource imports in `src/client.rs` <!-- sha:596f8f3 --> — wrap `use crate::resources::chat::Chat` etc. with matching `#[cfg(feature = "...")]` so unused imports don't error.
+- [x] Task 1.5: Verify minimal compilation — test that `cargo check --no-default-features` compiles (just client + types, no resources). Test `cargo test --no-default-features --features chat` passes chat tests only.
 
 ### Verification
 

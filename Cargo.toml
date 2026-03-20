@@ -44,3 +44,23 @@ batches = []
 uploads = []
 beta = []
 live-tests = []
+
+[[example]]
+name = "chat"
+required-features = ["chat"]
+
+[[example]]
+name = "chat_stream"
+required-features = ["chat"]
+
+[[example]]
+name = "structured_output"
+required-features = ["chat"]
+
+[[example]]
+name = "tool_calling"
+required-features = ["chat"]
+
+[[example]]
+name = "responses_api"
+required-features = ["responses"]
