@@ -1,0 +1,118 @@
+  [2msession: 0987458d  model: claude-opus-4-6[1m][0m
+Starting retro for `openai-rust`. Let me locate artifacts first.
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan-done/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/**/*" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m".solo/pipelines/solo-pipeline-openai-rust.local.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"solo-pipeline-openai-rust.local.md" ~/.solo/pipelines[0m
+
+Found 11 iter logs, pipeline.log, progress.md, 3 completed plan tracks, 1 active plan. State file exists — let me check if pipeline is still running.
+  [36m>>[0m [36mRead[0m [2m~/.solo/pipelines/solo-pipeline-openai-rust.local.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/pipeline.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/retro/references/eval-dimensions.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/retro/references/failure-catalog.md[0m
+
+Now let me read plan files, git history, and run tests in parallel.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase1/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase2/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase2/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase3/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan-done/phase3/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/remaining/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+  [32m$ [0m [33mBash[0m [2mShow recent commit history[0m
+  [32m$ [0m [33mBash[0m [2mShow committer breakdown[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+  [32m$ [0m [33mBash[0m [2mRun clippy lint check[0m
+
+Let me sample key iter logs for failure pattern analysis.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-003-deploy.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-006-review.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-011-review.log[0m
+  [32m$ [0m [33mBash[0m [2mCount conventional vs total commits[0m
+
+All data collected. Let me read the rest of the review verdict and generate the report.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/iter-011-review.log[0m
+  [32m$ [0m [33mBash[0m [2mCheck if retro dir exists[0m
+
+Now let me read the factory skills that were invoked for Phase 10 analysis.
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/deploy/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/.claude/plugins/cache/solo/solo/1.19.0/skills/review/SKILL.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/retro-phase1.log[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+All data collected. Now generating the retro report.
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/docs/retro/2026-03-20-retro.md[0m
+
+Now let me apply the patches and update CLAUDE.md.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/README.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/CLAUDE.md[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': "Применить патчи из ретро? README.md version f[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': "Применить патчи из ретро? README.md version f[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': "Применить патчи из ретро? README.md version f[0m
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Apply patches from retro?', 'header': 'Patche[0m
+
+Retro report generated at `docs/retro/2026-03-20-retro.md`.
+
+## Summary: 6.4/10
+
+### Top 3 Failure Patterns
+
+1. **AskUserQuestion Spin-Loop** (7 wasted iters) — Deploy skill asked for crate name interactively in non-interactive pipeline mode. Same question repeated 7 times across both runs.
+2. **Review Redo on Minor Issue** (1 wasted iter) — Review said `<solo:redo/>` for README version "0.1" → "0.2". Redo limit forced completion, issue still open.
+3. **Circuit Breaker Missed** — Hash-based comparison didn't catch consecutive deploy failures with varying output.
+
+### Top 3 Recommendations
+
+1. **[CRITICAL]** Deploy skill needs library/crate-aware path — auto-search crates.io names, never `AskUserQuestion` in pipeline mode
+2. **[HIGH]** Circuit breaker: add consecutive `continuing` counter per stage (not just hash comparison)
+3. **[HIGH]** Review: severity classification — only `<solo:redo/>` for CRITICAL issues, not MINOR ones
+
+### What Went Well
+
+- **Build skill**: 18 API endpoints in 2 productive iterations — excellent WebFetch-then-implement pattern
+- **Code quality**: 93 tests, 100% pass, clippy clean, 100% conventional commits
+- **Published**: `openai-oxide` v0.2.0 on crates.io with full Python SDK parity
+
+---
+
+Хочешь применить патчи? Два предложения:
+1. **README.md** — `openai-oxide = "0.1"` → `"0.2"`
+2. **CLAUDE.md** — добавить Don't rule про синхронизацию версий
+
+Скажи "apply" или "skip".
+
+<solo:done/>Retro report generated at `docs/retro/2026-03-20-retro.md`.
+
+## Summary: 6.4/10
+
+### Top 3 Failure Patterns
+
+1. **AskUserQuestion Spin-Loop** (7 wasted iters) — Deploy skill asked for crate name interactively in non-interactive pipeline mode. Same question repeated 7 times across both runs.
+2. **Review Redo on Minor Issue** (1 wasted iter) — Review said `<solo:redo/>` for README version "0.1" → "0.2". Redo limit forced completion, issue still open.
+3. **Circuit Breaker Missed** — Hash-based comparison didn't catch consecutive deploy failures with varying output.
+
+### Top 3 Recommendations
+
+1. **[CRITICAL]** Deploy skill needs library/crate-aware path — auto-search crates.io names, never `AskUserQuestion` in pipeline mode
+2. **[HIGH]** Circuit breaker: add consecutive `continuing` counter per stage (not just hash comparison)
+3. **[HIGH]** Review: severity classification — only `<solo:redo/>` for CRITICAL issues, not MINOR ones
+
+### What Went Well
+
+- **Build skill**: 18 API endpoints in 2 productive iterations — excellent WebFetch-then-implement pattern
+- **Code quality**: 93 tests, 100% pass, clippy clean, 100% conventional commits
+- **Published**: `openai-oxide` v0.2.0 on crates.io with full Python SDK parity
+
+---
+
+Хочешь применить патчи? Два предложения:
+1. **README.md** — `openai-oxide = "0.1"` → `"0.2"`
+2. **CLAUDE.md** — добавить Don't rule про синхронизацию версий
+
+Скажи "apply" или "skip".
+
+<solo:done/>

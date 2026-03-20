@@ -1,0 +1,52 @@
+  [2msession: 85d4737b  model: claude-opus-4-6[1m][0m
+  [32m$ [0m [33mBash[0m [2mCheck recent commits[0m
+  [32m$ [0m [33mBash[0m [2mCheck working tree status[0m
+  [32m$ [0m [33mBash[0m [2mCheck unpushed commits[0m
+  [32m$ [0m [33mBash[0m [2mCheck current version[0m
+  [32m$ [0m [33mBash[0m [2mCheck published version on crates.io[0m
+  [32m$ [0m [33mBash[0m [2mCheck uncommitted changes summary[0m
+  [32m$ [0m [33mBash[0m [2mCheck content of uncommitted src changes[0m
+  [32m$ [0m [33mBash[0m [2mRun fmt + clippy + test[0m
+  [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
+
+
+
+Состояние: опубликована v0.1.1 (4 API), локально — 18 API (14 новых), 5 коммитов не запушены, 93 теста проходят.
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Версия 0.1.1 на crates.io содержит 4 API. Сей[0m
+
+Окей, иду с **0.2.0**. Сначала закоммичу форматирование, потом bump + push + publish.
+  [32m$ [0m [33mBash[0m [2mCommit formatting fixes[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [32m$ [0m [33mBash[0m [2mCommit version bump to 0.2.0[0m
+  [32m$ [0m [33mBash[0m [2mCheck all unpushed commits[0m
+
+7 коммитов к пушу. Пушу на GitHub.
+  [32m$ [0m [33mBash[0m [2mPush all commits to GitHub[0m
+
+Запушено. Теперь публикую на crates.io.
+  [32m$ [0m [33mBash[0m [2mDry run publish to verify package[0m
+  [32m$ [0m [33mBash[0m [2mCheck gitignore for .solo and Cargo.lock[0m
+  [32m$ [0m [33mBash[0m [2mCheck gitignore contents[0m
+
+Грязные файлы — `.solo/` (pipeline state) и `Cargo.lock`. Они не влияют на пакет. Публикую с `--allow-dirty`.
+  [32m$ [0m [33mBash[0m [2mPublish openai-oxide 0.2.0 to crates.io[0m
+
+Опубликовано. Верифицирую.
+  [32m$ [0m [33mBash[0m [2mVerify published version[0m
+
+**Deploy завершён:**
+
+- **GitHub:** 7 коммитов запушены на `main`
+- **crates.io:** `openai-oxide` v0.2.0 опубликован
+- **18 API endpoints** (было 4 в v0.1.1)
+- 93 теста проходят, clippy + fmt чисто
+
+<solo:done/>**Deploy завершён:**
+
+- **GitHub:** 7 коммитов запушены на `main`
+- **crates.io:** `openai-oxide` v0.2.0 опубликован
+- **18 API endpoints** (было 4 в v0.1.1)
+- 93 теста проходят, clippy + fmt чисто
+
+<solo:done/>

@@ -1,23 +1,28 @@
-  [2msession: f2c22fef  model: claude-opus-4-6[1m][0m
+  [2msession: 3ae500d1  model: claude-opus-4-6[1m][0m
   [35m=>[0m [35msolo:deploy[0m
-
-Это Rust-библиотека, не веб-приложение — "deploy" здесь означает публикацию на crates.io. Собираю контекст.
   [32m$ [0m [33mBash[0m [2mCheck git status[0m
   [32m$ [0m [33mBash[0m [2mRecent commits[0m
+  [32m$ [0m [33mBash[0m [2mCheck git remotes[0m
+  [32m$ [0m [33mBash[0m [2mRun tests[0m
   [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
-  [32m$ [0m [33mBash[0m [2mCheck available CLI tools[0m
-
-Проект — Rust-библиотека. Deploy = подготовка к публикации на crates.io + push на GitHub. Проверяю сборку и тесты.
-  [32m$ [0m [33mBash[0m [2mRun all tests[0m
-  [32m$ [0m [33mBash[0m [2mRun clippy[0m
-  [32m$ [0m [33mBash[0m [2mCheck git remote[0m
-  [32m$ [0m [33mBash[0m [2mCheck formatting[0m
-
-29 тестов + doc-test пройдены, clippy и fmt чисто. Готовлю к публикации.
-  [32m$ [0m [33mBash[0m [2mList project root files[0m
-  [32m$ [0m [33mBash[0m [2mDry-run publish to check crates.io readiness[0m
-
-Имя `openai-rust` уже занято на crates.io. Нужно выбрать другое имя. Также нет LICENSE и README.md. Исправляю метаданные и подготавливаю к публикации.
+  [32m$ [0m [33mBash[0m [2mFull test output[0m
+  [32m$ [0m [33mBash[0m [2mCheck openai-oxide availability on crates.io[0m
+  [32m$ [0m [33mBash[0m [2mCheck oai-client availability on crates.io[0m
+  [32m$ [0m [33mBash[0m [2mCheck openai-api-rs availability[0m
+  [32m$ [0m [33mBash[0m [2mCheck openai-rs availability[0m
   [2m--[0m [36mToolSearch[0m [2mselect:AskUserQuestion[0m
-  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Имя `openai-rust` уже занято на crates.io. Ка[0m
+
+
+
+Статус: 29/29 тестов проходят, код на GitHub (`fortunto2/openai-rust`). Для Rust-библиотеки "deploy" = публикация на crates.io.
+
+Имя `openai-rust` занято. Проверил свободные варианты:
+
+| Имя | Статус |
+|-----|--------|
+| `openai-oxide` | **свободно** |
+| `oai-client` | **свободно** |
+| `openai-api-rs` | занято |
+| `openai-rs` | занято |
+  [2m--[0m [36mAskUserQuestion[0m [2m[{'question': 'Какое имя использовать для крейта на crates.i[0m
 

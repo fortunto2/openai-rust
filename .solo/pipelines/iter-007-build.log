@@ -1,0 +1,115 @@
+  [2msession: 22b7731c  model: claude-opus-4-6[1m][0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+  [32m$ [0m [33mBash[0m [2mRecent git history[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/.solo/pipelines/progress.md[0m
+
+Review отправил на `<solo:redo/>` с 6 fix-задачами в Phase 0. Начинаю выполнение.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/lib.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/examples/chat.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/examples/chat_stream.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/README.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+
+Let me check the actual `ClientConfig` API to fix the README correctly.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/config.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/client.rs[0m
+
+Вижу 6 задач в Phase 0 (review fix). Начинаю выполнение.
+
+**Starting Task 0.1: Fix lib.rs doc comment — replace all `openai_rust` → `openai_oxide`**
+  [2m--[0m [36mToolSearch[0m [2mselect:TodoWrite[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Task 0.1: Fix lib.rs doc comment — openai_rust[0m
+
+Mark task 0.1 in plan.md and fix lib.rs:
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/src/lib.rs[0m
+
+Now Tasks 0.2 and 0.3 — fix examples:
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/examples/chat.rs[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/examples/chat_stream.rs[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Task 0.1: Fix lib.rs doc comment — openai_rust[0m
+
+**Starting Task 0.4: Fix README.md** — rename references + fix API signatures.
+
+The actual API:
+- `ClientConfig::new("sk-...")` — takes api_key
+- `.timeout_secs(30)` — not `.timeout(30)`
+- `OpenAI::with_config(config)` — takes only config, not `("sk-...", config)`
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/README.md[0m
+
+Now update plan.md to mark tasks 0.1-0.4 and commit:
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+
+**Starting Task 0.5: Run cargo test**
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Task 0.1: Fix lib.rs doc comment — openai_rust[0m
+  [32m$ [0m [33mBash[0m [2mRun all cargo tests[0m
+
+30/30 тестов (29 unit + 1 doc-test) pass. Проверю clippy и fmt:
+  [32m$ [0m [33mBash[0m [2mRun clippy[0m
+  [32m$ [0m [33mBash[0m [2mCheck formatting[0m
+
+All clean. Commit tasks 0.1–0.5:
+  [32m$ [0m [33mBash[0m [2mCommit Phase 0 fixes[0m
+
+Update plan.md with SHAs:
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+
+**Starting Task 0.6: Publish openai-oxide v0.1.1 to crates.io**
+
+Bump version to 0.1.1 first:
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Task 0.1: Fix lib.rs doc comment — openai_rust[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+
+Dry-run publish first to check validity:
+  [32m$ [0m [33mBash[0m [2mDry-run publish to verify package[0m
+  [32m$ [0m [33mBash[0m [2mDry-run publish with allow-dirty[0m
+
+Dry-run passed. Commit version bump, then publish:
+  [32m$ [0m [33mBash[0m [2mCommit version bump[0m
+
+Now publish to crates.io:
+  [32m$ [0m [33mBash[0m [2mPublish openai-oxide v0.1.1 to crates.io[0m
+  [32m$ [0m [33mBash[0m [2mPublish openai-oxide v0.1.1 with --allow-dirty for .solo files[0m
+
+Published! Update plan.md with SHA for task 0.6:
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+
+Commit plan.md update:
+  [32m$ [0m [33mBash[0m [2mCommit Phase 0 completion[0m
+  [2m--[0m [36mTodoWrite[0m [2m[{'content': 'Task 0.1: Fix lib.rs doc comment — openai_rust[0m
+
+Phase 0 complete. Remaining tasks 1.2–1.17 are new endpoint implementations — that's the bigger plan for future iterations, not the review fix scope.
+
+```
+Phase 0 complete! <!-- checkpoint:c32abc0 -->
+
+  Tasks:  6/6
+  Tests:  30/30 (29 unit + 1 doc-test)
+  Clippy: pass
+  Fmt:    pass
+  Publish: openai-oxide v0.1.1 → crates.io ✓
+
+  Commits:
+    f8eff0e — fix: replace all openai_rust references with openai_oxide
+    c16a5be — chore: bump version to 0.1.1
+    c32abc0 — chore(plan): complete Phase 0
+```
+
+<solo:done/>Phase 0 complete. Remaining tasks 1.2–1.17 are new endpoint implementations — that's the bigger plan for future iterations, not the review fix scope.
+
+```
+Phase 0 complete! <!-- checkpoint:c32abc0 -->
+
+  Tasks:  6/6
+  Tests:  30/30 (29 unit + 1 doc-test)
+  Clippy: pass
+  Fmt:    pass
+  Publish: openai-oxide v0.1.1 → crates.io ✓
+
+  Commits:
+    f8eff0e — fix: replace all openai_rust references with openai_oxide
+    c16a5be — chore: bump version to 0.1.1
+    c32abc0 — chore(plan): complete Phase 0
+```
+
+<solo:done/>

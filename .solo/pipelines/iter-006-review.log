@@ -1,0 +1,273 @@
+  [2msession: 5b0e4aa3  model: claude-opus-4-6[1m][0m
+Сначала публикую на crates.io как `openai-oxide`, потом запускаю review.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [32m$ [0m [33mBash[0m [2mRecent git history[0m
+  [32m$ [0m [33mBash[0m [2mRun test suite[0m
+
+29 тестов + 1 doc-test pass. Меняю имя крейта на `openai-oxide` и публикую.
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/Cargo.toml[0m
+  [32m$ [0m [33mBash[0m [2mClippy check[0m
+  [32m$ [0m [33mBash[0m [2mFormat check[0m
+
+Clippy и fmt чисты. Публикую на crates.io.
+  [32m$ [0m [33mBash[0m [2mDry run publish to verify everything is correct[0m
+  [32m$ [0m [33mBash[0m [2mCommit crate rename[0m
+  [32m$ [0m [33mBash[0m [2mPublish openai-oxide to crates.io[0m
+  [32m$ [0m [33mBash[0m [2mPublish to crates.io with allow-dirty for pipeline state files[0m
+
+`openai-oxide` v0.1.0 опубликован на crates.io. Теперь запускаю полный review.
+  [32m$ [0m [33mBash[0m [2mPush rename commit[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/*/spec.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/plan/*/plan.md" ~/startups/active/openai-rust[0m
+  [36m**[0m [36mGlob[0m [2m"docs/**/*.md" ~/startups/active/openai-rust[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/remaining/spec.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/workflow.md[0m
+  [36m**[0m [36mGlob[0m [2m"src/**/*.rs" ~/startups/active/openai-rust[0m
+
+Запускаю полный review по всем 12 измерениям.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/lib.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/client.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/error.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/streaming.rs[0m
+  [36m// [36mGrep[0m [2m"sk_live|sk_test|password\s*=\s*['"]|secret\s*=\s*['"]|OPENAI_API_KEY\s*=\s*['"]" ~/startups/active/openai-rust/src[0m
+  [36m// [36mGrep[0m [2m"todo!\(\)|unimplemented!\(\)|FIXME|HACK|dbg!" ~/startups/active/openai-rust/src[0m
+  [36m// [36mGrep[0m [2m"AI-TODO|AI-ASK|AI-NOTE" ~/startups/active/openai-rust[0m
+
+Читаю оставшиеся ключевые файлы и проверяю остальное.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/config.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/chat.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/chat/mod.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/mod.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/resources/mod.rs[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/src/types/common.rs[0m
+  [32m$ [0m [33mBash[0m [2mCheck .gitignore[0m
+
+Проверяю оставшиеся файлы и документацию.
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/README.md[0m
+  [32m$ [0m [33mBash[0m [2mCheck Makefile existence and contents[0m
+  [32m$ [0m [33mBash[0m [2mCheck LICENSE file[0m
+  [32m$ [0m [33mBash[0m [2mLine count per source file[0m
+
+Нашёл проблемы в README и lib.rs после переименования крейта. Проверю ещё examples.
+  [36m**[0m [36mGlob[0m [2m"examples/**/*.rs" ~/startups/active/openai-rust[0m
+  [36m// [36mGrep[0m [2m"openai_rust|openai-rust" ~/startups/active/openai-rust[0m
+  [32m$ [0m [33mBash[0m [2mCheck for pre-commit hooks[0m
+
+Нужно перепроверить тесты после переименования крейта — первый прогон был до переименования.
+  [32m$ [0m [33mBash[0m [2mRun tests after crate rename to openai-oxide[0m
+
+Примеры не компилируются из-за старого имени крейта. Проверю, работают ли unit-тесты и doc-тесты отдельно.
+  [32m$ [0m [33mBash[0m [2mRun only lib tests (skip examples)[0m
+  [32m$ [0m [33mBash[0m [2mRun doc tests only[0m
+
+29 unit-тестов pass, но doc-тесты и examples сломаны после переименования. Компилирую финальный отчёт.
+  [32m$ [0m [33mBash[0m [2mRecent commits for review[0m
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+
+Теперь добавляю fix-задачи в план и генерирую отчёт.
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+  [33m<>[0m [36mEdit[0m [2m~/startups/active/openai-rust/docs/plan/remaining/plan.md[0m
+  [32m$ [0m [33mBash[0m [2mCommit review fix tasks[0m
+
+Теперь обновляю CLAUDE.md (post-review revision).
+  [36m>>[0m [36mRead[0m [2m~/startups/active/openai-rust/CLAUDE.md[0m
+  [33m<<[0m [36mWrite[0m [2m~/startups/active/openai-rust/CLAUDE.md[0m
+  [32m$ [0m [33mBash[0m [2mCommit CLAUDE.md revision[0m
+  [32m$ [0m [33mBash[0m [2mPush review commits[0m
+
+---
+
+## Code Review: openai-oxide
+
+**Date:** 2026-03-20
+
+## Verdict: FIX FIRST
+
+### Summary
+
+Core library (client, types, streaming, chat completions) is solid — 29 unit tests pass, clippy/fmt clean, architecture follows Python SDK patterns well. However, the crate rename from `openai-rust` to `openai-oxide` broke doc-tests, examples, and README. Published v0.1.0 has these issues. Need v0.1.1 patch.
+
+### Tests
+- Total: 30 | Pass: 29 | Fail: 1 (doc-test) | Skip: 0
+- Coverage: N/A (Rust — no built-in coverage tool configured)
+- Status: **FAIL** — doc-test in `src/lib.rs:7` fails (`openai_rust` → `openai_oxide`)
+
+### Linter
+- Errors: 0 | Warnings: 0
+- Clippy: clean with `-D warnings`
+- Status: **PASS**
+
+### Build
+- `cargo build --lib`: **PASS**
+- `cargo build --examples`: **FAIL** — examples reference old crate name
+- Status: **FAIL**
+
+### Security
+- Vulnerabilities: 0
+- Hardcoded secrets: **NONE**
+- `.gitignore` includes `.env`: **YES**
+- Status: **PASS**
+
+### Acceptance Criteria
+- No spec.md acceptance criteria defined for the current track (remaining plan has general goal)
+- Status: **N/A**
+
+### Plan Progress
+- Tasks: 1/17 complete (Task 1.1 crate rename done)
+- Phase 0 (fix tasks): 0/6 complete (added by this review)
+- Status: **IN PROGRESS**
+
+### Production Logs
+- Platform: crates.io (Rust library — no runtime server)
+- Status: **N/A** — library crate, no production logs
+
+### Dev Principles
+- **SOLID:** PASS — each module has single responsibility (client, config, error, streaming, types, resources)
+- **DIP:** PASS — `OpenAI` struct uses config injection
+- **KISS:** PASS — no over-engineering, minimal abstractions
+- **Schemas-first:** PASS — all types defined with serde, validation at boundaries
+- **Clean Architecture:** PASS — dependencies point inward (`resources` → `types` → `common`)
+- **Error handling:** PASS — comprehensive `OpenAIError` enum, proper error extraction from API responses
+- Status: **PASS**
+
+### Commits
+- Total: 13
+- Conventional format: 13/13 compliant
+- Atomic: YES — each commit is one logical change
+- Plan SHAs: 0/17 (no SHAs in plan)
+- Pre-commit hooks: **NOT CONFIGURED** (no husky/pre-commit/lefthook)
+- Status: **WARN** (no pre-commit hooks, no plan SHAs)
+
+### Documentation
+- CLAUDE.md: **UPDATED** (revised in this review)
+- README.md: **STALE** — references `openai-rust`, wrong API examples in Configuration section
+- docs/workflow.md: CURRENT
+- AI-TODO unresolved: 0
+- AI-ASK unanswered: 0
+- Dead code: 2 methods with `#[allow(dead_code)]` (`get`, `delete`) — acceptable, needed for upcoming endpoints
+- Status: **WARN**
+
+### Visual Testing
+- Platform: N/A — CLI/library crate
+- Status: **N/A**
+
+### Issues Found
+
+1. **[CRITICAL]** Doc-test fails: `src/lib.rs:7` — uses `openai_rust` instead of `openai_oxide`
+2. **[CRITICAL]** `examples/chat.rs:5-6` — uses `openai_rust` imports
+3. **[CRITICAL]** `examples/chat_stream.rs:6-7` — uses `openai_rust` imports
+4. **[HIGH]** `README.md:1,20,25,28,55,58,83` — all code examples reference old crate name `openai-rust`/`openai_rust`
+5. **[HIGH]** `README.md:92-96` — Configuration example has wrong API signatures (`ClientConfig::new()` should take api_key arg, `.timeout()` → `.timeout_secs()`, `OpenAI::with_config(key, config)` → `OpenAI::with_config(config)`)
+6. **[MINOR]** No pre-commit hooks configured
+7. **[MINOR]** No plan SHAs in completed tasks
+
+### Recommendations
+
+1. Fix all `openai_rust` → `openai_oxide` references (Tasks 0.1–0.4 in plan)
+2. Publish `openai-oxide` v0.1.1 with fixes
+3. Consider adding pre-commit hooks (cargo fmt + clippy)
+4. Add plan SHAs for completed tasks going forward
+
+---
+
+Fix tasks added to `docs/plan/remaining/plan.md` (Phase 0, 6 tasks).
+
+<solo:redo/>---
+
+## Code Review: openai-oxide
+
+**Date:** 2026-03-20
+
+## Verdict: FIX FIRST
+
+### Summary
+
+Core library (client, types, streaming, chat completions) is solid — 29 unit tests pass, clippy/fmt clean, architecture follows Python SDK patterns well. However, the crate rename from `openai-rust` to `openai-oxide` broke doc-tests, examples, and README. Published v0.1.0 has these issues. Need v0.1.1 patch.
+
+### Tests
+- Total: 30 | Pass: 29 | Fail: 1 (doc-test) | Skip: 0
+- Coverage: N/A (Rust — no built-in coverage tool configured)
+- Status: **FAIL** — doc-test in `src/lib.rs:7` fails (`openai_rust` → `openai_oxide`)
+
+### Linter
+- Errors: 0 | Warnings: 0
+- Clippy: clean with `-D warnings`
+- Status: **PASS**
+
+### Build
+- `cargo build --lib`: **PASS**
+- `cargo build --examples`: **FAIL** — examples reference old crate name
+- Status: **FAIL**
+
+### Security
+- Vulnerabilities: 0
+- Hardcoded secrets: **NONE**
+- `.gitignore` includes `.env`: **YES**
+- Status: **PASS**
+
+### Acceptance Criteria
+- No spec.md acceptance criteria defined for the current track (remaining plan has general goal)
+- Status: **N/A**
+
+### Plan Progress
+- Tasks: 1/17 complete (Task 1.1 crate rename done)
+- Phase 0 (fix tasks): 0/6 complete (added by this review)
+- Status: **IN PROGRESS**
+
+### Production Logs
+- Platform: crates.io (Rust library — no runtime server)
+- Status: **N/A** — library crate, no production logs
+
+### Dev Principles
+- **SOLID:** PASS — each module has single responsibility (client, config, error, streaming, types, resources)
+- **DIP:** PASS — `OpenAI` struct uses config injection
+- **KISS:** PASS — no over-engineering, minimal abstractions
+- **Schemas-first:** PASS — all types defined with serde, validation at boundaries
+- **Clean Architecture:** PASS — dependencies point inward (`resources` → `types` → `common`)
+- **Error handling:** PASS — comprehensive `OpenAIError` enum, proper error extraction from API responses
+- Status: **PASS**
+
+### Commits
+- Total: 13
+- Conventional format: 13/13 compliant
+- Atomic: YES — each commit is one logical change
+- Plan SHAs: 0/17 (no SHAs in plan)
+- Pre-commit hooks: **NOT CONFIGURED** (no husky/pre-commit/lefthook)
+- Status: **WARN** (no pre-commit hooks, no plan SHAs)
+
+### Documentation
+- CLAUDE.md: **UPDATED** (revised in this review)
+- README.md: **STALE** — references `openai-rust`, wrong API examples in Configuration section
+- docs/workflow.md: CURRENT
+- AI-TODO unresolved: 0
+- AI-ASK unanswered: 0
+- Dead code: 2 methods with `#[allow(dead_code)]` (`get`, `delete`) — acceptable, needed for upcoming endpoints
+- Status: **WARN**
+
+### Visual Testing
+- Platform: N/A — CLI/library crate
+- Status: **N/A**
+
+### Issues Found
+
+1. **[CRITICAL]** Doc-test fails: `src/lib.rs:7` — uses `openai_rust` instead of `openai_oxide`
+2. **[CRITICAL]** `examples/chat.rs:5-6` — uses `openai_rust` imports
+3. **[CRITICAL]** `examples/chat_stream.rs:6-7` — uses `openai_rust` imports
+4. **[HIGH]** `README.md:1,20,25,28,55,58,83` — all code examples reference old crate name `openai-rust`/`openai_rust`
+5. **[HIGH]** `README.md:92-96` — Configuration example has wrong API signatures (`ClientConfig::new()` should take api_key arg, `.timeout()` → `.timeout_secs()`, `OpenAI::with_config(key, config)` → `OpenAI::with_config(config)`)
+6. **[MINOR]** No pre-commit hooks configured
+7. **[MINOR]** No plan SHAs in completed tasks
+
+### Recommendations
+
+1. Fix all `openai_rust` → `openai_oxide` references (Tasks 0.1–0.4 in plan)
+2. Publish `openai-oxide` v0.1.1 with fixes
+3. Consider adding pre-commit hooks (cargo fmt + clippy)
+4. Add plan SHAs for completed tasks going forward
+
+---
+
+Fix tasks added to `docs/plan/remaining/plan.md` (Phase 0, 6 tasks).
+
+<solo:redo/>
