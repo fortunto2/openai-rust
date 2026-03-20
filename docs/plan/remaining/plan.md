@@ -1,6 +1,6 @@
 # openai-sdk — Remaining Endpoints
 
-**Status:** [x] Complete
+**Status:** [~] In Progress
 **Track:** remaining
 
 ## Context Handoff
@@ -50,3 +50,9 @@
 - [x] Task 1.15: WebFetch Python `resources/beta/vector_stores/` <!-- sha:65eb210 -->. Implement `src/resources/vector_stores.rs`. Methods: `create()`, `list()`, `retrieve()`, `delete()`. Sub: `file_batches.create()`. Mockito tests.
 - [x] Task 1.16: WebFetch Python SDK <!-- sha:0af88a3 --> `src/openai/resources/` directory listing. Compare ALL modules vs what we have. If ANY resource is missing — implement it. This is the final coverage check.
 - [x] Task 1.17: Update README.md with ALL endpoints table <!-- sha:a4d240d -->. Run `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt -- --check`. Final commit.
+
+---
+
+## Phase 2: Review Fix Tasks (from review 2026-03-20)
+
+- [ ] Task 2.1: Fix README.md — update `openai-oxide = "0.1"` to `openai-oxide = "0.2"` in Quick Start Cargo.toml example
