@@ -1,12 +1,58 @@
-# openai-oxide
+<p align="center">
+  <h1 align="center">openai-oxide</h1>
+  <p align="center">
+    The fastest OpenAI client for Rust. Beats Python on 10 out of 13 benchmarks.
+  </p>
+  <p align="center">
+    <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/v/openai-oxide.svg" alt="crates.io"></a>
+    <a href="https://docs.rs/openai-oxide"><img src="https://docs.rs/openai-oxide/badge.svg" alt="docs.rs"></a>
+    <a href="https://github.com/fortunto2/openai-rust/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
+  </p>
+</p>
 
-Idiomatic Rust client for the OpenAI API — 1:1 parity with the [official Python SDK](https://github.com/openai/openai-python).
+Full Responses API + Chat Completions + 20 endpoints. WebSocket mode, hedged requests, streaming FC early parse — features no other client has.
 
-## Performance
+```toml
+[dependencies]
+openai-oxide = "0.9"
+tokio = { version = "1", features = ["full"] }
+```
 
-Benchmarked against the official Python SDK and 2 Rust alternatives. All use the Responses API (`POST /responses`), GPT-5.4, warm connections, 5 iterations, median.
+```rust
+let client = OpenAI::from_env()?;
 
-### Sequential requests
+// Simple
+let r = client.responses().create(
+    ResponseCreateRequest::new("gpt-5.4").input("Hello!")
+).await?;
+println!("{}", r.output_text());
+
+// WebSocket (persistent connection, -22% latency)
+let mut ws = client.ws_session().await?;
+let r = ws.send(ResponseCreateRequest::new("gpt-5.4").input("Hello!")).await?;
+
+// Hedged (send 2, take fastest — P99 reduced 50-96%)
+let r = hedged_request(&client, request, Some(Duration::from_secs(2))).await?;
+
+// Parallel fan-out (3 answers for the price of 1 round-trip)
+let (r1, r2, r3) = tokio::join!(
+    async { c1.responses().create(req1).await },
+    async { c2.responses().create(req2).await },
+    async { c3.responses().create(req3).await },
+);
+
+// Streaming FC early parse (-38% tool call latency)
+let mut handle = client.responses().create_stream_fc(request).await?;
+while let Some(fc) = handle.recv().await {
+    execute_tool(&fc.name, &fc.arguments).await;  // starts BEFORE response.completed
+}
+```
+
+## Benchmarks
+
+All clients use the Responses API, GPT-5.4, warm connections, 5 iterations, median.
+
+### 4 clients compared
 
 | Test | openai-oxide | genai 0.6 | async-openai 0.33 | Python 2.29 |
 |------|:-----------:|:---------:|:-----------------:|:-----------:|
@@ -16,110 +62,66 @@ Benchmarked against the official Python SDK and 2 Rust alternatives. All use the
 | Multi-turn (2 reqs) | **2042ms** | 2303ms | 2289ms | 2188ms |
 | Web search | **2969ms** | — | — | 3176ms |
 | Nested structured | 5013ms | — | — | **4286ms** |
-| Agent loop (FC→result→JSON) | **3933ms** | — | — | 4113ms |
+| Agent loop (FC+result+JSON) | **3933ms** | — | — | 4113ms |
 | Rapid-fire (5 calls) | **4521ms** | — | — | 4646ms |
 | Prompt-cached | **4433ms** | — | — | 4712ms |
 
-### Advanced patterns (oxide-only)
+### Unique to oxide
 
 | Test | oxide | Python | Speedup |
 |------|------:|-------:|--------:|
-| Streaming TTFT | **588ms** | 659ms | **11% faster** |
-| Stream FC (early parse) | **909ms** | — | **-38% vs normal FC** |
-| Parallel 3x fan-out | **926ms** | 1462ms | **37% faster** |
-| Hedged 2x race | **893ms** | 958ms | **7% faster** |
+| Streaming TTFT | **588ms** | 659ms | **11%** |
+| Stream FC early parse | **909ms** | — | **-38% vs normal FC** |
+| Parallel 3x fan-out | **926ms** | 1462ms | **37%** |
+| Hedged 2x race | **893ms** | 958ms | **7%** |
 | WebSocket plain text | **721ms** | — | **-22% vs HTTP** |
 | WebSocket multi-turn | **1650ms** | — | **-19% vs HTTP** |
 
-**oxide wins 10/13 tests** vs Python. No other Rust or Python client has WebSocket mode, streaming FC early parse, hedged requests, or parallel fan-out built in.
+**Wins 10/13 vs Python.** Reproduce: `cargo run --example benchmark --features responses --release`
 
-### Why it's fast
+### 10 techniques that make it fast
 
-| Technique | What it does | Savings |
-|-----------|-------------|---------|
-| HTTP/2 keep-alive while idle | Connections stay warm between requests | -200ms cold start |
-| HTTP/2 adaptive windows | Auto-tuned flow control | Better throughput |
-| Parallel fan-out | `tokio::join!` + HTTP/2 multiplex | 3 answers ≈ 1 latency |
-| Hedged requests | Send 2 copies, take fastest | P99 -50-96% |
-| Streaming TTFT | First token in ~588ms | -36% vs full response |
-| Stream FC early parse | Yield function call on `arguments.done` | -38% vs `response.completed` |
-| WebSocket mode | Persistent `wss://` — no per-turn HTTP | -20-25% per request |
-| Prompt cache key | Server-side system prompt caching | Up to -80% TTFT |
-| Fast-path retry | No loop overhead for successful requests | -5-15ms |
-| gzip + from_slice | Compressed responses, zero-copy deser | Bandwidth + alloc |
-
-Run the benchmark yourself:
-```bash
-OPENAI_API_KEY=sk-... cargo run --example benchmark --features responses --release
-python3 examples/bench_python.py  # Python comparison
-```
+| # | Technique | Savings |
+|---|-----------|---------|
+| 1 | **WebSocket mode** — persistent `wss://`, no per-turn HTTP overhead | -20-25% |
+| 2 | **Stream FC early parse** — yield tool calls on `arguments.done` | -38% FC |
+| 3 | **Parallel fan-out** — `tokio::join!` + HTTP/2 multiplex | 3x = 1x |
+| 4 | **Hedged requests** — send 2, take fastest, cancel loser | P99 -50-96% |
+| 5 | **HTTP/2 keep-alive while idle** — connections never go cold | -200ms |
+| 6 | **Adaptive flow control** — auto-tuned HTTP/2 windows | Throughput |
+| 7 | **Streaming TTFT** — first token in ~588ms | -36% |
+| 8 | **Prompt cache key** — server-side prefix caching | Up to -80% |
+| 9 | **Fast-path retry** — no loop overhead for success | -5-15ms |
+| 10 | **gzip + from_slice** — compressed, zero intermediate alloc | Bandwidth |
 
 ## Features
 
-- Async-first (tokio + reqwest 0.13)
-- Strongly typed requests and responses (serde)
-- SSE streaming for Chat Completions and Responses API
-- Automatic retries with exponential backoff
-- Chainable builder pattern for requests
-- Responses API with tool support (WebSearch, FileSearch, MCP, etc.)
-- Structured outputs (JSON Schema with strict mode)
-- Reasoning model support (o-series: effort, summary)
-- Realtime API session creation (ephemeral tokens)
-- 100% OpenAPI field coverage for Chat Completions
-- Same resource structure as Python SDK: `client.chat().completions().create()`
+- **Async-first** — tokio + reqwest 0.13, HTTP/2
+- **Strongly typed** — serde, every field documented
+- **Streaming** — SSE with zero-copy parser (no external deps)
+- **WebSocket** — persistent `wss://` for agent loops (opt-in: `websocket` feature)
+- **Hedged requests** — `hedged_request()`, `hedged_request_n()`, `speculative()`
+- **Responses API** — create, stream, retrieve, delete, tools (WebSearch, FileSearch, MCP, Function, CodeInterpreter, ComputerUse, ImageGeneration)
+- **Chat Completions** — full parity with Python SDK
+- **Structured outputs** — JSON Schema with strict mode
+- **Reasoning models** — o-series (effort, summary)
+- **BYOT** — `create_raw()` for custom types / raw JSON
+- **Pagination** — auto cursor-based streaming
+- **Retries** — exponential backoff with Retry-After
+- **Azure** — full Azure OpenAI support
+- **195 tests** — unit + integration + OpenAPI coverage
 
 ## Feature Flags
 
-Each API resource is behind an optional Cargo feature (all enabled by default):
-
 ```toml
-# All resources (default)
-openai-oxide = "0.9"
-
-# Only chat + embeddings
-openai-oxide = { version = "0.8", default-features = false, features = ["chat", "embeddings"] }
+openai-oxide = "0.9"                                            # all APIs (default)
+openai-oxide = { version = "0.9", features = ["websocket"] }    # + WebSocket mode
+openai-oxide = { version = "0.9", features = ["simd"] }         # + simd-json deser
 ```
 
-Available features: `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`.
+API features (all default): `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`.
 
 ## Quick Start
-
-Add to `Cargo.toml`:
-
-```toml
-[dependencies]
-openai-oxide = "0.9"
-tokio = { version = "1", features = ["full"] }
-```
-
-```rust
-use openai_oxide::{OpenAI, types::chat::*};
-
-#[tokio::main]
-async fn main() -> Result<(), openai_oxide::OpenAIError> {
-    let client = OpenAI::from_env()?;
-
-    let request = ChatCompletionRequest::new(
-        "gpt-4o-mini",
-        vec![
-            ChatCompletionMessageParam::System {
-                content: "You are a helpful assistant.".into(),
-                name: None,
-            },
-            ChatCompletionMessageParam::User {
-                content: UserContent::Text("Hello!".into()),
-                name: None,
-            },
-        ],
-    );
-
-    let response = client.chat().completions().create(request).await?;
-    println!("{}", response.choices[0].message.content.as_deref().unwrap_or(""));
-    Ok(())
-}
-```
-
-## Responses API
 
 ```rust
 use openai_oxide::{OpenAI, types::responses::*};
@@ -130,168 +132,125 @@ async fn main() -> Result<(), openai_oxide::OpenAIError> {
 
     let response = client.responses().create(
         ResponseCreateRequest::new("gpt-5.4")
-            .input("What are the latest developments in Rust?")
-            .tools(vec![ResponseTool::WebSearch {
-                search_context_size: Some("medium".into()),
-                user_location: None,
-            }])
-            .max_output_tokens(1024)
+            .input("Explain quantum computing in one sentence.")
+            .max_output_tokens(100)
     ).await?;
 
     println!("{}", response.output_text());
-
-    // Extract function calls
-    for fc in response.function_calls() {
-        println!("Tool: {}({})", fc.name, fc.arguments);
-    }
     Ok(())
 }
 ```
 
-## Streaming
+## WebSocket Mode
+
+Persistent connection — no TLS handshake per request. Ideal for agent loops.
 
 ```rust
-use futures_util::StreamExt;
-use openai_oxide::{OpenAI, types::chat::*};
+let client = OpenAI::from_env()?;
+let mut session = client.ws_session().await?;
 
-#[tokio::main]
-async fn main() -> Result<(), openai_oxide::OpenAIError> {
-    let client = OpenAI::from_env()?;
+// All calls go through the same wss:// connection
+let r1 = session.send(
+    ResponseCreateRequest::new("gpt-5.4").input("My name is Rustam.").store(true)
+).await?;
 
-    let request = ChatCompletionRequest::new(
-        "gpt-4o-mini",
-        vec![ChatCompletionMessageParam::User {
-            content: UserContent::Text("Tell me a joke".into()),
-            name: None,
-        }],
-    );
+let r2 = session.send(
+    ResponseCreateRequest::new("gpt-5.4")
+        .input("What's my name?")
+        .previous_response_id(&r1.id)
+).await?;
 
-    let mut stream = client.chat().completions().create_stream(request).await?;
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
-        if let Some(delta) = chunk.choices.first().and_then(|c| c.delta.content.as_deref()) {
-            print!("{delta}");
-        }
-    }
-    Ok(())
+session.close().await?;
+```
+
+## Streaming FC Early Parse
+
+Start executing tools ~400ms earlier. Safe — `arguments.done` guarantees complete JSON.
+
+```rust
+let mut handle = client.responses().create_stream_fc(request).await?;
+
+while let Some(fc) = handle.recv().await {
+    // Fires on arguments.done, NOT response.completed
+    let result = execute_tool(&fc.name, &fc.arguments).await;
+}
+
+if let Some(err) = handle.error().await {
+    eprintln!("Error: {err}");
 }
 ```
 
-## BYOT (Bring Your Own Types)
+## Hedged Requests
 
-Send custom fields or get raw JSON responses using `create_raw()`:
-
-```rust
-use openai_oxide::OpenAI;
-use serde_json::json;
-
-#[tokio::main]
-async fn main() -> Result<(), openai_oxide::OpenAIError> {
-    let client = OpenAI::from_env()?;
-
-    let raw = client.chat().completions().create_raw(&json!({
-        "model": "gpt-4o",
-        "messages": [{"role": "user", "content": "Hi"}],
-        "custom_field": true
-    })).await?;
-
-    println!("{}", raw["choices"][0]["message"]["content"]);
-    Ok(())
-}
-```
-
-Also available on `client.responses().create_raw()` and `client.embeddings().create_raw()`.
-
-## Image Save Helper
-
-Save generated images directly to disk:
+Send duplicates, take the fastest. Costs 2-7% extra tokens, reduces P99 by 50-96%.
 
 ```rust
-let resp = client.images().generate(req).await?;
-if let Some(images) = &resp.data {
-    images[0].save("output.png").await?;  // handles both URL and b64_json
-}
+use openai_oxide::hedged_request;
+use std::time::Duration;
+
+// Send 2 copies with 1.5s hedge delay, return whichever finishes first
+let response = hedged_request(&client, request, Some(Duration::from_secs(2))).await?;
 ```
 
-## Pagination
+## Parallel Fan-Out
 
-All list endpoints support automatic cursor-based pagination:
+HTTP/2 multiplexing — 3 requests on 1 connection, wall time = slowest single request.
 
 ```rust
-use futures_util::StreamExt;
-use openai_oxide::{OpenAI, types::file::FileListParams};
-
-#[tokio::main]
-async fn main() -> Result<(), openai_oxide::OpenAIError> {
-    let client = OpenAI::from_env()?;
-
-    // Single page with params
-    let page = client.files().list_page(
-        FileListParams::new().limit(10)
-    ).await?;
-
-    // Auto-paginate through all results
-    let mut stream = client.files().list_auto(FileListParams::new());
-    while let Some(file) = stream.next().await {
-        let file = file?;
-        println!("{}: {}", file.id, file.filename);
-    }
-    Ok(())
-}
+let (c1, c2, c3) = (client.clone(), client.clone(), client.clone());
+let (r1, r2, r3) = tokio::join!(
+    async { c1.responses().create(req1).await },
+    async { c2.responses().create(req2).await },
+    async { c3.responses().create(req3).await },
+);
+// 926ms for all 3 (vs 1462ms in Python)
 ```
+
+## Implemented APIs
+
+| API | Method |
+|-----|--------|
+| Chat Completions | `client.chat().completions().create()` / `create_stream()` |
+| Responses | `client.responses().create()` / `create_stream()` / `create_stream_fc()` |
+| Responses Tools | Function, WebSearch, FileSearch, CodeInterpreter, ComputerUse, Mcp, ImageGeneration |
+| WebSocket | `client.ws_session()` — send / send_stream / warmup / close |
+| Hedged | `hedged_request()` / `hedged_request_n()` / `speculative()` |
+| Embeddings | `client.embeddings().create()` |
+| Models | `client.models().list()` / `retrieve()` / `delete()` |
+| Images | `client.images().generate()` / `edit()` / `create_variation()` |
+| Audio | `client.audio().transcriptions()` / `translations()` / `speech()` |
+| Files | `client.files().create()` / `list()` / `retrieve()` / `delete()` / `content()` |
+| Fine-tuning | `client.fine_tuning().jobs().create()` / `list()` / `cancel()` / `list_events()` |
+| Moderations | `client.moderations().create()` |
+| Batches | `client.batches().create()` / `list()` / `retrieve()` / `cancel()` |
+| Uploads | `client.uploads().create()` / `cancel()` / `complete()` |
+| Pagination | `list_page()` / `list_auto()` — cursor-based, async stream |
+| Assistants (beta) | Full CRUD + threads + runs + vector stores |
+| Realtime (beta) | `client.beta().realtime().sessions().create()` |
 
 ## Configuration
 
 ```rust
 use openai_oxide::{OpenAI, ClientConfig};
 
-// From environment variable OPENAI_API_KEY
-let client = OpenAI::from_env()?;
-
-// Explicit API key
-let client = OpenAI::new("sk-...");
-
-// Full configuration
-let config = ClientConfig::new("sk-...")
-    .base_url("https://api.openai.com/v1")
-    .timeout_secs(30)
-    .max_retries(3);
-let client = OpenAI::with_config(config);
+let client = OpenAI::from_env()?;                              // OPENAI_API_KEY env
+let client = OpenAI::new("sk-...");                             // explicit key
+let client = OpenAI::with_config(                               // full config
+    ClientConfig::new("sk-...").base_url("https://...").timeout_secs(30).max_retries(3)
+);
+let client = OpenAI::azure(AzureConfig::new()                  // Azure
+    .azure_endpoint("https://my.openai.azure.com").azure_deployment("gpt-4").api_key("...")
+)?;
 ```
-
-## Implemented APIs
-
-| API | Method | Status |
-|-----|--------|--------|
-| Chat Completions | `client.chat().completions().create()` | Done |
-| Chat Completions (streaming) | `client.chat().completions().create_stream()` | Done |
-| Responses | `client.responses().create()` / `create_stream()` | Done |
-| Responses Tools | Function, WebSearch, FileSearch, CodeInterpreter, ComputerUse, Mcp | Done |
-| Embeddings | `client.embeddings().create()` | Done |
-| Models | `client.models().list()` / `retrieve()` / `delete()` | Done |
-| Images | `client.images().generate()` / `edit()` / `create_variation()` | Done |
-| Audio Transcription | `client.audio().transcriptions().create()` | Done |
-| Audio Translation | `client.audio().translations().create()` | Done |
-| Audio Speech (TTS) | `client.audio().speech().create()` | Done |
-| Files | `client.files().create()` / `list()` / `retrieve()` / `delete()` / `content()` | Done |
-| Fine-tuning | `client.fine_tuning().jobs().create()` / `list()` / `cancel()` / `list_events()` | Done |
-| Moderations | `client.moderations().create()` | Done |
-| Batches | `client.batches().create()` / `list()` / `retrieve()` / `cancel()` | Done |
-| Uploads | `client.uploads().create()` / `cancel()` / `complete()` | Done |
-| Assistants (beta) | `client.beta().assistants().create()` / `list()` / `retrieve()` / `delete()` | Done |
-| Threads (beta) | `client.beta().threads().create()` / `retrieve()` / `delete()` / `messages()` | Done |
-| Runs (beta) | `client.beta().runs(thread_id).create()` / `retrieve()` / `cancel()` | Done |
-| Vector Stores (beta) | `client.beta().vector_stores().create()` / `list()` / `retrieve()` / `delete()` | Done |
-| Realtime (beta) | `client.beta().realtime().sessions().create()` | Done |
 
 ## Development
 
 ```bash
-cargo test                          # all tests
-cargo test --features live-tests    # tests hitting real API (needs OPENAI_API_KEY)
-cargo clippy -- -D warnings         # lint
-cargo fmt -- --check                # format check
-cargo run --example benchmark --features responses --release  # benchmark
+cargo test                                                      # 195 tests
+cargo test --features live-tests                                # real API
+cargo clippy -- -D warnings                                     # lint
+cargo run --example benchmark --features responses --release    # benchmark
+python3 examples/bench_python.py                                # Python comparison
 ```
 
 ## License
