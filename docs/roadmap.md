@@ -28,7 +28,7 @@ Reference: https://github.com/64bit/async-openai (competitor), ~/startups/shared
 ## Priority 2: Ergonomics (match async-openai)
 - [ ] Per-request customization: `.query()`, `.header()`, `.headers()` on resource groups
 - [ ] `dyn Config` trait for provider-agnostic code (OpenAI, Azure, custom)
-- [ ] Azure OpenAI support (different base URL + API version header + AD auth)
+- [x] Azure OpenAI support (`AzureConfig` builder, `OpenAI::azure()`, api-key/AD token auth)
 - [ ] Granular feature flags: `chat-types`, `response-types`, `embedding-types` (compile-time savings)
 - [ ] BYOT (bring your own types): `_byot` methods accepting `impl Serialize` / `DeserializeOwned`
 - [ ] Image save helper: `response.save("./output").await`

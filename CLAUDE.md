@@ -35,9 +35,10 @@ Replicate the official Python SDK in Rust:
 ```
 src/
   lib.rs              — pub mod, re-exports
-  client.rs           — OpenAI client (api_key, base_url, org, retries, Beta struct, with_options)
+  azure.rs            — AzureConfig builder, from_env(), build() → OpenAI client
+  client.rs           — OpenAI client (api_key, base_url, org, retries, Beta struct, with_options, azure())
   error.rs            — OpenAIError enum
-  config.rs           — ClientConfig (timeouts, retries, base_url, default_headers, default_query)
+  config.rs           — ClientConfig (timeouts, retries, base_url, default_headers, default_query, azure auth mode)
   request_options.rs  — RequestOptions (per-request headers, query, extra_body, timeout)
   streaming.rs        — SSE stream parser
   resources/
