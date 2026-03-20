@@ -23,6 +23,7 @@ bytes = "1"
 pin-project-lite = "0.2"
 base64 = { version = "0.22", optional = true }
 simd-json = { version = "0.17", optional = true }
+tokio-tungstenite = { version = "0.26", optional = true, features = ["rustls-tls-native-roots"] }
 
 [dev-dependencies]
 mockito = "1"
@@ -47,6 +48,7 @@ uploads = []
 beta = []
 live-tests = []
 simd = ["dep:simd-json"]
+websocket = ["dep:tokio-tungstenite"]
 
 [[example]]
 name = "chat"
@@ -71,3 +73,7 @@ required-features = ["responses"]
 [[example]]
 name = "benchmark"
 required-features = ["responses"]
+
+[[example]]
+name = "websocket"
+required-features = ["websocket", "responses"]

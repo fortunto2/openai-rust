@@ -45,4 +45,9 @@ pub enum OpenAIError {
     /// Invalid argument passed by the caller.
     #[error("invalid argument: {0}")]
     InvalidArgument(String),
+
+    /// WebSocket error.
+    #[cfg(feature = "websocket")]
+    #[error("websocket error: {0}")]
+    WebSocketError(String),
 }

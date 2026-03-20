@@ -35,16 +35,24 @@ pub mod azure;
 pub mod client;
 pub mod config;
 pub mod error;
+#[cfg(feature = "responses")]
+pub mod hedged;
 pub mod pagination;
 pub mod request_options;
 pub mod resources;
 pub mod streaming;
 pub mod types;
+#[cfg(feature = "websocket")]
+pub mod websocket;
 
 pub use azure::AzureConfig;
 pub use client::OpenAI;
 pub use config::ClientConfig;
 pub use error::OpenAIError;
+#[cfg(feature = "responses")]
+pub use hedged::{hedged_request, hedged_request_n, speculative};
 pub use pagination::Paginator;
 pub use request_options::RequestOptions;
 pub use streaming::SseStream;
+#[cfg(feature = "websocket")]
+pub use websocket::{WsEventStream, WsSession};

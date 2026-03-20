@@ -215,6 +215,24 @@ impl OpenAI {
         Embeddings::new(self)
     }
 
+    /// Create a persistent WebSocket session to the Responses API.
+    ///
+    /// Opens a connection to `wss://api.openai.com/v1/responses` and returns
+    /// a [`WsSession`](crate::websocket::WsSession) for low-latency,
+    /// multi-turn interactions.
+    ///
+    /// Requires the `websocket` feature.
+    ///
+    /// ```ignore
+    /// let mut session = client.ws_session().await?;
+    /// let response = session.send(request).await?;
+    /// session.close().await?;
+    /// ```
+    #[cfg(feature = "websocket")]
+    pub async fn ws_session(&self) -> Result<crate::websocket::WsSession, OpenAIError> {
+        crate::websocket::WsSession::connect(&self.config).await
+    }
+
     /// Build a request with auth headers and client-level options applied.
     pub(crate) fn request(&self, method: reqwest::Method, path: &str) -> reqwest::RequestBuilder {
         let url = format!("{}{}", self.config.base_url, path);
