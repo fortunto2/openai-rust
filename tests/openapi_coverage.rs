@@ -250,6 +250,14 @@ fn overall_coverage_report() {
             "CreateEmbeddingRequest",
             fields_from_source("src/types/embedding.rs", "EmbeddingRequest"),
         ),
+        (
+            "CreateImageRequest",
+            fields_from_source("src/types/image.rs", "ImageGenerateRequest"),
+        ),
+        (
+            "CreateModerationRequest",
+            fields_from_source("src/types/moderation.rs", "ModerationRequest"),
+        ),
     ];
 
     eprintln!("\n=== OpenAPI Coverage Report ===");
@@ -274,4 +282,83 @@ fn overall_coverage_report() {
         total_matched as f64 / total_spec as f64 * 100.0
     };
     eprintln!("=== Overall: {overall:.0}% ({total_matched}/{total_spec}) ===\n");
+    assert!(overall >= 80.0, "Overall coverage {overall:.0}% < 80%");
+}
+
+#[test]
+fn chat_completion_response_coverage() {
+    let schemas = load_openapi_schemas();
+    let spec = schemas
+        .get("CreateChatCompletionResponse")
+        .expect("schema not found");
+
+    let rust_fields = fields_from_source("src/types/chat.rs", "ChatCompletionResponse");
+    let pct = check_coverage("CreateChatCompletionResponse", spec, &rust_fields);
+    assert!(pct >= 80.0, "coverage {pct:.0}% < 80%");
+}
+
+#[test]
+fn usage_details_deserialize() {
+    let json = serde_json::json!({
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150,
+        "prompt_tokens_details": {
+            "cached_tokens": 20,
+            "audio_tokens": 5
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 10,
+            "audio_tokens": 3,
+            "accepted_prediction_tokens": 15,
+            "rejected_prediction_tokens": 2
+        }
+    });
+
+    let usage: openai_oxide::types::common::Usage = serde_json::from_value(json).unwrap();
+    assert_eq!(usage.prompt_tokens, Some(100));
+    let prompt_details = usage.prompt_tokens_details.unwrap();
+    assert_eq!(prompt_details.cached_tokens, Some(20));
+    assert_eq!(prompt_details.audio_tokens, Some(5));
+    let completion_details = usage.completion_tokens_details.unwrap();
+    assert_eq!(completion_details.reasoning_tokens, Some(10));
+    assert_eq!(completion_details.accepted_prediction_tokens, Some(15));
+    assert_eq!(completion_details.rejected_prediction_tokens, Some(2));
+}
+
+#[test]
+fn chat_request_new_fields_serialize() {
+    use openai_oxide::types::chat::*;
+
+    let mut req = ChatCompletionRequest::new(
+        "gpt-4o",
+        vec![ChatCompletionMessageParam::User {
+            content: UserContent::Text("Hi".into()),
+            name: None,
+        }],
+    );
+    req.reasoning_effort = Some("high".into());
+    req.modalities = Some(vec!["text".into(), "audio".into()]);
+    req.audio = Some(ChatCompletionAudioParam {
+        format: "mp3".into(),
+        voice: "alloy".into(),
+    });
+    req.prediction = Some(PredictionContent {
+        type_: "content".into(),
+        content: serde_json::json!("predicted text"),
+    });
+    req.web_search_options = Some(WebSearchOptions {
+        search_context_size: Some("medium".into()),
+        user_location: None,
+    });
+    req.max_tokens = Some(1000);
+
+    let json = serde_json::to_value(&req).unwrap();
+    assert_eq!(json["reasoning_effort"], "high");
+    assert_eq!(json["modalities"], serde_json::json!(["text", "audio"]));
+    assert_eq!(json["audio"]["format"], "mp3");
+    assert_eq!(json["audio"]["voice"], "alloy");
+    assert_eq!(json["prediction"]["type"], "content");
+    assert_eq!(json["web_search_options"]["search_context_size"], "medium");
+    assert_eq!(json["max_tokens"], 1000);
 }

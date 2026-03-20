@@ -98,6 +98,45 @@ pub struct ChatCompletionRequest {
     /// Metadata key-value pairs.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<std::collections::HashMap<String, String>>,
+
+    /// Output modalities: ["text"] or ["text", "audio"].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modalities: Option<Vec<String>>,
+
+    /// Reasoning effort for reasoning models (o-series).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<String>,
+
+    /// Response verbosity level.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verbosity: Option<String>,
+
+    /// Audio output parameters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio: Option<ChatCompletionAudioParam>,
+
+    /// Predicted output content (for Predicted Outputs feature).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prediction: Option<PredictionContent>,
+
+    /// Web search options.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub web_search_options: Option<WebSearchOptions>,
+
+    /// DEPRECATED: Maximum number of tokens to generate.
+    /// Use max_completion_tokens instead.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<i64>,
+
+    /// DEPRECATED: A list of functions the model may call.
+    /// Use tools instead.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub functions: Option<Vec<FunctionDef>>,
+
+    /// DEPRECATED: Controls how the model calls functions.
+    /// Use tool_choice instead.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_call: Option<serde_json::Value>,
 }
 
 impl ChatCompletionRequest {
@@ -127,6 +166,15 @@ impl ChatCompletionRequest {
             user: None,
             store: None,
             metadata: None,
+            modalities: None,
+            reasoning_effort: None,
+            verbosity: None,
+            audio: None,
+            prediction: None,
+            web_search_options: None,
+            max_tokens: None,
+            functions: None,
+            function_call: None,
         }
     }
 }
@@ -145,6 +193,60 @@ pub struct StreamOptions {
     /// If true, stream includes a final chunk with usage stats.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub include_usage: Option<bool>,
+}
+
+/// Audio output parameters for chat completions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatCompletionAudioParam {
+    /// Audio output format.
+    pub format: String,
+    /// Voice to use for audio output.
+    pub voice: String,
+}
+
+/// Predicted output content for the Predicted Outputs feature.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PredictionContent {
+    /// Always "content".
+    #[serde(rename = "type")]
+    pub type_: String,
+    /// The predicted content.
+    pub content: serde_json::Value,
+}
+
+/// Web search options.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebSearchOptions {
+    /// Search context size: "low", "medium", "high".
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_context_size: Option<String>,
+    /// User location for search relevance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_location: Option<WebSearchUserLocation>,
+}
+
+/// User location for web search.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebSearchUserLocation {
+    /// Always "approximate".
+    #[serde(rename = "type")]
+    pub type_: String,
+    /// Approximate location details.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub approximate: Option<ApproximateLocation>,
+}
+
+/// Approximate user location.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApproximateLocation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub city: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub region: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timezone: Option<String>,
 }
 
 /// Response format constraint.
