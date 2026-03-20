@@ -131,7 +131,10 @@ mod tests {
 
         let response = client.chat().completions().create(request).await.unwrap();
         assert_eq!(response.id, "chatcmpl-abc123");
-        assert_eq!(response.choices[0].finish_reason, "stop");
+        assert_eq!(
+            response.choices[0].finish_reason,
+            crate::types::common::FinishReason::Stop
+        );
         assert_eq!(
             response.choices[0].message.content.as_deref(),
             Some("Hello! How can I help?")

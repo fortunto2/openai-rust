@@ -38,6 +38,62 @@ pub struct PromptTokensDetails {
     pub audio_tokens: Option<i64>,
 }
 
+/// Reason the model stopped generating tokens.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum FinishReason {
+    Stop,
+    Length,
+    ToolCalls,
+    ContentFilter,
+    FunctionCall,
+}
+
+impl std::fmt::Display for FinishReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Stop => write!(f, "stop"),
+            Self::Length => write!(f, "length"),
+            Self::ToolCalls => write!(f, "tool_calls"),
+            Self::ContentFilter => write!(f, "content_filter"),
+            Self::FunctionCall => write!(f, "function_call"),
+        }
+    }
+}
+
+/// Service tier used for the request.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum ServiceTier {
+    Auto,
+    Default,
+    Flex,
+    Scale,
+    Priority,
+}
+
+/// Reasoning effort level for o-series models.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum ReasoningEffort {
+    Low,
+    Medium,
+    High,
+}
+
+/// Search context size for web search.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum SearchContextSize {
+    Low,
+    Medium,
+    High,
+}
+
 /// Detailed breakdown of completion token usage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompletionTokensDetails {

@@ -337,7 +337,7 @@ fn chat_request_new_fields_serialize() {
             name: None,
         }],
     );
-    req.reasoning_effort = Some("high".into());
+    req.reasoning_effort = Some(openai_oxide::types::common::ReasoningEffort::High);
     req.modalities = Some(vec!["text".into(), "audio".into()]);
     req.audio = Some(ChatCompletionAudioParam {
         format: "mp3".into(),
@@ -348,7 +348,7 @@ fn chat_request_new_fields_serialize() {
         content: serde_json::json!("predicted text"),
     });
     req.web_search_options = Some(WebSearchOptions {
-        search_context_size: Some("medium".into()),
+        search_context_size: Some(openai_oxide::types::common::SearchContextSize::Medium),
         user_location: None,
     });
     req.max_tokens = Some(1000);

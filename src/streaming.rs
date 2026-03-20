@@ -167,7 +167,10 @@ data: [DONE]
         assert_eq!(chunk2.choices[0].delta.content.as_deref(), Some(" world"));
 
         let chunk3 = events[3].as_ref().unwrap();
-        assert_eq!(chunk3.choices[0].finish_reason.as_deref(), Some("stop"));
+        assert_eq!(
+            chunk3.choices[0].finish_reason,
+            Some(crate::types::common::FinishReason::Stop)
+        );
     }
 
     #[test]
@@ -265,10 +268,8 @@ data: [DONE]
         );
 
         assert_eq!(
-            events[3].as_ref().unwrap().choices[0]
-                .finish_reason
-                .as_deref(),
-            Some("tool_calls")
+            events[3].as_ref().unwrap().choices[0].finish_reason,
+            Some(crate::types::common::FinishReason::ToolCalls)
         );
     }
 }

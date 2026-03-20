@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::common::{Role, Usage};
+use super::common::{FinishReason, ReasoningEffort, Role, SearchContextSize, ServiceTier, Usage};
 
 // ── Request types ──
 
@@ -53,7 +53,7 @@ pub struct ChatCompletionRequest {
 
     /// Service tier.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub service_tier: Option<String>,
+    pub service_tier: Option<ServiceTier>,
 
     /// Up to 4 stop sequences.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -105,7 +105,7 @@ pub struct ChatCompletionRequest {
 
     /// Reasoning effort for reasoning models (o-series).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub reasoning_effort: Option<String>,
+    pub reasoning_effort: Option<ReasoningEffort>,
 
     /// Response verbosity level.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -221,8 +221,8 @@ impl ChatCompletionRequest {
     }
 
     /// Set reasoning effort for o-series models.
-    pub fn reasoning_effort(mut self, effort: impl Into<String>) -> Self {
-        self.reasoning_effort = Some(effort.into());
+    pub fn reasoning_effort(mut self, effort: ReasoningEffort) -> Self {
+        self.reasoning_effort = Some(effort);
         self
     }
 
@@ -308,9 +308,9 @@ pub struct PredictionContent {
 /// Web search options.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebSearchOptions {
-    /// Search context size: "low", "medium", "high".
+    /// Search context size.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub search_context_size: Option<String>,
+    pub search_context_size: Option<SearchContextSize>,
     /// User location for search relevance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_location: Option<WebSearchUserLocation>,
@@ -515,7 +515,7 @@ pub struct ChatCompletionResponse {
     pub model: String,
     pub object: String,
     #[serde(default)]
-    pub service_tier: Option<String>,
+    pub service_tier: Option<ServiceTier>,
     #[serde(default)]
     pub system_fingerprint: Option<String>,
     #[serde(default)]
@@ -525,7 +525,7 @@ pub struct ChatCompletionResponse {
 /// A single choice in a chat completion response.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChatCompletionChoice {
-    pub finish_reason: String,
+    pub finish_reason: FinishReason,
     pub index: i32,
     pub message: ChatCompletionMessage,
     #[serde(default)]
@@ -604,7 +604,7 @@ pub struct ChatCompletionChunk {
     pub model: String,
     pub object: String,
     #[serde(default)]
-    pub service_tier: Option<String>,
+    pub service_tier: Option<ServiceTier>,
     #[serde(default)]
     pub system_fingerprint: Option<String>,
     #[serde(default)]
@@ -615,7 +615,7 @@ pub struct ChatCompletionChunk {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChunkChoice {
     pub delta: ChoiceDelta,
-    pub finish_reason: Option<String>,
+    pub finish_reason: Option<FinishReason>,
     pub index: i32,
     #[serde(default)]
     pub logprobs: Option<ChoiceLogprobs>,
@@ -687,7 +687,7 @@ mod tests {
         assert_eq!(resp.object, "chat.completion");
         assert_eq!(resp.model, "gpt-4o-mini");
         assert_eq!(resp.choices.len(), 1);
-        assert_eq!(resp.choices[0].finish_reason, "stop");
+        assert_eq!(resp.choices[0].finish_reason, FinishReason::Stop);
         assert_eq!(
             resp.choices[0].message.content.as_deref(),
             Some("Hello! How can I help you today?")
@@ -730,7 +730,7 @@ mod tests {
         }"#;
 
         let resp: ChatCompletionResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(resp.choices[0].finish_reason, "tool_calls");
+        assert_eq!(resp.choices[0].finish_reason, FinishReason::ToolCalls);
         let tool_calls = resp.choices[0].message.tool_calls.as_ref().unwrap();
         assert_eq!(tool_calls.len(), 1);
         assert_eq!(tool_calls[0].id, "call_abc123");
@@ -899,7 +899,7 @@ mod tests {
         }"#;
 
         let chunk: ChatCompletionChunk = serde_json::from_str(json).unwrap();
-        assert_eq!(chunk.choices[0].finish_reason.as_deref(), Some("stop"));
+        assert_eq!(chunk.choices[0].finish_reason, Some(FinishReason::Stop));
         assert!(chunk.choices[0].delta.content.is_none());
     }
 
@@ -947,7 +947,7 @@ mod tests {
         )
         .temperature(0.7)
         .max_completion_tokens(1000)
-        .reasoning_effort("high")
+        .reasoning_effort(ReasoningEffort::High)
         .top_p(0.9)
         .seed(42)
         .store(true)
