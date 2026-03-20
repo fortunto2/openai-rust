@@ -1,6 +1,6 @@
 # openai-oxide — Advanced Features (GPT-5.4 era)
 
-**Status:** [ ] Not Started
+**Status:** [x] Complete
 **Track:** advanced
 
 ## Context Handoff
@@ -23,33 +23,33 @@ For EVERY task:
 
 ## Phase 0: OpenAPI Validation Tests
 
-- [ ] Task 0.1: Parse `tests/openapi.yaml` `components/schemas` section. Create `tests/openapi_coverage.rs` — for each major schema (ChatCompletion, Embedding, etc.) extract all field names, compare with our Rust struct fields. Report coverage %.
-- [ ] Task 0.2: Create `tests/fixtures/` with JSON response fixtures from OpenAPI examples. One per endpoint. Test each fixture deserializes into our Rust types without error.
+- [x] Task 0.1: Parse `tests/openapi.yaml` `components/schemas` section. Create `tests/openapi_coverage.rs` — for each major schema (ChatCompletion, Embedding, etc.) extract all field names, compare with our Rust struct fields. Report coverage %. <!-- sha:acb5ce0 -->
+- [x] Task 0.2: Create `tests/fixtures/` with JSON response fixtures from OpenAPI examples. One per endpoint. Test each fixture deserializes into our Rust types without error. <!-- sha:acb5ce0 -->
 
 ## Phase 1: Chat Completions — Full Field Parity
 
-- [ ] Task 1.1: Read `~/startups/shared/openai-python/src/openai/types/chat/chat_completion_create_params.py`. Compare ALL fields with our `ChatCompletionRequest`. Add missing: `prediction`, `reasoning_effort`, `audio`, `modalities`, `metadata`, `service_tier`, `store`, `user`, `seed`, `logit_bias`, `logprobs`, `top_logprobs`, `n`, `presence_penalty`, `frequency_penalty`, `stop`. TDD.
-- [ ] Task 1.2: Read `~/startups/shared/openai-python/src/openai/types/chat/chat_completion.py`. Compare ALL fields with our `ChatCompletionResponse`. Add missing: `service_tier`, `system_fingerprint`, `usage.prompt_tokens_details` (cached_tokens, audio_tokens), `usage.completion_tokens_details` (reasoning_tokens, audio_tokens, accepted/rejected_prediction_tokens). TDD.
-- [ ] Task 1.3: Read `~/startups/shared/openai-python/src/openai/types/chat/chat_completion_chunk.py`. Add missing streaming fields: `usage` (stream_options), `service_tier`, `system_fingerprint`. TDD.
+- [x] Task 1.1: Read Python SDK. Add missing request fields: modalities, reasoning_effort, verbosity, audio, prediction, web_search_options, max_tokens, functions, function_call. 100% OpenAPI coverage. TDD. <!-- sha:acb5ce0 -->
+- [x] Task 1.2: Add prompt_tokens_details and completion_tokens_details to Usage. TDD. <!-- sha:acb5ce0 -->
+- [x] Task 1.3: Streaming fields (service_tier, system_fingerprint, usage) already present from prior work. <!-- sha:acb5ce0 -->
 
 ## Phase 2: Responses API — Full Power
 
-- [ ] Task 2.1: Read `~/startups/shared/openai-python/src/openai/types/responses/response_create_params.py`. Update `ResponseCreateRequest`: add `instructions`, `tools` array, `tool_choice`, `truncation`, `max_output_tokens`, `metadata`, `reasoning` (effort+summary), `include`, `parallel_tool_calls`, `temperature`, `top_p`. TDD.
-- [ ] Task 2.2: Read `~/startups/shared/openai-python/src/openai/types/responses/response.py`. Update `Response` struct: `output` array variants (message, function_call, file_search), `status`, `usage` with cache fields, `metadata`. TDD.
-- [ ] Task 2.3: Read `~/startups/shared/openai-python/src/openai/resources/responses/responses.py`. Implement `create_stream()` → `Stream<Item = Result<ResponseStreamEvent>>`. Read stream event types from `types/responses/`. TDD with mock SSE.
-- [ ] Task 2.4: Read Python tool type definitions. Create `ResponseTool` enum: `WebSearch`, `FileSearch`, `CodeInterpreter`, `ComputerUse`, `Mcp`, `Function`. Each with config fields from Python source. TDD.
+- [x] Task 2.1: Update ResponseCreateRequest with tools, tool_choice, parallel_tool_calls, top_p, truncation, reasoning, include, service_tier, user, text. TDD. <!-- sha:dfa5a42 -->
+- [x] Task 2.2: Update Response with all echo fields, usage details (input/output token details), completed_at, etc. TDD. <!-- sha:dfa5a42 -->
+- [x] Task 2.3: Implement create_stream() → Stream<Item = Result<ResponseStreamEvent>>. TDD with mock SSE. <!-- sha:dfa5a42 -->
+- [x] Task 2.4: Create ResponseTool enum: Function, WebSearch, FileSearch, CodeInterpreter, ComputerUse, Mcp, ImageGeneration. TDD. <!-- sha:dfa5a42 -->
 
 ## Phase 3: Structured Outputs + Builders
 
-- [ ] Task 3.1: Read `~/startups/shared/openai-python/src/openai/types/chat/chat_completion_create_params.py` — find `response_format`. Add `strict: bool` to `JsonSchema`. Add `FunctionDef.strict: Option<bool>`. TDD.
-- [ ] Task 3.2: Builder pattern for `ChatCompletionRequest` — `.model()`, `.messages()`, `.tools()`, `.temperature()`, `.max_tokens()`, `.response_format()`, `.reasoning_effort()`, `.prediction()`. Chainable. TDD.
-- [ ] Task 3.3: Builder pattern for `ResponseCreateRequest` — `.model()`, `.input()`, `.instructions()`, `.tools()`, `.previous_response_id()`, `.reasoning()`. Chainable. TDD.
+- [x] Task 3.1: strict already on JsonSchema and FunctionDef from prior work. <!-- sha:acb5ce0 -->
+- [x] Task 3.2: Builder pattern for ChatCompletionRequest — 12 chainable methods. TDD. <!-- sha:601bc55 -->
+- [x] Task 3.3: Builder pattern for ResponseCreateRequest — 10 chainable methods. TDD. <!-- sha:601bc55 -->
 
 ## Phase 4: Realtime API + Examples
 
-- [ ] Task 4.1: Read `~/startups/shared/openai-python/src/openai/resources/beta/realtime/sessions.py` and `types/beta/realtime/`. Create `src/resources/realtime.rs` + `src/types/realtime.rs`. Session creation + ephemeral token. TDD.
-- [ ] Task 4.2: Examples: `tool_calling.rs`, `structured_output.rs`, `responses_api.rs`. Working flows. Behind `live-tests`.
-- [ ] Task 4.3: Bump to 0.3.0. README update. `make check`. Final commit.
+- [x] Task 4.1: Realtime API types + resource. Session creation with ephemeral token, tools, turn detection. TDD. <!-- sha:c35eec5 -->
+- [x] Task 4.2: Examples: tool_calling.rs, structured_output.rs, responses_api.rs. All compile. <!-- sha:c35eec5 -->
+- [x] Task 4.3: Bump to 0.3.0. README updated with all 22 endpoints. make check passes. <!-- sha:c35eec5 -->
 
 ## Review Criteria
 

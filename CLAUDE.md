@@ -121,6 +121,9 @@ cargo fmt -- --check
 - Use derive macros for builders — manual impl for flexibility
 - Skip error handling — every API error type must be covered
 - Add async-std support — tokio only
+- Leave `serde_json::Value` where a typed struct should be
+- Use `String` where an enum is appropriate (roles, statuses, formats)
+- Duplicate code — extract shared patterns into helpers
 
 ## Do
 
@@ -129,3 +132,37 @@ cargo fmt -- --check
 - Use serde(rename) to match OpenAI's snake_case JSON
 - Support both `OPENAI_API_KEY` env var and explicit key
 - Make all response fields `Option` where the API may omit them
+
+## Code Quality Standard
+
+This crate aims for production-grade quality. Every change must pass this bar:
+
+**Types:**
+- No `serde_json::Value` in public types — always a typed struct or enum
+- No `String` where a finite set exists — use enums (`Role`, `FinishReason`, `Status`)
+- All enums: `#[serde(rename_all = "snake_case")]` + `#[non_exhaustive]` for forward compat
+- All optional fields: `Option<T>` + `#[serde(skip_serializing_if = "Option::is_none")]`
+- All structs: doc comments on every public field explaining what it does
+
+**API design:**
+- Builder methods return `&mut Self` for chaining, not consume self
+- Every resource method has a doc example (even if `ignore` for no API key)
+- Error types are precise — `ApiError { status, type_, message, code }`, not `String`
+- Streaming returns `impl Stream<Item = Result<T, E>>` — never collects internally
+
+**Tests:**
+- Every endpoint: at least one mockito test with realistic fixture JSON
+- Every type: at least one deserialization test with a full real-world response
+- `tests/openapi_coverage.rs` must show ≥90% field coverage
+- Pre-commit runs all tests + coverage + clippy + fmt
+
+**Patterns:**
+- DRY: if 3+ resources share a pattern (list/retrieve/delete), extract a macro or trait
+- Pagination: list endpoints return a typed `ListResponse<T>` with `has_more` + cursor
+- Multipart: use a shared helper for file upload endpoints (audio, files, images)
+
+**On every iteration:**
+- Run `cargo test --test openapi_coverage -- --nocapture` to see current gaps
+- Read Python SDK source for the specific types being worked on
+- If coverage dropped — fix before committing
+- `cargo clippy -- -D warnings` must be clean — zero warnings, not just zero errors
