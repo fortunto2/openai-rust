@@ -3,7 +3,7 @@
 **Track ID:** ergonomics
 **Spec:** [spec.md](./spec.md)
 **Created:** 2026-03-20
-**Status:** [~] In Progress (Phase 1 done)
+**Status:** [x] Complete
 
 ## Overview
 
@@ -62,13 +62,13 @@ Add `Image::save(path)` convenience method that handles both URL download and b6
 - [x] `Image::save("output.png")` works for URL responses
 - [x] Error returned when image has neither URL nor b64_json
 
-## Phase 4: Docs & Cleanup
+## Phase 4: Docs & Cleanup <!-- checkpoint:1c43c25 -->
 
 ### Tasks
 
-- [x] Task 4.1: Update CLAUDE.md — add feature flags documentation, BYOT methods, image save helper to architecture section and implemented APIs table.
-- [x] Task 4.2: Update README.md — add feature flags usage example, BYOT example, image save example.
-- [x] Task 4.3: Update `docs/roadmap.md` — check off completed Priority 2 items (feature flags, BYOT, image save helper).
+- [x] Task 4.1: Update CLAUDE.md — add feature flags documentation, BYOT methods, image save helper to architecture section and implemented APIs table. <!-- sha:1c43c25 -->
+- [x] Task 4.2: Update README.md — add feature flags usage example, BYOT example, image save example. <!-- sha:1c43c25 -->
+- [x] Task 4.3: Update `docs/roadmap.md` — check off completed Priority 2 items (feature flags, BYOT, image save helper). <!-- sha:1c43c25 -->
 
 ### Verification
 
@@ -78,12 +78,12 @@ Add `Image::save(path)` convenience method that handles both URL download and b6
 
 ## Final Verification
 
-- [ ] All acceptance criteria from spec met
-- [ ] Tests pass (default features + minimal feature set)
-- [ ] `cargo clippy -- -D warnings` clean
-- [ ] `cargo fmt -- --check` clean
-- [ ] Build succeeds
-- [ ] Documentation up to date
+- [x] All acceptance criteria from spec met
+- [x] Tests pass (default features + minimal feature set)
+- [x] `cargo clippy -- -D warnings` clean
+- [x] `cargo fmt -- --check` clean
+- [x] Build succeeds
+- [x] Documentation up to date
 
 ## Context Handoff
 
