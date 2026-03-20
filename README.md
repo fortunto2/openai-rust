@@ -253,6 +253,10 @@ cargo run --example benchmark --features responses --release    # benchmark
 python3 examples/bench_python.py                                # Python comparison
 ```
 
+## Used in
+
+- **[sgr-agent](https://github.com/fortunto2/rust-code)** — LLM agent framework with structured output, function calling, agent loops, and 3-backend support (oxide / genai / async-openai). `openai-oxide` is the default backend for OpenAI models via `Llm::new()`.
+
 ## License
 
 MIT
