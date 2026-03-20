@@ -2,9 +2,34 @@
 
 Idiomatic Rust client for the OpenAI API — 1:1 parity with the [official Python SDK](https://github.com/openai/openai-python).
 
+## Performance
+
+Benchmarked against Python `openai` SDK v2.29 and `async-openai` v0.33. All clients use the Responses API (`POST /responses`), GPT-5.4, warm connections, 5 iterations, median reported.
+
+| Test | openai-oxide | Python openai | async-openai | Winner |
+|------|:-----------:|:-------------:|:------------:|:------:|
+| Plain text | **857ms** | 1062ms | 968ms | Rust |
+| Structured output | **1306ms** | 1251ms | 3407ms | ~Tie |
+| Function calling | **1086ms** | 1225ms | 1244ms | Rust |
+| Multi-turn (2 reqs) | **1998ms** | 2196ms | 2289ms | Rust |
+| Web search | **2968ms** | 3671ms | — | Rust |
+
+Why it's fast:
+- **HTTP/2** with keep-alive while idle (connections stay warm between requests)
+- **Adaptive flow control** windows (auto-tuned per connection)
+- **gzip** response compression
+- **Fast-path retry** (no loop overhead for successful requests)
+- **Zero-copy SSE** streaming parser (no external deps)
+
+Run the benchmark yourself:
+```bash
+OPENAI_API_KEY=sk-... cargo run --example benchmark --features responses --release
+python3 examples/bench_python.py  # Python comparison
+```
+
 ## Features
 
-- Async-first (tokio + reqwest)
+- Async-first (tokio + reqwest 0.13)
 - Strongly typed requests and responses (serde)
 - SSE streaming for Chat Completions and Responses API
 - Automatic retries with exponential backoff
@@ -63,6 +88,35 @@ async fn main() -> Result<(), openai_oxide::OpenAIError> {
 
     let response = client.chat().completions().create(request).await?;
     println!("{}", response.choices[0].message.content.as_deref().unwrap_or(""));
+    Ok(())
+}
+```
+
+## Responses API
+
+```rust
+use openai_oxide::{OpenAI, types::responses::*};
+
+#[tokio::main]
+async fn main() -> Result<(), openai_oxide::OpenAIError> {
+    let client = OpenAI::from_env()?;
+
+    let response = client.responses().create(
+        ResponseCreateRequest::new("gpt-5.4")
+            .input("What are the latest developments in Rust?")
+            .tools(vec![ResponseTool::WebSearch {
+                search_context_size: Some("medium".into()),
+                user_location: None,
+            }])
+            .max_output_tokens(1024)
+    ).await?;
+
+    println!("{}", response.output_text());
+
+    // Extract function calls
+    for fc in response.function_calls() {
+        println!("Tool: {}({})", fc.name, fc.arguments);
+    }
     Ok(())
 }
 ```
@@ -210,6 +264,7 @@ cargo test                          # all tests
 cargo test --features live-tests    # tests hitting real API (needs OPENAI_API_KEY)
 cargo clippy -- -D warnings         # lint
 cargo fmt -- --check                # format check
+cargo run --example benchmark --features responses --release  # benchmark
 ```
 
 ## License
