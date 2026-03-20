@@ -96,7 +96,7 @@ src/
 | Vector Stores (beta) | `client.beta().vector_stores()` CRUD + `list_page()` / `list_auto()` | Done |
 | Realtime (beta) | `client.beta().realtime().sessions().create()` | Done |
 
-**Current version:** v0.7.0 on crates.io
+**Current version:** v0.8.0 on crates.io
 
 **Feature flags:** Each resource is gated behind an optional Cargo feature (`chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`). All enabled by default. `cargo check --no-default-features` compiles with zero resources (just client + types).
 
