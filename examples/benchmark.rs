@@ -7,6 +7,7 @@
 //! OPENAI_API_KEY=sk-... cargo run --example benchmark --features responses --release
 //! ```
 
+use futures_util::StreamExt;
 use openai_oxide::OpenAI;
 use openai_oxide::types::responses::*;
 use std::time::Instant;
@@ -373,6 +374,96 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "{:<25} {:>6}ms {:>6}ms {:>6}ms {:>6}ms",
         "Prompt-cached", med, p95, min, max
+    );
+
+    // ── Test 10: Streaming TTFT (Time To First Token) ──
+    let mut times = Vec::new();
+    for _ in 0..ITERATIONS {
+        let req = ResponseCreateRequest::new(MODEL)
+            .input("Explain quicksort in 3 sentences.")
+            .max_output_tokens(200);
+        let t0 = Instant::now();
+        let mut stream = client.responses().create_stream(req).await?;
+        // Measure time to first content delta
+        while let Some(event) = stream.next().await {
+            let ev = event?;
+            if ev.type_ == "response.output_text.delta" {
+                times.push(t0.elapsed().as_millis());
+                break;
+            }
+        }
+        // Drain remaining events
+        while let Some(_) = stream.next().await {}
+    }
+    if !times.is_empty() {
+        let (med, p95, min, max) = stats(&mut times);
+        println!(
+            "{:<25} {:>6}ms {:>6}ms {:>6}ms {:>6}ms",
+            "Streaming TTFT", med, p95, min, max
+        );
+    }
+
+    // ── Test 11: Parallel fan-out (3 requests via HTTP/2 multiplex) ──
+    // Clone client — shares same connection pool (Arc<reqwest::Client> inside)
+    let mut times = Vec::new();
+    for _ in 0..ITERATIONS {
+        let t0 = Instant::now();
+        let (c1, c2, c3) = (client.clone(), client.clone(), client.clone());
+        let (r1, r2, r3) = tokio::join!(
+            async {
+                c1.responses()
+                    .create(
+                        ResponseCreateRequest::new(MODEL)
+                            .input("Capital of France? One word.")
+                            .max_output_tokens(16),
+                    )
+                    .await
+            },
+            async {
+                c2.responses()
+                    .create(
+                        ResponseCreateRequest::new(MODEL)
+                            .input("Capital of Japan? One word.")
+                            .max_output_tokens(16),
+                    )
+                    .await
+            },
+            async {
+                c3.responses()
+                    .create(
+                        ResponseCreateRequest::new(MODEL)
+                            .input("Capital of Brazil? One word.")
+                            .max_output_tokens(16),
+                    )
+                    .await
+            },
+        );
+        r1?;
+        r2?;
+        r3?;
+        times.push(t0.elapsed().as_millis());
+    }
+    let (med, p95, min, max) = stats(&mut times);
+    println!(
+        "{:<25} {:>6}ms {:>6}ms {:>6}ms {:>6}ms",
+        "Parallel 3x (fan-out)", med, p95, min, max
+    );
+
+    // ── Test 12: Hedged request (send 2, take first) ──
+    let mut times = Vec::new();
+    for _ in 0..ITERATIONS {
+        let t0 = Instant::now();
+        let (c1, c2) = (client.clone(), client.clone());
+        tokio::select! {
+            r = async { c1.responses().create(ResponseCreateRequest::new(MODEL).input("What is 7*8? Number only.").max_output_tokens(16)).await } => { r?; }
+            r = async { c2.responses().create(ResponseCreateRequest::new(MODEL).input("What is 7*8? Number only.").max_output_tokens(16)).await } => { r?; }
+        }
+        times.push(t0.elapsed().as_millis());
+    }
+    let (med, p95, min, max) = stats(&mut times);
+    println!(
+        "{:<25} {:>6}ms {:>6}ms {:>6}ms {:>6}ms",
+        "Hedged (2x race)", med, p95, min, max
     );
 
     println!("\n{ITERATIONS} iterations per test. All times include full HTTP round-trip.");

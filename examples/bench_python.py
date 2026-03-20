@@ -140,5 +140,47 @@ med, p95, mn, mx = bench(lambda: client.responses.create(
     max_output_tokens=200))
 print(f"{'Prompt-cached':<25} {med:>6}ms {p95:>6}ms {mn:>6}ms {mx:>6}ms")
 
+# Test 10: Streaming TTFT
+times = []
+for _ in range(ITERATIONS):
+    t0 = time.perf_counter()
+    stream = client.responses.create(
+        model=MODEL, input="Explain quicksort in 3 sentences.", max_output_tokens=200, stream=True)
+    for event in stream:
+        if event.type == "response.output_text.delta":
+            times.append(int((time.perf_counter() - t0) * 1000))
+            break
+med, p95, mn, mx = stats(times)
+print(f"{'Streaming TTFT':<25} {med:>6}ms {p95:>6}ms {mn:>6}ms {mx:>6}ms")
+
+# Test 11: Parallel 3x (Python uses threads since httpx is sync)
+import concurrent.futures
+def single_call(q):
+    return client.responses.create(model=MODEL, input=f"Capital of {q}? One word.", max_output_tokens=16)
+
+times = []
+for _ in range(ITERATIONS):
+    t0 = time.perf_counter()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+        fs = [ex.submit(single_call, q) for q in ["France", "Japan", "Brazil"]]
+        for f in concurrent.futures.as_completed(fs):
+            f.result()
+    times.append(int((time.perf_counter() - t0) * 1000))
+med, p95, mn, mx = stats(times)
+print(f"{'Parallel 3x (fan-out)':<25} {med:>6}ms {p95:>6}ms {mn:>6}ms {mx:>6}ms")
+
+# Test 12: Hedged request (send 2, take first)
+times = []
+for _ in range(ITERATIONS):
+    t0 = time.perf_counter()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        f1 = ex.submit(lambda: client.responses.create(model=MODEL, input="What is 7*8? Number only.", max_output_tokens=16))
+        f2 = ex.submit(lambda: client.responses.create(model=MODEL, input="What is 7*8? Number only.", max_output_tokens=16))
+        done, _ = concurrent.futures.wait([f1, f2], return_when=concurrent.futures.FIRST_COMPLETED)
+        next(iter(done)).result()
+    times.append(int((time.perf_counter() - t0) * 1000))
+med, p95, mn, mx = stats(times)
+print(f"{'Hedged (2x race)':<25} {med:>6}ms {p95:>6}ms {mn:>6}ms {mx:>6}ms")
+
 print(f"\n{ITERATIONS} iterations per test. All times include full HTTP round-trip.")
 print(f"Client: openai-python v{__import__('openai').__version__}, httpx.")
