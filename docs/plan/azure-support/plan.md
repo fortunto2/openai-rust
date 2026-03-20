@@ -3,7 +3,7 @@
 **Track ID:** azure-support
 **Spec:** [spec.md](./spec.md)
 **Created:** 2026-03-20
-**Status:** [ ] Not Started
+**Status:** [x] Complete
 
 ## Overview
 
@@ -45,22 +45,22 @@ TDD: write tests for all Azure-specific behavior.
 ## Phase 3: Docs & Cleanup
 
 ### Tasks
-- [ ] Task 3.1: Update `CLAUDE.md` — add Azure support to architecture section, add `AzureConfig` to imports.
-- [ ] Task 3.2: Add doc comments and examples on `AzureConfig`, `OpenAI::azure()`.
-- [ ] Task 3.3: Update roadmap.md — check off Azure OpenAI support item.
+- [x] Task 3.1: Update `CLAUDE.md` — add Azure support to architecture section, add `AzureConfig` to imports. <!-- sha:f3292f0 -->
+- [x] Task 3.2: Add doc comments and examples on `AzureConfig`, `OpenAI::azure()`. <!-- sha:b22ce82 -->
+- [x] Task 3.3: Update roadmap.md — check off Azure OpenAI support item. <!-- sha:f3292f0 -->
 
 ### Verification
-- [ ] CLAUDE.md reflects current project state
-- [ ] `cargo clippy -- -D warnings` clean
-- [ ] `cargo test` passes
-- [ ] `cargo doc` generates without warnings
+- [x] CLAUDE.md reflects current project state
+- [x] `cargo clippy -- -D warnings` clean
+- [x] `cargo test` passes
+- [x] `cargo doc` generates without warnings
 
 ## Final Verification
-- [ ] All acceptance criteria from spec met
-- [ ] Tests pass (151 existing + ~7 new Azure tests)
-- [ ] Clippy clean
-- [ ] Build succeeds
-- [ ] Documentation up to date
+- [x] All acceptance criteria from spec met
+- [x] Tests pass (151 existing + 14 new Azure tests = 165 total)
+- [x] Clippy clean
+- [x] Build succeeds
+- [x] Documentation up to date
 
 ## Context Handoff
 _Summary for /build to load at session start — keeps context compact._
