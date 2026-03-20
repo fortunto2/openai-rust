@@ -1,6 +1,6 @@
 # openai-oxide — Advanced Features (GPT-5.4 era)
 
-**Status:** [~] In Progress
+**Status:** [x] Complete
 **Track:** advanced
 
 ## Context Handoff
@@ -53,11 +53,11 @@ For EVERY task:
 
 ## Phase 5: Review Fix Tasks (v0.3.1)
 
-- [~] Task 5.1: Add `#[non_exhaustive]` to ALL 10 public enums (Stop, ResponseFormat, ChatCompletionMessageParam, UserContent, ContentPart, ToolChoice, ResponseInput, ResponseTool, EmbeddingInput, ModerationInput). This is a semver-safe change for 0.x.
-- [ ] Task 5.2: Replace `serde_json::Value` with typed structs in `src/types/responses.rs` — at least: tool_choice → ToolChoice enum, content → ResponseContent enum, annotations → typed Vec, format → TextFormat struct. Target: reduce from 27 to ≤10 Value fields.
-- [ ] Task 5.3: Replace `serde_json::Value` in `src/types/beta.rs` — tools → typed BetaTool struct/enum (5 occurrences). Read Python SDK `types/beta/` for exact types.
-- [ ] Task 5.4: Add 6 missing Image request fields (output_format, output_compression, stream, partial_images, moderation, background) to reach ≥90% OpenAPI coverage. Read Python SDK `types/images.py`.
-- [ ] Task 5.5: Add `Role` enum (system/user/assistant/tool/function) and use it across chat types instead of `pub role: String`. Same for `object` type fields → ObjectType enum.
+- [x] Task 5.1: Add `#[non_exhaustive]` to ALL 10 public enums <!-- sha:6b73f46 --> (Stop, ResponseFormat, ChatCompletionMessageParam, UserContent, ContentPart, ToolChoice, ResponseInput, ResponseTool, EmbeddingInput, ModerationInput). This is a semver-safe change for 0.x.
+- [x] Task 5.2: Replace `serde_json::Value` with typed structs in `src/types/responses.rs` <!-- sha:e040644 --> — at least: tool_choice → ToolChoice enum, content → ResponseContent enum, annotations → typed Vec, format → TextFormat struct. Target: reduce from 27 to ≤10 Value fields.
+- [x] Task 5.3: Replace `serde_json::Value` in `src/types/beta.rs` <!-- sha:2a949cc --> — tools → typed BetaTool struct/enum (5 occurrences). Read Python SDK `types/beta/` for exact types.
+- [x] Task 5.4: Add 6 missing Image request fields <!-- sha:53ac94a --> (output_format, output_compression, stream, partial_images, moderation, background) to reach ≥90% OpenAPI coverage. Read Python SDK `types/images.py`.
+- [x] Task 5.5: Add `Role` enum <!-- sha:93b8de8 --> (system/user/assistant/tool/function) and use it across chat types instead of `pub role: String`. Same for `object` type fields → ObjectType enum.
 
 ## Review Criteria
 
