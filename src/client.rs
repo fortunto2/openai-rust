@@ -5,6 +5,10 @@ use std::time::Duration;
 use crate::config::ClientConfig;
 use crate::error::{ErrorResponse, OpenAIError};
 use crate::resources::audio::Audio;
+use crate::resources::beta::assistants::Assistants;
+use crate::resources::beta::runs::Runs;
+use crate::resources::beta::threads::Threads;
+use crate::resources::beta::vector_stores::VectorStores;
 use crate::resources::chat::Chat;
 use crate::resources::embeddings::Embeddings;
 use crate::resources::files::Files;
@@ -42,6 +46,11 @@ impl OpenAI {
     /// Create a client using the `OPENAI_API_KEY` environment variable.
     pub fn from_env() -> Result<Self, OpenAIError> {
         Ok(Self::with_config(ClientConfig::from_env()?))
+    }
+
+    /// Access the Beta resources (Assistants, Threads, Runs, Vector Stores).
+    pub fn beta(&self) -> Beta<'_> {
+        Beta { client: self }
     }
 
     /// Access the Audio resource.
@@ -244,7 +253,7 @@ impl OpenAI {
     }
 
     /// Handle API response: check status, parse errors or deserialize body.
-    async fn handle_response<T: serde::de::DeserializeOwned>(
+    pub(crate) async fn handle_response<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
     ) -> Result<T, OpenAIError> {
         let status = response.status();
@@ -275,6 +284,33 @@ impl OpenAI {
                 code: None,
             }
         }
+    }
+}
+
+/// Access beta endpoints (Assistants v2, Threads, Runs, Vector Stores).
+pub struct Beta<'a> {
+    client: &'a OpenAI,
+}
+
+impl<'a> Beta<'a> {
+    /// Access the Assistants resource.
+    pub fn assistants(&self) -> Assistants<'_> {
+        Assistants::new(self.client)
+    }
+
+    /// Access the Threads resource.
+    pub fn threads(&self) -> Threads<'_> {
+        Threads::new(self.client)
+    }
+
+    /// Access runs for a specific thread.
+    pub fn runs(&self, thread_id: &str) -> Runs<'_> {
+        Runs::new(self.client, thread_id.to_string())
+    }
+
+    /// Access the Vector Stores resource.
+    pub fn vector_stores(&self) -> VectorStores<'_> {
+        VectorStores::new(self.client)
     }
 }
 

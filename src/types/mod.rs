@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod beta;
 pub mod chat;
 pub mod common;
 pub mod embedding;
