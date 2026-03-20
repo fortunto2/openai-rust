@@ -8,6 +8,7 @@ use crate::resources::audio::Audio;
 use crate::resources::chat::Chat;
 use crate::resources::embeddings::Embeddings;
 use crate::resources::files::Files;
+use crate::resources::fine_tuning::FineTuning;
 use crate::resources::images::Images;
 use crate::resources::models::Models;
 use crate::resources::moderations::Moderations;
@@ -55,6 +56,11 @@ impl OpenAI {
     /// Access the Models resource.
     pub fn models(&self) -> Models<'_> {
         Models::new(self)
+    }
+
+    /// Access the Fine-tuning resource.
+    pub fn fine_tuning(&self) -> FineTuning<'_> {
+        FineTuning::new(self)
     }
 
     /// Access the Files resource.
