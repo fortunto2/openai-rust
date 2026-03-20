@@ -54,19 +54,20 @@ src/
     responses.rs      — responses create/retrieve/delete
     uploads.rs        — upload create/cancel/complete
   types/
-    audio.rs          — Transcription, Translation, Speech types
-    batch.rs          — Batch types
-    beta.rs           — Assistant, Thread, Run, VectorStore types
-    chat.rs           — ChatCompletionRequest, ChatCompletionResponse, ...
-    common.rs         — Usage, shared types
-    embedding.rs      — Embedding types
-    file.rs           — FileObject, FileDeleted types
-    fine_tuning.rs    — FineTuningJob types
-    image.rs          — Image types
+    audio.rs          — Transcription, Translation, Speech types + AudioVoice, AudioResponseFormat, SpeechResponseFormat enums
+    batch.rs          — Batch types + BatchStatus enum
+    beta.rs           — Assistant, Thread, Run, VectorStore types + RunStatus, VectorStoreStatus enums
+    chat.rs           — ChatCompletionRequest, ChatCompletionResponse, ... + ImageDetail, FunctionCallOption enums
+    common.rs         — Usage, Role, FinishReason, ServiceTier, ReasoningEffort, SearchContextSize, AutoOrFixed<T>, MaxResponseTokens
+    embedding.rs      — Embedding types + EncodingFormat enum
+    file.rs           — FileObject, FileDeleted types + FilePurpose, FileStatus enums
+    fine_tuning.rs    — FineTuningJob types + FineTuningStatus, FineTuningEventLevel enums
+    image.rs          — Image types + ImageQuality, ImageSize, ImageStyle, ImageOutputFormat, ImageBackground, ImageModeration enums
     model.rs          — Model types
     moderation.rs     — Moderation types
     responses.rs      — Response types
-    upload.rs         — Upload types
+    realtime.rs       — Realtime session types + RealtimeAudioFormat, TurnDetectionType, Eagerness enums
+    upload.rs         — Upload types + UploadStatus enum
 ```
 
 ## Implemented APIs
