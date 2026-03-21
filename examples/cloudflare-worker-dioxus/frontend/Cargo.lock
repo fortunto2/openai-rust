@@ -325,6 +325,7 @@ dependencies = [
 name = "dioxus-chat"
 version = "0.1.0"
 dependencies = [
+ "async-channel",
  "dioxus",
  "dioxus-logger",
  "futures-util",

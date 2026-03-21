@@ -25,13 +25,32 @@ fn main() {
 pub fn App() -> Element {
     let mut messages = use_signal(Vec::<ChatMessage>::new);
     let mut input_text = use_signal(String::new);
+    let mut api_key = use_signal(|| {
+        let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+        storage.get_item("openai_api_key").unwrap().unwrap_or_default()
+    });
     let mut connected = use_signal(|| false);
 
     let ws_task = use_coroutine(|mut rx: UnboundedReceiver<String>| async move {
         let host = web_sys::window().unwrap().location().host().unwrap();
         let protocol = web_sys::window().unwrap().location().protocol().unwrap();
         let ws_protocol = if protocol == "https:" { "wss:" } else { "ws:" };
-        let ws_url = format!("{}//{}/api/ws", ws_protocol, host);
+        
+        // Wait for key
+        let mut key = String::new();
+        while let Some(msg) = rx.next().await {
+            if msg.starts_with("CONNECT:") {
+                key = msg.replace("CONNECT:", "");
+                break;
+            }
+        }
+        
+        let ws_url = if key.is_empty() {
+            format!("{}//{}/api/ws", ws_protocol, host)
+        } else {
+            format!("{}//{}/api/ws?key={}", ws_protocol, host, key)
+        };
+        
         tracing::info!("Connecting to {}", ws_url);
         
         let ws_conn = match WebSocket::open(&ws_url) {
@@ -102,6 +121,14 @@ pub fn App() -> Element {
         input_text.set(String::new());
     };
 
+    let mut connect_ws = move || {
+        let key = api_key.read().clone();
+        if let Ok(Some(storage)) = web_sys::window().unwrap().local_storage() {
+            let _ = storage.set_item("openai_api_key", &key);
+        }
+        ws_task.send(format!("CONNECT:{}", key));
+    };
+
     let status_color = if connected() { "green" } else { "red" };
     let status_text = if connected() { "Status: Connected" } else { "Status: Disconnected" };
 
@@ -109,8 +136,30 @@ pub fn App() -> Element {
         div {
             style: "max-width: 800px; margin: 0 auto; padding: 20px; font-family: sans-serif;",
             h1 { "OpenAI Oxide + Rust WASM + Durable Objects" }
+            
             div {
-                style: "margin-bottom: 20px; color: {status_color};",
+                style: "margin-bottom: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;",
+                label {
+                    style: "margin-right: 10px;",
+                    "OpenAI API Key (optional if set on server): "
+                }
+                input {
+                    "type": "password",
+                    value: "{api_key}",
+                    oninput: move |e| api_key.set(e.value()),
+                    placeholder: "sk-...",
+                    style: "margin-right: 10px; padding: 5px; width: 250px;"
+                }
+                button {
+                    onclick: move |_| connect_ws(),
+                    disabled: connected(),
+                    style: "padding: 5px 15px; cursor: pointer;",
+                    "Connect"
+                }
+            }
+
+            div {
+                style: "margin-bottom: 20px; color: {status_color}; font-weight: bold;",
                 "{status_text}"
             }
             

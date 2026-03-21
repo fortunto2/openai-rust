@@ -25,9 +25,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             let stub = id.get_stub()?;
             stub.fetch_with_request(req).await
         })
-        .get_async("/*path", |_req, _ctx| async move {
-            Response::ok("Not Found")
-        })
         .run(req, env)
         .await
 }
@@ -56,11 +53,17 @@ impl ChatDurableObject {
             let browser_ws = pair.server;
             browser_ws.accept()?;
 
-            let api_key = match self.env.var("OPENAI_API_KEY") {
-                Ok(k) => k.to_string(),
-                Err(_) => {
-                    console_log!("OPENAI_API_KEY not set");
-                    browser_ws.close(Some(1011), Some("Internal Server Error"))?;
+            let url = req.url()?;
+            let api_key = url.query_pairs().find(|(k, _)| k == "key").map(|(_, v)| v.into_owned())
+                .filter(|k| !k.is_empty())
+                .or_else(|| self.env.var("OPENAI_API_KEY").ok().map(|v| v.to_string()))
+                .filter(|k| !k.is_empty());
+
+            let api_key = match api_key {
+                Some(k) => k,
+                None => {
+                    console_log!("OPENAI_API_KEY missing in query params and env");
+                    browser_ws.close(Some(1011), Some("Missing API Key"))?;
                     return Response::from_websocket(client);
                 }
             };
