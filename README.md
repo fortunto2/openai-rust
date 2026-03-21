@@ -65,9 +65,10 @@ All benchmarks were run to ensure a fair, real-world comparison of the clients:
 - **Execution:** 5 iterations per test. The reported value is the **Median** time.
 - **Rust APIs:** `openai-oxide` provides first-class support for both the traditional `Chat Completions API` (`/v1/chat/completions`) and the newer `Responses API` (`/v1/responses`). The Responses API has slightly higher backend orchestration latency on OpenAI's side for non-streamed requests, so we separate them for fairness.
 
+
 ### Rust Ecosystem (`openai-oxide` vs `async-openai` vs `genai`)
 
-| Test | `openai-oxide`<br>*(WebSockets)* | `openai-oxide`<br>*(Responses API)* | `async-openai`<br>*(Responses API)* | `genai`<br>*(Responses API)* | `openai-oxide`<br>*(Chat API)* | `genai`<br>*(Chat API)* |
+| Test | `openai-oxide`<br>*(WebSockets)* | `openai-oxide`<br>*(Responses API)* | [`async-openai`](https://crates.io/crates/async-openai)<br>*(Responses API)* | [`genai`](https://crates.io/crates/genai)<br>*(Responses API)* | `openai-oxide`<br>*(Chat API)* | `genai`<br>*(Chat API)* |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Plain text** | **710ms** *( -29% )* | 1000ms | 960ms | 835ms | 753ms | 722ms |
 | **Structured output** | **~1000ms** | 1352ms | N/A | 1197ms | 1304ms | N/A |
@@ -255,6 +256,14 @@ Coverage is enforced on every commit via pre-commit hooks. Current field coverag
 
 - **[sgr-agent](https://github.com/fortunto2/rust-code)** — LLM agent framework with structured output, function calling, and agent loops. `openai-oxide` is the default backend.
 - **[rust-code](https://github.com/fortunto2/rust-code)** — AI-powered TUI coding agent.
+
+
+
+## See Also
+
+- [openai-python](https://github.com/openai/openai-python) — Official Python SDK (our benchmark baseline)
+- [async-openai](https://github.com/64bit/async-openai) — Alternative Rust client (mature, 1800+ stars)
+- [genai](https://github.com/jeremychone/rust-genai) — Multi-provider Rust client (Gemini, Anthropic, OpenAI)
 
 ## License
 

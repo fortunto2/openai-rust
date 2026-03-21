@@ -93,5 +93,3 @@ required-features = ["websocket", "responses"]
 name = "integration_test"
 required-features = ["websocket", "responses"]
 
-[[bin]]
-required-features = ["responses", "websocket"]
