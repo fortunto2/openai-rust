@@ -31,7 +31,6 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: all
           args: --release --out dist --manifest-path openai-oxide-python/Cargo.toml
           manylinux: auto
 
