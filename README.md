@@ -123,6 +123,33 @@ openai-oxide = { version = "0.9", features = ["simd"] }         # + simd-json de
 
 API features (all default): `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`.
 
+## WASM Support
+
+Compiles to `wasm32-unknown-unknown` — run in browsers, Cloudflare Workers, Deno Deploy.
+
+```toml
+# Cargo.toml for WASM
+[dependencies]
+openai-oxide = { version = "0.9", default-features = false, features = ["chat", "responses"] }
+```
+
+**Unlike [async-openai](https://github.com/64bit/async-openai) which disables streaming, retry, and all advanced features on WASM**, oxide keeps everything working:
+
+| Feature | oxide WASM | async-openai WASM |
+|---------|:----------:|:-----------------:|
+| Chat / Responses API | **yes** | yes |
+| Streaming SSE | **yes** | no |
+| Stream FC early parse | **yes** | no |
+| Hedged requests | **yes** | no |
+| Parallel fan-out | **yes** | no |
+| Speculative execution | **yes** | no |
+| Retry with backoff | **yes** | no |
+
+Cross-platform via [`runtime.rs`](src/runtime.rs) — one codebase, zero duplication:
+- `sleep()` → tokio on native, [gloo-timers](https://crates.io/crates/gloo-timers) on WASM
+- `spawn()` → tokio::spawn on native, [wasm-bindgen-futures](https://crates.io/crates/wasm-bindgen-futures) spawn_local on WASM
+- `timeout()` → tokio::time::timeout on native, pass-through on WASM (browser handles)
+
 ## Quick Start
 
 ```rust
