@@ -1,6 +1,6 @@
 [project]
-name = "openai-oxide-python"
-version = "0.9.1"
+name = "openai-oxide"
+version = "0.9.2"
 description = "Fastest OpenAI client — Rust core with Python bindings"
 requires-python = ">=3.9"
 license = "MIT"

@@ -14,7 +14,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from openai_oxide_python import Client as OxideClient
+    from openai_oxide import Client as OxideClient
 except ImportError:
     print("Please install openai_oxide_python. Run `uv run maturin develop --release` in `openai-oxide-python`.")
     sys.exit(1)
@@ -258,7 +258,7 @@ async def main():
     row("Hedged (2x race)", stats(ot), stats(pt))
 
     print(f"\n{N} iterations, median. Model: {MODEL}")
-    print(f"oxide-py: openai-oxide-python v0.1.0 (Rust via PyO3)")
+    print(f"oxide-py: openai-oxide v0.9.2 (Rust via PyO3)")
     print(f"python:   openai v{__import__('openai').__version__} (httpx)")
 
     wins = sum(1 for _, _, _, w in results if w == "OXIDE")

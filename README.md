@@ -117,7 +117,7 @@ uv run maturin develop --release
 
 ```python
 import asyncio
-from openai_oxide_python import Client
+from openai_oxide import Client
 
 async def main():
     client = Client()

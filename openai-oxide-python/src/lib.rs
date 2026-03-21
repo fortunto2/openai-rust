@@ -1,27 +1,27 @@
 //! Python bindings for openai-oxide via PyO3.
 //!
 //! Install: `cd openai-oxide-python && uv sync && uv run maturin develop`
-//! Usage:   `from openai_oxide_python import Client`
+//! Usage:   `from openai_oxide import Client`
 
 mod stream;
 
-use openai_oxide::config::ClientConfig;
-use openai_oxide::types::responses::*;
-use openai_oxide::OpenAI;
+use ::openai_oxide::config::ClientConfig;
+use ::openai_oxide::types::responses::*;
+use ::openai_oxide::OpenAI;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3_async_runtimes::tokio::future_into_py;
 use crate::stream::PyResponseStream;
 
 /// Convert OpenAI errors to Python RuntimeError.
-fn to_py_err(e: openai_oxide::OpenAIError) -> PyErr {
+fn to_py_err(e: ::openai_oxide::OpenAIError) -> PyErr {
     PyRuntimeError::new_err(e.to_string())
 }
 
 /// Fastest OpenAI client — Rust core, Python interface.
 ///
 /// ```python
-/// from openai_oxide_python import Client
+/// from openai_oxide import Client
 ///
 /// client = Client()  # uses OPENAI_API_KEY env
 /// response = client.create("gpt-5.4", "Hello!")
@@ -236,7 +236,7 @@ impl Client {
 }
 
 /// Convert Response to a Python-friendly dict string (JSON).
-fn response_to_dict(resp: &openai_oxide::types::responses::Response) -> PyResult<String> {
+fn response_to_dict(resp: &::openai_oxide::types::responses::Response) -> PyResult<String> {
     let fcs: Vec<serde_json::Value> = resp
         .function_calls()
         .into_iter()
@@ -271,7 +271,7 @@ fn response_to_dict(resp: &openai_oxide::types::responses::Response) -> PyResult
 
 /// Python module.
 #[pymodule]
-fn openai_oxide_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn openai_oxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Client>()?;
     m.add_class::<PyResponseStream>()?;
     Ok(())
