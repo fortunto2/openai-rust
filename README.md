@@ -159,6 +159,8 @@ Compiles to `wasm32-unknown-unknown` — run in browsers, Cloudflare Workers, De
 openai-oxide = { version = "0.9", default-features = false, features = ["chat", "responses"] }
 ```
 
+Check out our **[Cloudflare Worker Examples](https://github.com/fortunto2/openai-rust/tree/main/examples/cloudflare-worker-dioxus)** showcasing a Full-Stack Rust app with a Dioxus frontend and a Cloudflare Worker Durable Object backend holding a WebSocket connection to OpenAI.
+
 **Unlike [async-openai](https://github.com/64bit/async-openai) which disables streaming, retry, and all advanced features on WASM**, oxide keeps everything working:
 
 | Feature | oxide WASM | async-openai WASM |

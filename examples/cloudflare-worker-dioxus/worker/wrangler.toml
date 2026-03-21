@@ -1,0 +1,21 @@
+name = "cloudflare-worker-dioxus"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-03-20"
+
+# Serve Dioxus frontend
+[site]
+bucket = "../frontend/dist"
+
+[build]
+command = "cargo install worker-build && worker-build --release"
+
+[[durable_objects.bindings]]
+name = "CHAT_DO"
+class_name = "ChatDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_durable_objects = ["ChatDurableObject"]
+
+[env.dev]
+# Local dev secrets or vars
