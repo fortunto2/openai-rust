@@ -1,10 +1,14 @@
 [project]
 name = "openai-oxide"
-version = "0.1.0"
+version = "0.9.0"
 description = "Fastest OpenAI client — Rust core with Python bindings"
 requires-python = ">=3.9"
 license = "MIT"
 readme = "README.md"
+authors = [
+  { name="Rustam", email="info@life2film.com" }
+]
+urls = { Repository = "https://github.com/fortunto2/openai-rust" }
 
 [build-system]
 requires = ["maturin>=1.7,<2"]
