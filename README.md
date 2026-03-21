@@ -94,10 +94,13 @@ All benchmarks were run to ensure a fair, real-world comparison of the clients:
 
 | Test | `openai-oxide` (Responses API) | `async-openai` (Responses API) | `genai` (Responses API) | `openai-oxide` (Chat API) | `genai` (Chat API) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Plain text | 1000ms | 960ms | 1250ms | **753ms** | **722ms** |
+| Plain text | 1000ms | 960ms | 835ms | **753ms** | **722ms** |
 | Structured output | 1352ms | N/A | **1197ms** | 1304ms | N/A |
 | Function calling | 1164ms | 1748ms | **1030ms** | 1252ms | N/A |
 | Streaming TTFT | **670ms** | 685ms | **670ms** | 695ms | N/A |
+| Multi-turn (2 reqs) | 2219ms | 3275ms | 1641ms | 2011ms | **1560ms** |
+| Rapid-fire (5 calls) | 5147ms | 5166ms | 3807ms | 4671ms | **3540ms** |
+| Parallel 3x (fan-out)| 1081ms | 1053ms | 866ms | 978ms | **801ms** |
 
 *Note: The new `Responses API` (`/v1/responses`) has higher backend latency on OpenAI's servers for non-streamed requests compared to the traditional `Chat Completions API` (`/v1/chat/completions`) due to its internal orchestration. `openai-oxide` provides first-class support for both APIs and implements zero-overhead stream parsing (`Accept: text/event-stream`).*
 
