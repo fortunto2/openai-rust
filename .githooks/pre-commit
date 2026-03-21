@@ -1,6 +1,17 @@
 #!/bin/sh
 set -e
 
+echo "=== Secret Scan ==="
+# Check for common API key patterns (OpenAI, Anthropic, OpenRouter, etc.)
+SECRETS=$(git diff --cached --unified=0 | grep -E "^\+.*sk-[a-zA-Z0-9_-]{20,}" || true)
+if [ -n "$SECRETS" ]; then
+    echo "🚨 ERROR: Potential API key (sk-...) detected in staged changes!"
+    echo "$SECRETS"
+    echo "Please remove the secret before committing."
+    echo "To bypass, use: git commit --no-verify"
+    exit 1
+fi
+
 echo "=== Tests ==="
 cargo test --quiet
 
