@@ -300,6 +300,20 @@ let client = OpenAI::azure(AzureConfig::new()                   // Azure OpenAI
 )?;
 ```
 
+
+## Roadmap
+
+Our goal is to make `openai-oxide` the universal engine for all LLM integrations across the entire software stack.
+
+- [x] **Rust Core**: Fully typed, high-performance client (Chat, Responses, Realtime, Assistants).
+- [x] **WASM Support**: First-class Cloudflare Workers & browser execution.
+- [x] **Python Bindings**: Native PyO3 integration published on PyPI.
+- [ ] **Swift Bindings (UniFFI)**: Native iOS/macOS integration for Apple ecosystem developers.
+- [ ] **Kotlin Bindings (UniFFI)**: Native Android integration via JNI.
+- [ ] **Node.js/TypeScript Bindings (NAPI-RS)**: Bringing WebSocket & Hedged request primitives to the TS ecosystem.
+
+Want to help us get there? PRs and discussions are highly welcome!
+
 ## Keeping up with OpenAI
 
 OpenAI moves fast. To ensure `openai-oxide` never falls behind, we built an automated architecture synchronization pipeline.
