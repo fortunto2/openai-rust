@@ -113,15 +113,41 @@ All clients use the Responses API, GPT-5.4, warm connections, 5 iterations, medi
 - **[Azure](https://learn.microsoft.com/en-us/azure/ai-services/openai/)** — full Azure OpenAI support
 - **195 tests** — unit + integration + [OpenAPI](https://github.com/openai/openai-openapi) coverage
 
-## Feature Flags
+## Install
 
-```toml
-openai-oxide = "0.9"                                            # all APIs (default)
-openai-oxide = { version = "0.9", features = ["websocket"] }    # + WebSocket mode
-openai-oxide = { version = "0.9", features = ["simd"] }         # + simd-json deser
+```bash
+cargo add openai-oxide                            # all APIs
+cargo add openai-oxide -F websocket               # + WebSocket mode
+cargo add openai-oxide -F simd                    # + simd-json deser
+cargo add openai-oxide --no-default-features -F chat,responses  # minimal (for WASM)
 ```
 
-API features (all default): `chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`.
+Or in `Cargo.toml`:
+
+```toml
+[dependencies]
+openai-oxide = "0.9"
+tokio = { version = "1", features = ["full"] }
+```
+
+## Feature Flags
+
+| Feature | Default | What |
+|---------|:-------:|------|
+| `chat` | yes | [Chat Completions](https://platform.openai.com/docs/api-reference/chat) API |
+| `responses` | yes | [Responses](https://platform.openai.com/docs/api-reference/responses) API + hedged requests + stream FC |
+| `embeddings` | yes | Embeddings API |
+| `images` | yes | Image generation / edit / variations |
+| `audio` | yes | Speech, transcription, translation |
+| `files` | yes | File upload / list / delete / content |
+| `fine-tuning` | yes | Fine-tuning jobs + events |
+| `models` | yes | Model list / retrieve / delete |
+| `moderations` | yes | Content moderation |
+| `batches` | yes | Batch API |
+| `uploads` | yes | Upload create / cancel / complete |
+| `beta` | yes | Assistants, Threads, Runs, Vector Stores, Realtime |
+| `websocket` | no | [WebSocket mode](https://platform.openai.com/docs/guides/websocket-mode) (`wss://`) |
+| `simd` | no | [simd-json](https://crates.io/crates/simd-json) for faster response parsing |
 
 ## WASM Support
 
