@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use worker::*;
 use openai_oxide::types::common::Role;
 use openai_oxide::types::responses::{ResponseCreateRequest, ResponseStreamEvent, ResponseInputItem, ResponseInput};
-use openai_oxide::types::chat::{ChatCompletionRequestMessage, ChatCompletionMessageParam, UserContent, ChatCompletionRequest};
+use openai_oxide::types::chat::{ ChatCompletionMessageParam, UserContent, ChatCompletionRequest};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 struct ChatMessage {
@@ -103,7 +103,7 @@ impl ChatDurableObject {
                     let mut browser_events = browser_ws.events().expect("Failed to get browser events");
                     let mut client_config = openai_oxide::ClientConfig::new(&api_key);
                     client_config.base_url = base_url.clone();
-                    let http_client = openai_oxide::Client::new_with_config(client_config);
+                    let http_client = openai_oxide::OpenAI::with_config(client_config);
 
                     while let Some(event) = browser_events.next().await {
                         if let Ok(worker::WebsocketEvent::Message(msg)) = event {
