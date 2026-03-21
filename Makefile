@@ -17,6 +17,12 @@ live:
 doc:
 	cargo doc --no-deps --open
 
+sync:
+	./scripts/sync-spec.sh
+
+bench:
+	cargo run --example benchmark --features responses --release
+
 clean:
 	cargo clean
 
@@ -27,4 +33,6 @@ help:
 	@echo "check   — fmt + clippy + test"
 	@echo "live    — tests with real API (needs OPENAI_API_KEY)"
 	@echo "doc     — generate and open docs"
+	@echo "sync    — check OpenAPI spec drift vs upstream"
+	@echo "bench   — run 13-test benchmark (needs OPENAI_API_KEY)"
 	@echo "clean   — remove build artifacts"
