@@ -93,3 +93,7 @@ required-features = ["websocket", "responses"]
 name = "integration_test"
 required-features = ["websocket", "responses"]
 
+[[bin]]
+name = "ws_bench"
+path = "ws_bench.rs"
+required-features = ["responses", "websocket"]

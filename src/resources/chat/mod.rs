@@ -74,6 +74,7 @@ impl<'a> Completions<'a> {
             .client
             .request(reqwest::Method::POST, "/chat/completions")
             .header(reqwest::header::ACCEPT, "text/event-stream")
+            .header(reqwest::header::CACHE_CONTROL, "no-cache")
             .json(&request)
             .send()
             .await?;

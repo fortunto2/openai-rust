@@ -103,6 +103,8 @@ impl<'a> Responses<'a> {
         let response = self
             .client
             .request(reqwest::Method::POST, "/responses")
+            .header(reqwest::header::ACCEPT, "text/event-stream")
+            .header(reqwest::header::CACHE_CONTROL, "no-cache")
             .json(&request)
             .send()
             .await?;
