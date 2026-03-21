@@ -53,6 +53,13 @@ impl<T: serde::de::DeserializeOwned> Stream for SseStream<T> {
         match this.inner.as_mut().poll_next(cx) {
             Poll::Ready(Some(Ok(chunk))) => {
                 this.buffer.push_str(&String::from_utf8_lossy(&chunk));
+                // Safety cap: 4MB max buffer to prevent unbounded growth on malformed streams
+                if this.buffer.len() > 4 * 1024 * 1024 {
+                    this.done = true;
+                    return Poll::Ready(Some(Err(OpenAIError::StreamError(
+                        "SSE buffer exceeded 4MB".into(),
+                    ))));
+                }
                 match try_parse_next::<T>(&mut this.buffer, &mut this.done) {
                     Some(item) => Poll::Ready(Some(item)),
                     None => {

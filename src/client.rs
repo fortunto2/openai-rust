@@ -396,6 +396,18 @@ impl OpenAI {
         Ok(value)
     }
 
+    /// Pre-serialize request body, merging extra_body if set.
+    fn prepare_body<B: serde::Serialize>(
+        &self,
+        body: Option<&B>,
+    ) -> Result<Option<serde_json::Value>, OpenAIError> {
+        match body {
+            Some(b) if self.options.extra_body.is_some() => Ok(Some(self.merge_body_json(b)?)),
+            Some(b) => Ok(Some(serde_json::to_value(b)?)),
+            None => Ok(None),
+        }
+    }
+
     /// WASM: retry with cross-platform sleep.
     #[cfg(target_arch = "wasm32")]
     async fn send_with_retry<B: serde::Serialize, T: serde::de::DeserializeOwned>(
@@ -404,11 +416,7 @@ impl OpenAI {
         path: &str,
         body: Option<&B>,
     ) -> Result<T, OpenAIError> {
-        let body_value = match body {
-            Some(b) if self.options.extra_body.is_some() => Some(self.merge_body_json(b)?),
-            Some(b) => Some(serde_json::to_value(b)?),
-            None => None,
-        };
+        let body_value = self.prepare_body(body)?;
 
         for attempt in 0..=self.config.max_retries {
             let mut req = self.request(method.clone(), path);
@@ -449,12 +457,7 @@ impl OpenAI {
         path: &str,
         body: Option<&B>,
     ) -> Result<T, OpenAIError> {
-        // Pre-serialize body once (avoids re-serialization on retry)
-        let body_value = match body {
-            Some(b) if self.options.extra_body.is_some() => Some(self.merge_body_json(b)?),
-            Some(b) => Some(serde_json::to_value(b)?),
-            None => None,
-        };
+        let body_value = self.prepare_body(body)?;
 
         // Fast path: first attempt — no clone, no loop
         let mut req = self.request(method.clone(), path);
@@ -543,12 +546,11 @@ impl OpenAI {
     /// Calculate backoff delay: max(retry_after, 0.5 * 2^attempt) seconds.
     #[cfg(not(target_arch = "wasm32"))]
     fn backoff_delay(attempt: u32, retry_after_secs: Option<f64>) -> Duration {
-        let exponential = 0.5 * 2.0_f64.powi(attempt as i32);
-        let secs = match retry_after_secs {
-            Some(ra) => ra.max(exponential),
-            None => exponential,
-        };
-        Duration::from_secs_f64(secs.min(60.0))
+        let base = crate::runtime::backoff_ms(attempt);
+        match retry_after_secs {
+            Some(ra) => Duration::from_secs_f64(ra.max(base.as_secs_f64())),
+            None => base,
+        }
     }
 
     /// Handle API response: check status, parse errors or deserialize body.

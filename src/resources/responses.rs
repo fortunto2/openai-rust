@@ -170,8 +170,18 @@ impl<'a> Responses<'a> {
             let mut pending_name: std::collections::HashMap<i64, String> = Default::default();
             let mut pending_call_id: std::collections::HashMap<i64, String> = Default::default();
             let mut response_id: Option<String> = None;
+            let mut event_count: u32 = 0;
+            const MAX_EVENTS: u32 = 10_000; // safety cap
 
             loop {
+                event_count += 1;
+                if event_count > MAX_EVENTS {
+                    let _ = meta_tx.send(StreamFcMeta {
+                        response_id: response_id.clone(),
+                        error: Some("exceeded 10000 events limit".into()),
+                    });
+                    break;
+                }
                 let event =
                     crate::runtime::timeout(std::time::Duration::from_secs(60), stream.next())
                         .await;

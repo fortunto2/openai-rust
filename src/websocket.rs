@@ -207,17 +207,21 @@ impl WsSession {
 
             match msg {
                 Message::Text(text) => {
-                    let event: ResponseStreamEvent = serde_json::from_str(&text)?;
+                    let mut event: ResponseStreamEvent = serde_json::from_str(&text)?;
 
                     if event.type_ == "response.completed" {
-                        let response: Response = serde_json::from_value(
-                            event.data["response"].clone(),
-                        )
-                        .map_err(|e| {
-                            OpenAIError::WebSocketError(format!(
-                                "deserialize response.completed: {e}"
-                            ))
-                        })?;
+                        // Take ownership of response data — avoids cloning potentially large payload
+                        let response_data = event
+                            .data
+                            .as_object_mut()
+                            .and_then(|m| m.remove("response"))
+                            .unwrap_or_default();
+                        let response: Response =
+                            serde_json::from_value(response_data).map_err(|e| {
+                                OpenAIError::WebSocketError(format!(
+                                    "deserialize response.completed: {e}"
+                                ))
+                            })?;
                         return Ok(response);
                     }
 
