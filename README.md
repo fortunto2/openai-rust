@@ -79,6 +79,21 @@ async def main():
 asyncio.run(main())
 ```
 
+### Benchmark: Rust Clients (`openai-oxide` vs `async-openai` vs `genai`)
+
+Tests performed using identical requests via `gpt-5.4` on native macOS, using TLS, HTTP/2 multiplexing, and warm connections where possible. Measured medians over 5 iterations.
+
+| Test | `openai-oxide` (Responses API) | `async-openai` (Chat API) | `genai` (Chat API) |
+| :--- | :--- | :--- | :--- |
+| Plain text | **1000ms** | 1331ms | **722ms** |
+| Structured output | **1509ms** | 1589ms | N/A |
+| Function calling | 1143ms | **935ms** | N/A |
+| Multi-turn (2 reqs) | 2217ms | **1692ms** | N/A |
+| Web search | **2997ms** | N/A | N/A |
+| Streaming TTFT | 1321ms | **656ms** | N/A |
+
+*Note: `openai-oxide` uses the optimized `Responses API` (`/v1/responses`), designed to natively route tools, structure, and caching. `async-openai` and `genai` currently use the standard `Chat Completions API` (`/v1/chat/completions`).*
+
 ### Benchmark: `openai-oxide-python` vs `openai` (Python)
 
 All tests run on Python 3.13, warm connections, 5 iterations, median.
