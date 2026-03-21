@@ -308,6 +308,8 @@ Our goal is to make `openai-oxide` the universal engine for all LLM integrations
 - [x] **Rust Core**: Fully typed, high-performance client (Chat, Responses, Realtime, Assistants).
 - [x] **WASM Support**: First-class Cloudflare Workers & browser execution.
 - [x] **Python Bindings**: Native PyO3 integration published on PyPI.
+- [ ] **Tauri Integrations**: Dedicated examples/guides for building AI desktop apps with Tauri + WebSockets.
+- [ ] **HTMX + Axum Examples**: Showcasing how to stream LLM responses directly to HTML with zero-JS frontends.
 - [ ] **Swift Bindings (UniFFI)**: Native iOS/macOS integration for Apple ecosystem developers.
 - [ ] **Kotlin Bindings (UniFFI)**: Native Android integration via JNI.
 - [ ] **Node.js/TypeScript Bindings (NAPI-RS)**: Bringing WebSocket & Hedged request primitives to the TS ecosystem.
