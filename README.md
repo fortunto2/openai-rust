@@ -298,13 +298,31 @@ let client = OpenAI::azure(AzureConfig::new()                  // Azure
 )?;
 ```
 
+## Keeping up with OpenAI
+
+Types are validated against the [official OpenAPI spec](https://github.com/openai/openai-openapi) and cross-checked with the [Python SDK](https://github.com/openai/openai-python) source (cloned locally).
+
+```bash
+make sync       # download latest spec, diff, run coverage test
+```
+
+`make sync` will:
+1. Download the latest OpenAI OpenAPI spec
+2. Show what changed (new endpoints, schemas, fields)
+3. Run `openapi_coverage` test — currently **100%** field coverage for all typed schemas
+4. Check your local Python SDK version for reference
+
+Coverage is enforced on every commit via pre-commit hooks and `cargo test --test openapi_coverage`.
+
 ## Development
 
 ```bash
-cargo test                                                      # 195 tests
-cargo test --features live-tests                                # real API
-cargo clippy -- -D warnings                                     # lint
-cargo run --example benchmark --features responses --release    # benchmark
+make check                                                      # fmt + clippy + 201 tests
+make sync                                                       # check OpenAPI spec drift
+make bench                                                      # 13-test benchmark (needs OPENAI_API_KEY)
+make live                                                       # tests with real API
+cargo test --features live-tests                                # same as make live
+cargo run --example integration_test --features "responses,websocket" --release  # 11-point live test
 python3 examples/bench_python.py                                # Python comparison
 ```
 
