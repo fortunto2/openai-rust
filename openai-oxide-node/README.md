@@ -1,107 +1,100 @@
 # openai-oxide-node
 
-Lightning-fast, memory-safe Node.js bindings for the [`openai-oxide`](https://github.com/your-org/openai-oxide) Rust client, powered by [NAPI-RS](https://napi.rs/).
+Native Node.js bindings for [`openai-oxide`](https://github.com/fortunto2/openai-rust), built with [napi-rs](https://napi.rs/).
 
-This package provides a high-performance, native integration with the OpenAI API directly from Node.js, sidestepping pure-JavaScript serialization overhead and leveraging Rust's robust architecture (such as persistent WebSockets and native async tasks).
+The package exposes the Rust client to Node.js with native streaming and WebSocket support, while keeping release artifacts out of git. Prebuilt binaries are published to npm for the supported targets listed below.
 
 ## Features
 
-- 🚀 **Native Performance**: Written in Rust, running via NAPI. No JS JSON serialization bottlenecks.
-- 🔄 **Native Streaming**: Rust pushes stream events directly into the Node.js Event Loop without blocking.
-- 🔌 **Persistent WebSockets**: Keep a "hot" connection to the Responses API for multi-turn, low-latency interactions.
-- 🛡 **Memory Safe**: Powered by Rust.
+- Native bindings for chat, responses, streaming, and WebSocket sessions
+- Shared Rust core with the main `openai-oxide` crate
+- Prebuilt npm artifacts for the main desktop and server targets
+- Local development and release flow driven by `pnpm`
 
-## Installation
+## Supported Targets
 
-You must first have Rust and Cargo installed, as this package builds the native binary during installation.
+- macOS `x64`
+- macOS `arm64`
+- Linux `x64` GNU
+- Linux `x64` musl
+- Linux `arm64` GNU
+- Linux `arm64` musl
+- Windows `x64` MSVC
+
+## Install
+
+From npm:
 
 ```bash
-# Using pnpm (recommended)
-pnpm install
-
-# Build the native module
-pnpm run build
+pnpm add openai-oxide-node
 ```
+
+From the repository for local development:
+
+```bash
+cd openai-oxide-node
+pnpm install
+pnpm build
+pnpm test
+```
+
+`Client` reads credentials from the same environment variables as the Rust crate, for example `OPENAI_API_KEY`.
 
 ## Quick Start
 
-### 1. Basic Request
-
-Make a simple request and receive a fully parsed native JavaScript object back. NAPI handles the Rust-to-V8 conversion natively.
-
-```javascript
-const { Client } = require('openai-oxide-node');
+```js
+const { Client } = require('openai-oxide-node')
 
 async function main() {
-    const client = new Client();
-    
-    const request = {
-        model: "gpt-4o-mini",
-        input: "Say hello to Node.js from Rust via NAPI!",
-        temperature: 0.7
-    };
+  const client = new Client()
 
-    const response = await client.createResponse(request);
-    console.log(response.output[0].content[0].text);
+  const response = await client.createResponse({
+    model: 'gpt-4o-mini',
+    input: 'Say hello to Node.js from Rust via napi-rs.'
+  })
+
+  console.log(response.output?.[0]?.content?.[0]?.text)
 }
 
-main();
+main().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
 ```
 
-### 2. Streaming (with AsyncIterator)
+Examples live in [`examples/`](examples/):
 
-Stream tokens as they are generated. The native module supports pushing events directly to a JS callback. You can easily wrap this in a native `AsyncIterator` for modern `for await` loops. 
-
-See the full example in [`examples/02_streaming.js`](examples/02_streaming.js) to see how to wrap the callback in a beautiful generator.
-
-```javascript
-const { Client } = require('openai-oxide-node');
-
-const client = new Client();
-
-// The native method takes a callback
-client.createStream({ model: "gpt-4o-mini", input: "Write a haiku" }, (err, event) => {
-    if (err) return console.error(err);
-    if (event.type === 'response.output_text.delta') {
-        process.stdout.write(event.delta);
-    }
-});
-```
-
-### 3. Persistent WebSocket Sessions
-
-For low-latency applications, you can open a persistent WebSocket connection to the Responses API. Rust holds the connection open, and you simply await the results in JS.
-
-```javascript
-const { Client } = require('openai-oxide-node');
-
-async function main() {
-    const client = new Client();
-    
-    console.log("Connecting WS...");
-    const session = await client.wsSession();
-    
-    // First request
-    const res1 = await session.send("gpt-4o-mini", "Say ping");
-    console.log("->", res1.output[0].content[0].text);
-
-    // Second request reuses the exact same hot connection!
-    const res2 = await session.send("gpt-4o-mini", "Say pong");
-    console.log("->", res2.output[0].content[0].text);
-
-    await session.close();
-}
-
-main();
-```
+- `examples/01_basic_request.js`
+- `examples/02_streaming.js`
+- `examples/03_websocket.js`
 
 ## Development
 
-The native module is compiled into the root directory.
-To re-build after making changes to `src/lib.rs`:
+Useful commands:
 
 ```bash
-pnpm run build
+pnpm install
+pnpm build
+pnpm test
+pnpm pack:preview
 ```
 
-Check out the [`examples/`](examples/) folder for runnable demonstration scripts.
+`pnpm build` writes the local `.node` binary next to `index.js` for development only. Those generated binaries are ignored by git and are not committed.
+`pnpm pack:preview` writes a tarball preview into `.preview/`, which is also ignored by git.
+
+## Release Flow
+
+The repository keeps the Node release separate from the Rust and Python releases.
+
+For the Node package:
+
+1. Keep the Node package version aligned with the Rust crate and Python package version.
+2. Push a tag like `node-v0.9.4`.
+3. GitHub Actions builds the native addon for each supported target.
+4. The Node release workflow assembles platform packages with `napi-rs` and publishes to npm with `pnpm publish`.
+
+Required secrets for npm publishing:
+
+- `NPM_TOKEN`
+
+The workflow uses `pnpm` throughout, publishes with provenance enabled, and keeps platform-specific binaries out of the repository history.

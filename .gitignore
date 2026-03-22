@@ -24,3 +24,7 @@ dist/
 # Node bindings artifacts
 openai-oxide-node/node_modules/
 openai-oxide-node/*.node
+openai-oxide-node/.preview/
+openai-oxide-node/artifacts/
+openai-oxide-node/npm/
+openai-oxide-node/target-node/

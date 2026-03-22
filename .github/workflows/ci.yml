@@ -41,3 +41,40 @@ jobs:
           cd openai-oxide-python
           uv sync
           uv run maturin build
+
+  node-bindings:
+    name: Node bindings CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openai-oxide-node
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: openai-oxide-node/pnpm-lock.yaml
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build native addon
+        run: pnpm build
+
+      - name: Smoke test addon
+        run: pnpm test
+
+      - name: Validate publish tarball
+        run: pnpm pack:preview

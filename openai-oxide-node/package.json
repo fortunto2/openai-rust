@@ -1,16 +1,69 @@
 {
   "name": "openai-oxide-node",
-  "version": "0.1.0",
+  "version": "0.9.4",
+  "description": "Native Node.js bindings for openai-oxide powered by napi-rs.",
   "main": "index.js",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.d.ts",
+    "index.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fortunto2/openai-rust.git",
+    "directory": "openai-oxide-node"
+  },
+  "homepage": "https://github.com/fortunto2/openai-rust/tree/main/openai-oxide-node#readme",
+  "bugs": {
+    "url": "https://github.com/fortunto2/openai-rust/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "openai",
+    "rust",
+    "napi-rs",
+    "node-addon",
+    "bindings"
+  ],
   "napi": {
-    "name": "openai-oxide-node"
+    "binaryName": "openai-oxide-node",
+    "targets": [
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl"
+    ]
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "scripts": {
+    "artifacts": "napi artifacts --output-dir artifacts --npm-dir npm",
     "build": "napi build --platform --release",
-    "test": "node test.js"
+    "build:debug": "napi build --platform",
+    "create:npm-dirs": "napi create-npm-dirs --npm-dir npm",
+    "pack:preview": "pnpm pack --pack-destination .preview",
+    "prepublishOnly": "napi prepublish -t npm --npm-dir npm",
+    "test": "node test.js",
+    "version": "napi version --npm-dir npm"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0"
-  }
+    "@napi-rs/cli": "^3.5.1"
+  },
+  "packageManager": "pnpm@10.8.1"
 }

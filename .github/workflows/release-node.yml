@@ -1,0 +1,159 @@
+name: Release Node Bindings
+
+env:
+  CARGO_TERM_COLOR: always
+  MACOSX_DEPLOYMENT_TARGET: "10.13"
+
+on:
+  push:
+    tags:
+      - "node-v*"
+
+jobs:
+  build-node-bindings:
+    name: Build Node bindings (${{ matrix.target }})
+    runs-on: ${{ matrix.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            build: pnpm build --target x86_64-apple-darwin
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            build: pnpm build --target aarch64-apple-darwin
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            build: pnpm build --target x86_64-unknown-linux-gnu --use-napi-cross
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            build: pnpm build --target x86_64-unknown-linux-musl -x
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            build: pnpm build --target aarch64-unknown-linux-gnu --use-napi-cross
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            build: pnpm build --target aarch64-unknown-linux-musl -x
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+            build: pnpm build --target x86_64-pc-windows-msvc
+    defaults:
+      run:
+        working-directory: openai-oxide-node
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: openai-oxide-node/pnpm-lock.yaml
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Zig for musl builds
+        if: ${{ contains(matrix.target, 'musl') }}
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
+
+      - name: Install cargo-zigbuild
+        if: ${{ contains(matrix.target, 'musl') }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build native addon
+        run: ${{ matrix.build }}
+
+      - name: Upload binding artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.target }}
+          path: openai-oxide-node/*.node
+          if-no-files-found: error
+
+  publish-node:
+    name: Publish Node package
+    needs: build-node-bindings
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      NPM_CONFIG_CACHE: ${{ github.workspace }}/.npm-cache
+    defaults:
+      run:
+        working-directory: openai-oxide-node
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: openai-oxide-node/pnpm-lock.yaml
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download binding artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: openai-oxide-node/artifacts
+          merge-multiple: true
+
+      - name: Create npm package dirs
+        run: pnpm create:npm-dirs
+
+      - name: Move binding artifacts into npm packages
+        run: pnpm artifacts
+
+      - name: Preview npm package layout
+        run: find npm -maxdepth 2 -type f | sort
+
+      - name: Publish package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^node-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            pnpm publish --access public --no-git-checks
+          elif [[ "${GITHUB_REF_NAME}" =~ ^node-v[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            pnpm publish --tag next --access public --no-git-checks
+          else
+            echo "Unsupported tag format: ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+  create-github-release:
+    name: Create GitHub Release
+    needs: publish-node
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Release Notes
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
