@@ -80,7 +80,7 @@ jobs:
           tool: cargo-zigbuild
 
       - name: Install Node dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --no-optional
 
       - name: Build native addon
         run: ${{ matrix.build }}
@@ -121,7 +121,7 @@ jobs:
           cache-dependency-path: openai-oxide-node/pnpm-lock.yaml
 
       - name: Install Node dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --no-optional
 
       - name: Download binding artifacts
         uses: actions/download-artifact@v4
@@ -134,6 +134,9 @@ jobs:
 
       - name: Move binding artifacts into npm packages
         run: pnpm artifacts
+
+      - name: Prepare npm manifests
+        run: pnpm prepublishOnly
 
       - name: Preview npm package layout
         run: find npm -maxdepth 2 -type f | sort
