@@ -18,12 +18,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fortunto2/openai-rust.git",
+    "url": "git+https://github.com/fortunto2/openai-oxide.git",
     "directory": "openai-oxide-node"
   },
-  "homepage": "https://github.com/fortunto2/openai-rust/tree/main/openai-oxide-node#readme",
+  "homepage": "https://github.com/fortunto2/openai-oxide/tree/main/openai-oxide-node#readme",
   "bugs": {
-    "url": "https://github.com/fortunto2/openai-rust/issues"
+    "url": "https://github.com/fortunto2/openai-oxide/issues"
   },
   "license": "MIT",
   "keywords": [

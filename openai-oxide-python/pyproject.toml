@@ -8,7 +8,7 @@ readme = "README.md"
 authors = [
   { name="Rustam", email="info@life2film.com" }
 ]
-urls = { Repository = "https://github.com/fortunto2/openai-rust" }
+urls = { Repository = "https://github.com/fortunto2/openai-oxide" }
 
 [build-system]
 requires = ["maturin>=1.7,<2"]

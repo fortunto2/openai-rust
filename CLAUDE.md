@@ -6,7 +6,7 @@ Idiomatic Rust client for the OpenAI API. Published on [crates.io](https://crate
 
 - **crates.io:** `openai-oxide`
 - **Rust import:** `use openai_oxide::...`
-- **GitHub repo:** `fortunto2/openai-rust` (repo name kept as-is)
+- **GitHub repo:** `fortunto2/openai-oxide`
 
 ## Goal
 

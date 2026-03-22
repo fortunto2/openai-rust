@@ -23,7 +23,7 @@ A production-ready architecture demonstrating a **100% Rust stack** using **Diox
 
 ## Deploy
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fortunto2/openai-rust/tree/main/examples/cloudflare-worker-dioxus)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fortunto2/openai-oxide/tree/main/examples/cloudflare-worker-dioxus)
 
 *(Note: Deploying this requires a Paid Cloudflare Workers plan because it uses Durable Objects).*
 

@@ -1,6 +1,6 @@
 # openai-oxide-python
 
-Python bindings for [openai-oxide](https://github.com/fortunto2/openai-rust) — the fastest OpenAI client.
+Python bindings for [openai-oxide](https://github.com/fortunto2/openai-oxide) — the fastest OpenAI client.
 
 Rust core compiled to native Python extension via [PyO3](https://pyo3.rs) + [maturin](https://www.maturin.rs).
 

@@ -75,19 +75,23 @@ impl OpenAI {
         let options = config.initial_options();
 
         #[cfg(not(target_arch = "wasm32"))]
-        let http = reqwest::Client::builder()
-            .timeout(Duration::from_secs(config.timeout_secs()))
-            .tcp_nodelay(true)
-            .tcp_keepalive(Some(Duration::from_secs(30)))
-            .pool_idle_timeout(Some(Duration::from_secs(300)))
-            .pool_max_idle_per_host(4)
-            .http2_keep_alive_interval(Some(Duration::from_secs(20)))
-            .http2_keep_alive_timeout(Duration::from_secs(10))
-            .http2_keep_alive_while_idle(true)
-            .http2_adaptive_window(true)
-            .gzip(true)
-            .build()
-            .expect("failed to build HTTP client");
+        let http = {
+            crate::ensure_tls_provider();
+
+            reqwest::Client::builder()
+                .timeout(Duration::from_secs(config.timeout_secs()))
+                .tcp_nodelay(true)
+                .tcp_keepalive(Some(Duration::from_secs(30)))
+                .pool_idle_timeout(Some(Duration::from_secs(300)))
+                .pool_max_idle_per_host(4)
+                .http2_keep_alive_interval(Some(Duration::from_secs(20)))
+                .http2_keep_alive_timeout(Duration::from_secs(10))
+                .http2_keep_alive_while_idle(true)
+                .http2_adaptive_window(true)
+                .gzip(true)
+                .build()
+                .expect("failed to build HTTP client")
+        };
 
         #[cfg(target_arch = "wasm32")]
         let http = reqwest::Client::new();

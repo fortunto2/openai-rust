@@ -19,7 +19,7 @@ It also serves a simple HTML playground on `GET /`.
 
 ## Deploy
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fortunto2/openai-rust/tree/main/examples/cloudflare-worker)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fortunto2/openai-oxide/tree/main/examples/cloudflare-worker)
 
 *(Note: This is a lightweight, stateless example and works perfectly on the Free Cloudflare Workers tier).*
 

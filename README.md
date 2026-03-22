@@ -7,8 +7,8 @@
     <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/v/openai-oxide.svg" alt="crates.io"></a>
     <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/d/openai-oxide.svg" alt="downloads"></a>
     <a href="https://docs.rs/openai-oxide"><img src="https://docs.rs/openai-oxide/badge.svg" alt="docs.rs"></a>
-    <a href="https://github.com/fortunto2/openai-rust/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
-    <a href="https://github.com/fortunto2/openai-rust"><img src="https://img.shields.io/github/stars/fortunto2/openai-rust?style=social" alt="GitHub stars"></a>
+    <a href="https://github.com/fortunto2/openai-oxide/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
+    <a href="https://github.com/fortunto2/openai-oxide"><img src="https://img.shields.io/github/stars/fortunto2/openai-oxide?style=social" alt="GitHub stars"></a>
   </p>
 </p>
 
@@ -322,7 +322,7 @@ openai-oxide = { version = "0.9", default-features = false, features = ["respons
 - `websocket-wasm` — Enables Realtime API over WebSockets (WASM: `gloo-net` / `web-sys`)
 - `simd` — Enables `simd-json` for ultra-fast JSON deserialization (requires nightly Rust)
 
-Check out our **[Cloudflare Worker Examples](https://github.com/fortunto2/openai-rust/tree/main/examples/cloudflare-worker-dioxus)** showcasing a Full-Stack Rust app with a Dioxus frontend and a Cloudflare Worker Durable Object backend holding a WebSocket connection to OpenAI.
+Check out our **[Cloudflare Worker Examples](https://github.com/fortunto2/openai-oxide/tree/main/examples/cloudflare-worker-dioxus)** showcasing a Full-Stack Rust app with a Dioxus frontend and a Cloudflare Worker Durable Object backend holding a WebSocket connection to OpenAI.
 
 ---
 

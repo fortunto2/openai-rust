@@ -1,6 +1,6 @@
 # openai-oxide-node
 
-Native Node.js bindings for [`openai-oxide`](https://github.com/fortunto2/openai-rust), built with [napi-rs](https://napi.rs/).
+Native Node.js bindings for [`openai-oxide`](https://github.com/fortunto2/openai-oxide), built with [napi-rs](https://napi.rs/).
 
 The package exposes the Rust client to Node.js with native streaming and WebSocket support, while keeping release artifacts out of git. Prebuilt binaries are published to npm for the supported targets listed below.
 

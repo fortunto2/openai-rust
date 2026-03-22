@@ -127,7 +127,6 @@ mod tests {
     async fn test_rate_limit_middleware() {
         use crate::middleware::Middleware;
         use crate::rate_limit::RateLimitTracker;
-        use reqwest::{Request, Response};
 
         let tracker = RateLimitTracker::new();
 
@@ -141,6 +140,7 @@ mod tests {
             .create_async()
             .await;
 
+        crate::ensure_tls_provider();
         let client = reqwest::Client::new();
         let res = client.get(server.url() + "/test").send().await.unwrap();
 

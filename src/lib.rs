@@ -48,6 +48,17 @@ pub mod types;
 #[cfg(feature = "websocket")]
 pub mod websocket;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn ensure_tls_provider() {
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    INIT.call_once(|| {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    });
+}
+
 pub use azure::AzureConfig;
 pub use client::OpenAI;
 pub use config::ClientConfig;
