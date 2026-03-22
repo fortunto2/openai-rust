@@ -4,7 +4,7 @@ members = [".", "openai-oxide-macros", "openai-oxide-node"]
 
 [package]
 name = "openai-oxide"
-version = "0.9.4"
+version = "0.9.5"
 edition = "2024"
 description = "Idiomatic Rust client for the OpenAI API — 1:1 parity with the official Python SDK"
 license = "MIT"

@@ -91,7 +91,7 @@ The repository keeps the Node release separate from the Rust and Python releases
 For the Node package:
 
 1. Keep the Node package version aligned with the Rust crate and Python package version.
-2. Push a tag like `node-v0.9.4`.
+2. Push a tag like `node-v0.9.5`.
 3. GitHub Actions builds the native addon for each supported target.
 4. The Node release workflow assembles platform packages with `napi-rs` and publishes to npm with `pnpm publish`.
 

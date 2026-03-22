@@ -14,13 +14,6 @@ importers:
       openai:
         specifier: ^6.32.0
         version: 6.32.0
-    optionalDependencies:
-      openai-oxide-darwin-arm64:
-        specifier: 0.9.4
-        version: 0.9.4
-      openai-oxide-darwin-x64:
-        specifier: 0.9.4
-        version: 0.9.4
 
 packages:
 
@@ -629,18 +622,6 @@ packages:
   obug@2.1.1:
     resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
 
-  openai-oxide-darwin-arm64@0.9.4:
-    resolution: {integrity: sha512-SzFpIONm+MPx+7wzwQ6uxtXcFOVJeH6y+kYCN3Dk0JGlYK7JRRgA4SvwTTUWIMZFqHUER5wz13dFk7sl59Ug8Q==}
-    engines: {node: '>=18'}
-    cpu: [arm64]
-    os: [darwin]
-
-  openai-oxide-darwin-x64@0.9.4:
-    resolution: {integrity: sha512-IZdu5vTDLw2BWe0u4VO5uD894+mWIZbYcN0oyIqenD0vaCjzeG9+Vxr8e5oJ6EqBa4hNr8N2TgZ9mD5zL/nZ5w==}
-    engines: {node: '>=18'}
-    cpu: [x64]
-    os: [darwin]
-
   openai@6.32.0:
     resolution: {integrity: sha512-j3k+BjydAf8yQlcOI7WUQMQTbbF5GEIMAE2iZYCOzwwB3S2pCheaWYp+XZRNAch4jWVc52PMDGRRjutao3lLCg==}
     hasBin: true
@@ -1145,12 +1126,6 @@ snapshots:
   mute-stream@3.0.0: {}
 
   obug@2.1.1: {}
-
-  openai-oxide-darwin-arm64@0.9.4:
-    optional: true
-
-  openai-oxide-darwin-x64@0.9.4:
-    optional: true
 
   openai@6.32.0: {}
 

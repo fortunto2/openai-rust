@@ -915,7 +915,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "openai-oxide"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "bytes",
  "futures-core",
@@ -934,7 +934,7 @@ dependencies = [
 
 [[package]]
 name = "openai-oxide-node"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "futures-util",
  "napi",
