@@ -1,5 +1,5 @@
 {
-  "name": "openai-oxide-node",
+  "name": "openai-oxide",
   "version": "0.9.4",
   "description": "Native Node.js bindings for openai-oxide powered by napi-rs.",
   "main": "index.js",
@@ -34,7 +34,7 @@
     "bindings"
   ],
   "napi": {
-    "binaryName": "openai-oxide-node",
+    "binaryName": "openai-oxide",
     "targets": [
       "x86_64-apple-darwin",
       "aarch64-apple-darwin",

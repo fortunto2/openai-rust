@@ -228,21 +228,6 @@ let (r1, r2, r3) = tokio::join!(
 ---
 
 
-### Middlewares
-Track rate limits automatically.
-
-```rust
-use openai_oxide::rate_limit::RateLimitTracker;
-use std::sync::atomic::Ordering;
-
-let tracker = RateLimitTracker::new();
-let client = OpenAI::from_env()?.with_middleware(tracker.clone());
-
-// After making requests...
-let info = tracker.info();
-println!("Tokens remaining: {}", info.remaining_tokens.load(Ordering::SeqCst));
-```
-
 ### `#[openai_tool]` Macro
 Auto-generate JSON schemas for your functions.
 
@@ -262,11 +247,18 @@ let tool = get_weather_tool();
 Thanks to NAPI-RS, we now provide lightning-fast Node.js bindings that execute requests and stream events directly from Rust into the V8 event loop without pure-JS blocking overhead.
 
 ```javascript
-import { Client } from "openai-oxide-node";
-const client = new Client();
-const session = await client.wsSession();
-const res = await session.send("gpt-4o-mini", "Say hello to Rust from Node!");
+const { Client } = require("openai-oxide");
+
+(async () => {
+  const client = new Client();
+  const session = await client.wsSession();
+  const res = await session.send("gpt-4o-mini", "Say hello to Rust from Node!");
+  console.log(res);
+  await session.close();
+})();
 ```
+
+At the moment, the Node bindings expose Chat Completions, Responses, streaming helpers, and WebSocket sessions. The full API matrix below refers to the Rust core crate.
 
 
 ## Implemented APIs

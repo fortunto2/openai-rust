@@ -1,4 +1,4 @@
-# openai-oxide-node
+# openai-oxide for Node.js
 
 Native Node.js bindings for [`openai-oxide`](https://github.com/fortunto2/openai-oxide), built with [napi-rs](https://napi.rs/).
 
@@ -26,7 +26,7 @@ The package exposes the Rust client to Node.js with native streaming and WebSock
 From npm:
 
 ```bash
-pnpm add openai-oxide-node
+pnpm add openai-oxide
 ```
 
 From the repository for local development:
@@ -43,7 +43,7 @@ pnpm test
 ## Quick Start
 
 ```js
-const { Client } = require('openai-oxide-node')
+const { Client } = require('openai-oxide')
 
 async function main() {
   const client = new Client()
