@@ -231,7 +231,7 @@ impl OpenAI {
     /// ```
     #[cfg(feature = "websocket")]
     pub async fn ws_session(&self) -> Result<crate::websocket::WsSession, OpenAIError> {
-        crate::websocket::WsSession::connect(&self.config).await
+        crate::websocket::WsSession::connect(self.config.as_ref()).await
     }
 
     /// Build a request with auth headers and client-level options applied.

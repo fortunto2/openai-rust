@@ -330,7 +330,7 @@ fn build_ws_url(config: &dyn Config) -> String {
     } else if base.starts_with("http://") {
         format!("ws://{}", &base["http://".len()..])
     } else {
-        base.clone()
+        base.to_string()
     };
 
     format!("{ws_base}/responses")

@@ -2,6 +2,8 @@
 /* eslint-disable */
 export declare class Client {
   constructor()
+  createChatCompletion(request: Record<string, any>): Promise<Record<string, any>>
+  createChatStream(request: Record<string, any>, tsfn: (err: Error | null, event: Record<string, any> | null) => void): Promise<void>
   createResponse(request: Record<string, any>): Promise<Record<string, any>>
   createStream(request: Record<string, any>, tsfn: (err: Error | null, event: Record<string, any> | null) => void): Promise<void>
   wsSession(): Promise<NodeWsSession>

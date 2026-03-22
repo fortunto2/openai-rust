@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "openai-oxide-macros"]
+members = [".", "openai-oxide-macros", "openai-oxide-node"]
 
 
 [package]

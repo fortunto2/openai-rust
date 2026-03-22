@@ -1,32 +1,17 @@
 import sys
-with open('src/resources/responses.rs', 'r') as f:
+
+with open('src/resources/chat/mod.rs', 'r') as f:
     content = f.read()
 
-target = '''    pub async fn create_stream_raw(
+# Add create_stream_raw to chat mod
+new_method = '''
+    pub async fn create_stream_raw(
         &self,
         request: &impl serde::Serialize,
     ) -> Result<crate::streaming::SseStream<serde_json::Value>, OpenAIError> {
         let response = self
             .client
-            .request(reqwest::Method::POST, "/responses")
-            .header(reqwest::header::ACCEPT, "text/event-stream")
-            .header(reqwest::header::CACHE_CONTROL, "no-cache")
-            .json(request)
-            .send()
-            .await
-            .map_err(OpenAIError::Reqwest)?;
-            
-        let response = self.client.handle_response_stream(response).await?;
-        Ok(crate::streaming::SseStream::new(response))
-    }'''
-
-replacement = '''    pub async fn create_stream_raw(
-        &self,
-        request: &impl serde::Serialize,
-    ) -> Result<crate::streaming::SseStream<serde_json::Value>, OpenAIError> {
-        let response = self
-            .client
-            .request(reqwest::Method::POST, "/responses")
+            .request(reqwest::Method::POST, "/chat/completions")
             .header(reqwest::header::ACCEPT, "text/event-stream")
             .header(reqwest::header::CACHE_CONTROL, "no-cache")
             .json(request)
@@ -45,14 +30,21 @@ replacement = '''    pub async fn create_stream_raw(
                     code: error_resp.error.code,
                 });
             }
-            return Err(OpenAIError::HttpError {
+            return Err(OpenAIError::ApiError {
                 status: status_code,
                 message: body,
+                type_: None,
+                code: None,
             });
         }
-        Ok(crate::streaming::SseStream::new(response))
-    }'''
 
-content = content.replace(target, replacement)
-with open('src/resources/responses.rs', 'w') as f:
+        Ok(crate::streaming::SseStream::new(response))
+    }
+'''
+
+if "create_stream_raw" not in content:
+    content = content.replace("impl<'a> Completions<'a> {", "impl<'a> Completions<'a> {" + new_method)
+
+with open('src/resources/chat/mod.rs', 'w') as f:
     f.write(content)
+

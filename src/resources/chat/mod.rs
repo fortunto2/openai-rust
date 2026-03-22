@@ -29,6 +29,42 @@ pub struct Completions<'a> {
 }
 
 impl<'a> Completions<'a> {
+    pub async fn create_stream_raw(
+        &self,
+        request: &impl serde::Serialize,
+    ) -> Result<crate::streaming::SseStream<serde_json::Value>, OpenAIError> {
+        let response = self
+            .client
+            .request(reqwest::Method::POST, "/chat/completions")
+            .header(reqwest::header::ACCEPT, "text/event-stream")
+            .header(reqwest::header::CACHE_CONTROL, "no-cache")
+            .json(request)
+            .send()
+            .await?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let status_code = status.as_u16();
+            let body = response.text().await.unwrap_or_default();
+            if let Ok(error_resp) = serde_json::from_str::<crate::error::ErrorResponse>(&body) {
+                return Err(OpenAIError::ApiError {
+                    status: status_code,
+                    message: error_resp.error.message,
+                    type_: error_resp.error.type_,
+                    code: error_resp.error.code,
+                });
+            }
+            return Err(OpenAIError::ApiError {
+                status: status_code,
+                message: body,
+                type_: None,
+                code: None,
+            });
+        }
+
+        Ok(crate::streaming::SseStream::new(response))
+    }
+
     /// Create a chat completion with a custom request type, returning raw JSON.
     ///
     /// Use this when you need to send fields not yet in [`ChatCompletionRequest`]
@@ -56,8 +92,9 @@ impl<'a> Completions<'a> {
     /// `POST /chat/completions`
     pub async fn create(
         &self,
-        request: ChatCompletionRequest,
+        mut request: ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, OpenAIError> {
+        Self::prepare_reasoning_request(&mut request);
         self.client.post("/chat/completions", &request).await
     }
 
@@ -69,6 +106,7 @@ impl<'a> Completions<'a> {
         &self,
         mut request: ChatCompletionRequest,
     ) -> Result<SseStream<ChatCompletionChunk>, OpenAIError> {
+        Self::prepare_reasoning_request(&mut request);
         request.stream = Some(true);
         let response = self
             .client
@@ -100,6 +138,57 @@ impl<'a> Completions<'a> {
         }
 
         Ok(SseStream::new(response))
+    }
+
+    /// Automatically aligns parameters for O1/O3 reasoning models to prevent API errors.
+    fn prepare_reasoning_request(request: &mut ChatCompletionRequest) {
+        if request.model.starts_with("o1") || request.model.starts_with("o3") {
+            // Reasoning models crash if temperature or other generation parameters are passed
+            if request.temperature.is_some() {
+                tracing::warn!(
+                    "temperature is not supported for reasoning models. Dropping parameter."
+                );
+                request.temperature = None;
+            }
+            if request.top_p.is_some() {
+                tracing::warn!("top_p is not supported for reasoning models. Dropping parameter.");
+                request.top_p = None;
+            }
+            if request.presence_penalty.is_some() {
+                tracing::warn!(
+                    "presence_penalty is not supported for reasoning models. Dropping parameter."
+                );
+                request.presence_penalty = None;
+            }
+            if request.frequency_penalty.is_some() {
+                tracing::warn!(
+                    "frequency_penalty is not supported for reasoning models. Dropping parameter."
+                );
+                request.frequency_penalty = None;
+            }
+
+            // Map max_tokens -> max_completion_tokens
+            if request.max_tokens.is_some() && request.max_completion_tokens.is_none() {
+                tracing::debug!("Mapping max_tokens to max_completion_tokens for reasoning model");
+                request.max_completion_tokens = request.max_tokens;
+                request.max_tokens = None;
+            }
+
+            // Change system messages to developer messages
+            for msg in request.messages.iter_mut() {
+                if let crate::types::chat::ChatCompletionMessageParam::System { content, name } =
+                    msg
+                {
+                    tracing::debug!(
+                        "Converting system message to developer message for reasoning model"
+                    );
+                    *msg = crate::types::chat::ChatCompletionMessageParam::Developer {
+                        content: content.clone(),
+                        name: name.clone(),
+                    };
+                }
+            }
+        }
     }
 }
 

@@ -458,6 +458,64 @@ pub struct InputAudio {
 // ── Tool / function calling types ──
 
 /// A tool available to the model.
+impl Tool {
+    /// Create a standard function tool.
+    pub fn function(
+        name: impl Into<String>,
+        description: impl Into<String>,
+        parameters: serde_json::Value,
+    ) -> Self {
+        Self {
+            type_: "function".to_string(),
+            function: FunctionDef {
+                name: name.into(),
+                description: Some(description.into()),
+                parameters: Some(parameters),
+                strict: Some(true),
+            },
+        }
+    }
+
+    /// Web search tool (used by gpt-4o-search models)
+    pub fn web_search() -> Self {
+        Self {
+            type_: "web_search".to_string(),
+            function: FunctionDef {
+                name: "".to_string(),
+                description: None,
+                parameters: None,
+                strict: None,
+            },
+        }
+    }
+
+    /// File search tool
+    pub fn file_search() -> Self {
+        Self {
+            type_: "file_search".to_string(),
+            function: FunctionDef {
+                name: "".to_string(),
+                description: None,
+                parameters: None,
+                strict: None,
+            },
+        }
+    }
+
+    /// Code interpreter tool
+    pub fn code_interpreter() -> Self {
+        Self {
+            type_: "code_interpreter".to_string(),
+            function: FunctionDef {
+                name: "".to_string(),
+                description: None,
+                parameters: None,
+                strict: None,
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tool {
     #[serde(rename = "type")]
