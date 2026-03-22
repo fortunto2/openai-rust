@@ -10,6 +10,63 @@ const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const DEFAULT_TIMEOUT_SECS: u64 = 600;
 const DEFAULT_MAX_RETRIES: u32 = 2;
 
+/// Configuration trait for API clients.
+///
+/// Allows implementing custom configurations for different providers
+/// (e.g., standard OpenAI, Azure OpenAI, OpenRouter).
+pub trait Config: Send + Sync + std::fmt::Debug {
+    /// Returns the base URL for the API.
+    fn base_url(&self) -> &str;
+
+    /// Returns the API key.
+    fn api_key(&self) -> &str;
+
+    /// Hook to modify or add provider-specific headers and auth to a request.
+    fn build_request(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder;
+
+    /// Returns the organization ID, if any.
+    fn organization(&self) -> Option<&str> {
+        None
+    }
+
+    /// Returns the project ID, if any.
+    fn project(&self) -> Option<&str> {
+        None
+    }
+
+    /// Returns the timeout in seconds.
+    fn timeout_secs(&self) -> u64 {
+        DEFAULT_TIMEOUT_SECS
+    }
+
+    /// Returns the maximum number of retries.
+    fn max_retries(&self) -> u32 {
+        DEFAULT_MAX_RETRIES
+    }
+
+    /// Returns default headers to append to all requests.
+    fn default_headers(&self) -> Option<&HeaderMap> {
+        None
+    }
+
+    /// Returns default query parameters to append to all requests.
+    fn default_query(&self) -> Option<&[(String, String)]> {
+        None
+    }
+
+    /// Build the initial `RequestOptions` from config-level defaults.
+    fn initial_options(&self) -> RequestOptions {
+        let mut opts = RequestOptions::new();
+        if let Some(h) = self.default_headers() {
+            opts.headers = Some(h.clone());
+        }
+        if let Some(q) = self.default_query() {
+            opts.query = Some(q.to_vec());
+        }
+        opts
+    }
+}
+
 /// Configuration for the OpenAI client.
 #[derive(Debug, Clone)]
 pub struct ClientConfig {
@@ -96,16 +153,55 @@ impl ClientConfig {
         self.use_azure_api_key_header = enabled;
         self
     }
+}
 
-    /// Build the initial `RequestOptions` from config-level defaults.
-    pub(crate) fn initial_options(&self) -> RequestOptions {
-        let mut opts = RequestOptions::new();
-        if let Some(ref h) = self.default_headers {
-            opts.headers = Some(h.clone());
+impl Config for ClientConfig {
+    fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    fn api_key(&self) -> &str {
+        &self.api_key
+    }
+
+    fn build_request(&self, mut req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        if self.use_azure_api_key_header {
+            req = req.header("api-key", &self.api_key);
+        } else {
+            req = req.bearer_auth(&self.api_key);
         }
-        if let Some(ref q) = self.default_query {
-            opts.query = Some(q.clone());
+
+        if let Some(ref org) = self.organization {
+            req = req.header("OpenAI-Organization", org);
         }
-        opts
+        if let Some(ref project) = self.project {
+            req = req.header("OpenAI-Project", project);
+        }
+
+        req
+    }
+
+    fn organization(&self) -> Option<&str> {
+        self.organization.as_deref()
+    }
+
+    fn project(&self) -> Option<&str> {
+        self.project.as_deref()
+    }
+
+    fn timeout_secs(&self) -> u64 {
+        self.timeout_secs
+    }
+
+    fn max_retries(&self) -> u32 {
+        self.max_retries
+    }
+
+    fn default_headers(&self) -> Option<&HeaderMap> {
+        self.default_headers.as_ref()
+    }
+
+    fn default_query(&self) -> Option<&[(String, String)]> {
+        self.default_query.as_deref()
     }
 }

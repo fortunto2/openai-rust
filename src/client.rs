@@ -60,7 +60,7 @@ const RETRYABLE_STATUS_CODES: [u16; 4] = [429, 500, 502, 503];
 #[derive(Debug, Clone)]
 pub struct OpenAI {
     pub(crate) http: reqwest::Client,
-    pub(crate) config: ClientConfig,
+    pub(crate) config: std::sync::Arc<dyn crate::config::Config>,
     pub(crate) options: RequestOptions,
 }
 
@@ -71,12 +71,12 @@ impl OpenAI {
     }
 
     /// Create a client from a full config.
-    pub fn with_config(config: ClientConfig) -> Self {
+    pub fn with_config<C: crate::config::Config + 'static>(config: C) -> Self {
         let options = config.initial_options();
 
         #[cfg(not(target_arch = "wasm32"))]
         let http = reqwest::Client::builder()
-            .timeout(Duration::from_secs(config.timeout_secs))
+            .timeout(Duration::from_secs(config.timeout_secs()))
             .tcp_nodelay(true)
             .tcp_keepalive(Some(Duration::from_secs(30)))
             .pool_idle_timeout(Some(Duration::from_secs(300)))
@@ -93,7 +93,7 @@ impl OpenAI {
         let http = reqwest::Client::new();
         Self {
             http,
-            config,
+            config: std::sync::Arc::new(config),
             options,
         }
     }
@@ -236,22 +236,9 @@ impl OpenAI {
 
     /// Build a request with auth headers and client-level options applied.
     pub(crate) fn request(&self, method: reqwest::Method, path: &str) -> reqwest::RequestBuilder {
-        let url = format!("{}{}", self.config.base_url, path);
-        let mut req = self.http.request(method, &url);
-
-        // Azure uses `api-key` header; standard OpenAI uses `Authorization: Bearer`
-        if self.config.use_azure_api_key_header {
-            req = req.header("api-key", &self.config.api_key);
-        } else {
-            req = req.bearer_auth(&self.config.api_key);
-        }
-
-        if let Some(ref org) = self.config.organization {
-            req = req.header("OpenAI-Organization", org);
-        }
-        if let Some(ref project) = self.config.project {
-            req = req.header("OpenAI-Project", project);
-        }
+        let url = format!("{}{}", self.config.base_url(), path);
+        let req = self.http.request(method, &url);
+        let mut req = self.config.build_request(req);
 
         // Apply client-level options
         if let Some(ref headers) = self.options.headers {
@@ -467,7 +454,7 @@ impl OpenAI {
 
         let response = match req.send().await {
             Ok(resp) => resp,
-            Err(e) if self.config.max_retries == 0 => return Err(OpenAIError::RequestError(e)),
+            Err(e) if self.config.max_retries() == 0 => return Err(OpenAIError::RequestError(e)),
             Err(e) => {
                 // Enter retry path
                 return self.retry_loop(method, path, &body_value, e, 1).await;
@@ -479,7 +466,7 @@ impl OpenAI {
             return Self::handle_response(response).await;
         }
 
-        if self.config.max_retries == 0 {
+        if self.config.max_retries() == 0 {
             return Self::handle_response(response).await;
         }
 
@@ -505,7 +492,7 @@ impl OpenAI {
         initial_error: impl Into<OpenAIError>,
         start_attempt: u32,
     ) -> Result<T, OpenAIError> {
-        let max_retries = self.config.max_retries;
+        let max_retries = self.config.max_retries();
         let mut last_error: OpenAIError = initial_error.into();
 
         for attempt in start_attempt..=max_retries {
@@ -659,8 +646,8 @@ mod tests {
     #[test]
     fn test_new_client() {
         let client = OpenAI::new("sk-test-key");
-        assert_eq!(client.config.api_key, "sk-test-key");
-        assert_eq!(client.config.base_url, "https://api.openai.com/v1");
+        assert_eq!(client.config.api_key(), "sk-test-key");
+        assert_eq!(client.config.base_url(), "https://api.openai.com/v1");
     }
 
     #[test]
@@ -670,9 +657,9 @@ mod tests {
             .organization("org-123")
             .timeout_secs(30);
         let client = OpenAI::with_config(config);
-        assert_eq!(client.config.base_url, "https://custom.api.com");
-        assert_eq!(client.config.organization.as_deref(), Some("org-123"));
-        assert_eq!(client.config.timeout_secs, 30);
+        assert_eq!(client.config.base_url(), "https://custom.api.com");
+        assert_eq!(client.config.organization(), Some("org-123"));
+        assert_eq!(client.config.timeout_secs(), 30);
     }
 
     #[test]

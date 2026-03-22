@@ -577,3 +577,4 @@ if (!nativeBinding) {
 
 module.exports = nativeBinding
 module.exports.Client = nativeBinding.Client
+module.exports.NodeWsSession = nativeBinding.NodeWsSession

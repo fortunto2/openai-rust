@@ -37,7 +37,9 @@ pub mod config;
 pub mod error;
 #[cfg(feature = "responses")]
 pub mod hedged;
+pub mod middleware;
 pub mod pagination;
+pub mod rate_limit;
 pub mod request_options;
 pub mod resources;
 pub(crate) mod runtime;

@@ -228,6 +228,47 @@ let (r1, r2, r3) = tokio::join!(
 ---
 
 
+### Middlewares
+Track rate limits automatically.
+
+```rust
+use openai_oxide::rate_limit::RateLimitTracker;
+use std::sync::atomic::Ordering;
+
+let tracker = RateLimitTracker::new();
+let client = OpenAI::from_env()?.with_middleware(tracker.clone());
+
+// After making requests...
+let info = tracker.info();
+println!("Tokens remaining: {}", info.remaining_tokens.load(Ordering::SeqCst));
+```
+
+### `#[openai_tool]` Macro
+Auto-generate JSON schemas for your functions.
+
+```rust
+use openai_oxide_macros::openai_tool;
+
+#[openai_tool(description = "Get the current weather")]
+fn get_weather(location: String, unit: Option<String>) -> String {
+    format!("Weather in {location}")
+}
+
+// The macro generates `get_weather_tool()` which returns the `serde_json::Value` schema
+let tool = get_weather_tool();
+```
+
+### Node.js / TypeScript Native Bindings
+Thanks to NAPI-RS, we now provide lightning-fast Node.js bindings that execute requests and stream events directly from Rust into the V8 event loop without pure-JS blocking overhead.
+
+```javascript
+import { Client } from "openai-oxide-node";
+const client = new Client();
+const session = await client.wsSession();
+const res = await session.send("gpt-4o-mini", "Say hello to Rust from Node!");
+```
+
+
 ## Implemented APIs
 
 | API | Method |

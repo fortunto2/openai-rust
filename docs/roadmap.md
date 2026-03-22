@@ -27,21 +27,21 @@ Reference: https://github.com/64bit/async-openai (competitor), ~/startups/shared
 - [x] Feature flags (`cargo check --no-default-features` compiles)
 - [x] BYOT `create_raw()` methods: Chat, Responses, Embeddings (accept `impl Serialize`, return `serde_json::Value`)
 - [x] Image save helper: `Image::save(path)` — URL download + b64_json decode
-- [ ] `dyn Config` trait for provider-agnostic code (OpenAI, Azure, custom) — separate track
+- [x] `dyn Config` trait for provider-agnostic code (OpenAI, Azure, custom) — separate track
 
 ## Priority 2: Production Hardening
-- [ ] Middleware/interceptor trait: logging, metrics, custom headers, rate limit tracking
-- [ ] Rate limit info from headers: `x-ratelimit-remaining`, `x-ratelimit-reset`
-- [ ] Automatic pagination for list endpoints (cursor-based iterator)
+- [x] Middleware/interceptor trait: logging, metrics, custom headers, rate limit tracking
+- [x] Rate limit info from headers: `x-ratelimit-remaining`, `x-ratelimit-reset`
+- [x] Automatic pagination for list endpoints (cursor-based iterator)
 - [ ] Retry with jitter (currently fixed backoff)
 - [ ] Timeout per-request override
 - [ ] Webhook signature verification (for Responses API webhooks)
 - [ ] Request ID tracking (`x-request-id` header)
 
 ## Priority 3: Ecosystem
-- [ ] `openai-oxide-macros`: derive macro for function tool definitions
-- [ ] WASM support (feature-gated, no tokio — use wasm-bindgen-futures)
-- [ ] OpenRouter / Ollama / vLLM compatibility (custom base URL + model mapping)
+- [x] `openai-oxide-macros`: derive macro for function tool definitions
+- [x] WASM support (feature-gated, no tokio — use wasm-bindgen-futures)
+- [x] OpenRouter / Ollama / vLLM compatibility (custom base URL + model mapping)
 - [ ] Integration test suite with real API (behind `live-tests` feature)
 - [ ] Benchmarks vs async-openai (request/response overhead, streaming latency)
 - [ ] Published docs on docs.rs with comprehensive examples

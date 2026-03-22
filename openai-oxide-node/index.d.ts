@@ -2,5 +2,12 @@
 /* eslint-disable */
 export declare class Client {
   constructor()
-  createResponse(model: string, input: string): Promise<string>
+  createResponse(request: Record<string, any>): Promise<Record<string, any>>
+  createStream(request: Record<string, any>, tsfn: (err: Error | null, event: Record<string, any> | null) => void): Promise<void>
+  wsSession(): Promise<NodeWsSession>
+}
+
+export declare class NodeWsSession {
+  send(model: string, input: string): Promise<Record<string, any>>
+  close(): Promise<void>
 }

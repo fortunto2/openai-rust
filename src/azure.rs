@@ -213,7 +213,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            client.config.base_url,
+            client.config.base_url(),
             "https://my-resource.openai.azure.com/openai/deployments/gpt-4"
         );
     }
@@ -227,7 +227,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            client.config.base_url,
+            client.config.base_url(),
             "https://my-resource.openai.azure.com/openai"
         );
     }
@@ -242,7 +242,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            client.config.base_url,
+            client.config.base_url(),
             "https://my-resource.openai.azure.com/openai/deployments/gpt-4"
         );
     }
@@ -464,11 +464,10 @@ mod tests {
         let client = AzureConfig::from_env().unwrap();
 
         assert_eq!(
-            client.config.base_url,
+            client.config.base_url(),
             "https://test.openai.azure.com/openai"
         );
-        assert_eq!(client.config.api_key, "env-key");
-        assert!(client.config.use_azure_api_key_header);
+        assert_eq!(client.config.api_key(), "env-key");
 
         let query = client.options.query.as_ref().unwrap();
         assert!(

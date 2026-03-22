@@ -12,7 +12,7 @@ use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async_with_config};
 
-use crate::config::ClientConfig;
+use crate::config::Config;
 use crate::error::OpenAIError;
 use crate::types::responses::{Response, ResponseCreateRequest, ResponseStreamEvent, ResponseTool};
 
@@ -61,7 +61,7 @@ impl WsSession {
     /// Builds the WSS URL from the config's `base_url` (replacing `https://`
     /// with `wss://`) and appends `/responses`. Authentication is via
     /// `Authorization: Bearer` header.
-    pub async fn connect(config: &ClientConfig) -> Result<Self, OpenAIError> {
+    pub async fn connect(config: &dyn Config) -> Result<Self, OpenAIError> {
         let ws_url = build_ws_url(config);
 
         tracing::debug!(url = %ws_url, "connecting to WebSocket");
@@ -69,7 +69,7 @@ impl WsSession {
         // Build request with Authorization header
         let request = tokio_tungstenite::tungstenite::http::Request::builder()
             .uri(&ws_url)
-            .header("Authorization", format!("Bearer {}", config.api_key))
+            .header("Authorization", format!("Bearer {}", config.api_key()))
             .header("Sec-WebSocket-Version", "13")
             .header(
                 "Sec-WebSocket-Key",
@@ -323,8 +323,8 @@ impl<'a> Stream for WsEventStream<'a> {
 ///
 /// Replaces `https://` with `wss://` (or `http://` with `ws://`) in the
 /// base URL and appends `/responses`. Auth is via headers, not query params.
-fn build_ws_url(config: &ClientConfig) -> String {
-    let base = &config.base_url;
+fn build_ws_url(config: &dyn Config) -> String {
+    let base = config.base_url();
     let ws_base = if base.starts_with("https://") {
         format!("wss://{}", &base["https://".len()..])
     } else if base.starts_with("http://") {
