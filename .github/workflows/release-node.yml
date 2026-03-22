@@ -29,12 +29,15 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             build: pnpm build --target x86_64-unknown-linux-musl -x
+            use-zig: true
           - host: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            build: pnpm build --target aarch64-unknown-linux-gnu --use-napi-cross
+            build: pnpm build --target aarch64-unknown-linux-gnu -x
+            use-zig: true
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             build: pnpm build --target aarch64-unknown-linux-musl -x
+            use-zig: true
           - host: windows-latest
             target: x86_64-pc-windows-msvc
             build: pnpm build --target x86_64-pc-windows-msvc
@@ -64,14 +67,14 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup Zig for musl builds
-        if: ${{ contains(matrix.target, 'musl') }}
+      - name: Setup Zig for cross builds
+        if: ${{ matrix.use-zig }}
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.2
 
       - name: Install cargo-zigbuild
-        if: ${{ contains(matrix.target, 'musl') }}
+        if: ${{ matrix.use-zig }}
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-zigbuild

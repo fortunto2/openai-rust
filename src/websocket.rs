@@ -62,6 +62,9 @@ impl WsSession {
     /// with `wss://`) and appends `/responses`. Authentication is via
     /// `Authorization: Bearer` header.
     pub async fn connect(config: &dyn Config) -> Result<Self, OpenAIError> {
+        #[cfg(not(target_arch = "wasm32"))]
+        crate::ensure_tls_provider();
+
         let ws_url = build_ws_url(config);
 
         tracing::debug!(url = %ws_url, "connecting to WebSocket");
