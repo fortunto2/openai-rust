@@ -109,6 +109,22 @@ impl<'a> Completions<'a> {
         crate::parsing::parse_completion(response)
     }
 
+    /// Create a streaming chat completion with high-level typed events.
+    ///
+    /// Returns a [`ChatCompletionStream`](crate::stream_helpers::ChatCompletionStream)
+    /// that yields [`ChatStreamEvent`](crate::stream_helpers::ChatStreamEvent) with
+    /// automatic text/tool-call accumulation.
+    ///
+    /// Use `.get_final_completion()` to consume the stream and get the
+    /// assembled [`ChatCompletionResponse`].
+    pub async fn create_stream_helper(
+        &self,
+        request: ChatCompletionRequest,
+    ) -> Result<crate::stream_helpers::ChatCompletionStream, OpenAIError> {
+        let stream = self.create_stream(request).await?;
+        Ok(crate::stream_helpers::ChatCompletionStream::new(stream))
+    }
+
     /// Create a streaming chat completion.
     ///
     /// Returns a `Stream<Item = Result<ChatCompletionChunk>>`.

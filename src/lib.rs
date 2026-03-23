@@ -45,6 +45,7 @@ pub mod rate_limit;
 pub mod request_options;
 pub mod resources;
 pub(crate) mod runtime;
+pub mod stream_helpers;
 pub mod streaming;
 pub mod types;
 #[cfg(feature = "websocket")]
