@@ -1,6 +1,9 @@
 # openai-oxide for Node.js
 
-Native Node.js bindings for [`openai-oxide`](https://github.com/fortunto2/openai-oxide), built with [napi-rs](https://napi.rs/).
+[![npm](https://img.shields.io/npm/v/openai-oxide.svg)](https://www.npmjs.com/package/openai-oxide)
+[![npm downloads](https://img.shields.io/npm/dm/openai-oxide.svg)](https://www.npmjs.com/package/openai-oxide)
+
+Native Node.js bindings for [`openai-oxide`](https://github.com/fortunto2/openai-oxide), built with [napi-rs](https://napi.rs/). Also available on [crates.io](https://crates.io/crates/openai-oxide) (Rust) and [PyPI](https://pypi.org/project/openai-oxide/) (Python).
 
 The package exposes the Rust client to Node.js with native streaming and WebSocket support, while keeping release artifacts out of git. Prebuilt binaries are published to npm for the supported targets listed below.
 
@@ -36,10 +39,12 @@ The official SDK is great for HTTP/REST but does not expose WebSocket streaming 
 
 ## Install
 
-From npm:
-
 ```bash
+npm install openai-oxide
+# or
 pnpm add openai-oxide
+# or
+yarn add openai-oxide
 ```
 
 From the repository for local development:
@@ -142,7 +147,7 @@ The repository keeps the Node release separate from the Rust and Python releases
 For the Node package:
 
 1. Keep the Node package version aligned with the Rust crate and Python package version.
-2. Push a tag like `node-v0.9.5`.
+2. Push a tag like `node-v0.9.6`.
 3. GitHub Actions builds the native addon for each supported target.
 4. The Node release workflow assembles platform packages with `napi-rs` and publishes to npm with `pnpm publish`.
 
