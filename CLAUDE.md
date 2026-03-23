@@ -96,11 +96,36 @@ src/
 | Vector Stores (beta) | `client.beta().vector_stores()` CRUD + `list_page()` / `list_auto()` | Done |
 | Realtime (beta) | `client.beta().realtime().sessions().create()` | Done |
 
-**Current version:** v0.8.0 on crates.io
+**Current version:** v0.9.6 on crates.io
 
 **Feature flags:** Each resource is gated behind an optional Cargo feature (`chat`, `responses`, `embeddings`, `images`, `audio`, `files`, `fine-tuning`, `models`, `moderations`, `batches`, `uploads`, `beta`). All enabled by default. `cargo check --no-default-features` compiles with zero resources (just client + types).
 
 Remaining (experimental/newer): Evals, Skills, Videos, Containers, legacy Completions.
+
+## Documentation
+
+Documentation lives in multiple places — keep them in sync:
+
+| Layer | Location | Auto-updated? |
+|-------|----------|---------------|
+| **API reference** | [docs.rs](https://docs.rs/openai-oxide) | Yes — from `///` doc-comments on `cargo publish` |
+| **Guides** | [GitHub Pages](https://fortunto2.github.io/openai-oxide/) (mdbook) | Yes — GitHub Actions on push to `docs/src/`, `examples/*.rs`, `book.toml` |
+| **AI discovery** | `llms.txt` in repo root | Manual |
+| **Context7** | `context7.json` in repo root | Manual config, auto-indexed |
+| **README** | GitHub + crates.io + npm | Manual |
+
+**Rules for doc-comments (`///`):**
+- Every `pub fn`, `pub struct`, `pub enum` MUST have a `///` doc-comment
+- Every resource file (`src/resources/*.rs`) MUST link to OpenAI docs: `/// OpenAI guide: <https://platform.openai.com/docs/guides/...>`
+- Pre-commit checks doc coverage (currently ~57%, minimum 50%)
+- Use `{{#include ../../../examples/file.rs}}` in mdbook to avoid duplicating code
+
+**When adding a new API endpoint:**
+1. Add `///` doc-comment with OpenAI docs link on the resource struct
+2. Create/update example in `examples/`
+3. Create mdbook guide in `docs/src/guides/` using `{{#include}}`
+4. Update OpenAI mapping table in README
+5. Update `llms.txt` with new usage pattern
 
 ## Essential Commands
 

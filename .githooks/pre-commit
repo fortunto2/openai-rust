@@ -32,6 +32,23 @@ if [ "$VALUE_COUNT" -gt 8 ]; then
     echo "(target: ≤8, currently: $VALUE_COUNT)"
 fi
 
+echo "=== Quality: doc coverage ==="
+TOTAL_PUB=$(grep -r "pub " src/ --include="*.rs" | grep -E "pub (fn|struct|enum|type|trait|const|static|mod)" | grep -v "pub(crate)" | wc -l | tr -d ' ')
+DOCUMENTED=$(grep -r "pub " src/ --include="*.rs" -B1 | grep -E "///.*" | wc -l | tr -d ' ')
+DOC_PCT=$(( DOCUMENTED * 100 / TOTAL_PUB ))
+echo "Doc coverage: $DOC_PCT% ($DOCUMENTED/$TOTAL_PUB public items)"
+if [ "$DOC_PCT" -lt 50 ]; then
+    echo "ERROR: Doc coverage below 50% — add /// comments to public items"
+    exit 1
+fi
+
+echo "=== Quality: resource files must link to OpenAI docs ==="
+NOLINK=$(grep -rL "platform\.openai\.com/docs" src/resources/*.rs src/resources/**/*.rs 2>/dev/null | grep -v mod.rs | wc -l | tr -d ' ')
+if [ "$NOLINK" -gt 0 ]; then
+    echo "WARN: $NOLINK resource files missing OpenAI docs links:"
+    grep -rL "platform\.openai\.com/docs" src/resources/*.rs src/resources/**/*.rs 2>/dev/null | grep -v mod.rs
+fi
+
 echo "=== Quality: enum coverage ==="
 STRING_FIELDS=$(grep -rn "pub.*: String," src/types/*.rs 2>/dev/null | grep -v "//\|name\|id\|url\|content\|text\|message\|description\|input\|path\|key\|label\|title" | wc -l | tr -d ' ')
 if [ "$STRING_FIELDS" -gt 10 ]; then
