@@ -168,9 +168,10 @@ impl Client {
         })
     }
 
-    /// Create with structured output — accepts a Python class (Pydantic or dataclass).
+    /// Create with structured output — accepts a Pydantic v2 BaseModel class.
     ///
-    /// Generates JSON schema from the class and parses the response text back.
+    /// Generates JSON schema via `model_json_schema()`, sends to API,
+    /// parses response back via `model_validate()`.
     ///
     /// ```python
     /// from pydantic import BaseModel
@@ -191,37 +192,30 @@ impl Client {
         response_class: Bound<'py, pyo3::types::PyAny>,
         max_output_tokens: Option<i64>,
     ) -> PyResult<Bound<'py, PyAny>> {
-        // Extract JSON schema from the Python class
-        let schema_json: String = if let Ok(method) = response_class.getattr("model_json_schema") {
-            // Pydantic v2 BaseModel
-            let schema_obj = method.call0()?;
-            let json_mod = py.import("json")?;
-            json_mod.call_method1("dumps", (schema_obj,))?.extract()?
-        } else if let Ok(method) = response_class.getattr("schema") {
-            // Pydantic v1 BaseModel
-            let schema_obj = method.call0()?;
-            let json_mod = py.import("json")?;
-            json_mod.call_method1("dumps", (schema_obj,))?.extract()?
-        } else {
-            // Try dataclasses — use __dataclass_fields__ to build schema
-            return Err(PyRuntimeError::new_err(
-                "response_class must be a Pydantic BaseModel (v1 or v2). \
-                 dataclasses are not yet supported — use Pydantic.",
-            ));
-        };
+        // Pydantic v2: model_json_schema()
+        let schema_method = response_class
+            .getattr("model_json_schema")
+            .map_err(|_| PyRuntimeError::new_err("response_class must be a Pydantic v2 BaseModel with model_json_schema()"))?;
+        let schema_obj = schema_method.call0()?;
+        let json_mod = py.import("json")?;
+        let schema_json: String = json_mod
+            .call_method1("dumps", (schema_obj,))?
+            .extract()?;
 
         let class_name: String = response_class
             .getattr("__name__")
             .and_then(|n| n.extract())
             .unwrap_or_else(|_| "Response".to_string());
 
-        // Store the class for parsing later
         let response_class_ref = response_class.unbind();
         let client = self.inner.clone();
 
         future_into_py(py, async move {
-            let schema_val: serde_json::Value = serde_json::from_str(&schema_json)
+            let mut schema_val: serde_json::Value = serde_json::from_str(&schema_json)
                 .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+
+            // Enforce OpenAI strict schema rules (additionalProperties:false, all required)
+            ensure_strict_schema(&mut schema_val);
 
             let mut req = ResponseCreateRequest::new(&model)
                 .input(input.as_str())
@@ -241,24 +235,13 @@ impl Client {
             let resp = client.responses().create(req).await.map_err(to_py_err)?;
             let text = resp.output_text();
 
-            // Parse text back into the Python class
+            // Parse response text back into Pydantic model
             Python::with_gil(|py| {
                 let class = response_class_ref.bind(py);
                 let json_mod = py.import("json")?;
                 let data = json_mod.call_method1("loads", (text,))?;
-
-                // Try Pydantic v2: model_validate(data)
-                if let Ok(method) = class.getattr("model_validate") {
-                    return method.call1((data,)).map(|r| r.unbind());
-                }
-                // Try Pydantic v1: parse_obj(data)
-                if let Ok(method) = class.getattr("parse_obj") {
-                    return method.call1((data,)).map(|r| r.unbind());
-                }
-                // Fallback: class(**data)
-                class.call((), Some(&data.downcast::<pyo3::types::PyDict>().map_err(|_| {
-                    PyRuntimeError::new_err("failed to parse response as dict")
-                })?)).map(|r| r.unbind())
+                let validate = class.getattr("model_validate")?;
+                validate.call1((data,)).map(|r| r.unbind())
             })
         })
     }
@@ -327,6 +310,30 @@ impl Client {
                 }).map(|p| p.into_any())
             })
         })
+    }
+}
+
+/// Enforce OpenAI strict JSON schema rules recursively.
+fn ensure_strict_schema(value: &mut serde_json::Value) {
+    if let serde_json::Value::Object(map) = value {
+        if map.get("type").and_then(|t| t.as_str()) == Some("object") {
+            map.entry("additionalProperties")
+                .or_insert(serde_json::Value::Bool(false));
+            if let Some(props) = map.get("properties").and_then(|p| p.as_object()) {
+                let keys: Vec<String> = props.keys().cloned().collect();
+                map.insert("required".to_string(), serde_json::json!(keys));
+            }
+        }
+        if map.get("default") == Some(&serde_json::Value::Null) {
+            map.remove("default");
+        }
+        for v in map.values_mut() {
+            ensure_strict_schema(v);
+        }
+    } else if let serde_json::Value::Array(arr) = value {
+        for v in arr {
+            ensure_strict_schema(v);
+        }
     }
 }
 
