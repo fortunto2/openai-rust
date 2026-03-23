@@ -5,7 +5,8 @@
   </p>
   <p align="center">
     <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/v/openai-oxide.svg" alt="crates.io"></a>
-    <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/d/openai-oxide.svg" alt="downloads"></a>
+    <a href="https://www.npmjs.com/package/openai-oxide"><img src="https://img.shields.io/npm/v/openai-oxide.svg" alt="npm"></a>
+    <a href="https://pypi.org/project/openai-oxide/"><img src="https://img.shields.io/pypi/v/openai-oxide.svg" alt="PyPI"></a>
     <a href="https://docs.rs/openai-oxide"><img src="https://docs.rs/openai-oxide/badge.svg" alt="docs.rs"></a>
     <a href="https://github.com/fortunto2/openai-oxide/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
     <a href="https://github.com/fortunto2/openai-oxide"><img src="https://img.shields.io/github/stars/fortunto2/openai-oxide?style=social" alt="GitHub stars"></a>
@@ -47,15 +48,42 @@ Request 2 (cat)  :                      [Req] -> [Wait TTFT] -> [Exec Tool Early
 
 ---
 
+## Installation
+
+### Rust
+```bash
+cargo add openai-oxide tokio --features tokio/full
+```
+
+### Node.js / TypeScript
+```bash
+npm install openai-oxide
+# or
+pnpm add openai-oxide
+# or
+yarn add openai-oxide
+```
+Supported platforms: macOS (x64, arm64), Linux (x64, arm64, glibc & musl), Windows (x64).
+
+### Python
+```bash
+pip install openai-oxide
+# or
+uv pip install openai-oxide
+```
+
+| Package | Registry | Link |
+|---------|----------|------|
+| `openai-oxide` | crates.io | [crates.io/crates/openai-oxide](https://crates.io/crates/openai-oxide) |
+| `openai-oxide` | npm | [npmjs.com/package/openai-oxide](https://www.npmjs.com/package/openai-oxide) |
+| `openai-oxide` | PyPI | [pypi.org/project/openai-oxide](https://pypi.org/project/openai-oxide/) |
+| `openai-oxide-macros` | crates.io | [crates.io/crates/openai-oxide-macros](https://crates.io/crates/openai-oxide-macros) |
+
+---
+
 ## Quick Start
 
-Add the crate to your `Cargo.toml`:
-
-```toml
-[dependencies]
-openai-oxide = "0.9"
-tokio = { version = "1", features = ["full"] }
-```
+### Rust
 
 ```rust
 use openai_oxide::{OpenAI, types::responses::*};
@@ -73,6 +101,30 @@ async fn main() -> Result<(), openai_oxide::OpenAIError> {
     println!("{}", response.output_text());
     Ok(())
 }
+```
+
+### Node.js
+
+```javascript
+const { Client } = require("openai-oxide");
+
+const client = new Client(); // Uses OPENAI_API_KEY
+const text = await client.createText("gpt-4o-mini", "Hello from Node!");
+console.log(text);
+```
+
+### Python
+
+```python
+import asyncio
+from openai_oxide import Client
+
+async def main():
+    client = Client()  # Uses OPENAI_API_KEY
+    res = await client.create("gpt-4o-mini", "Hello from Python!")
+    print(res["text"])
+
+asyncio.run(main())
 ```
 
 ---
@@ -161,14 +213,6 @@ See the full Node package guide and benchmark notes in [openai-oxide-node/README
 ---
 
 ## Python Usage
-
-Install via `uv` or `pip` (no Rust toolchain required):
-
-```bash
-pip install openai-oxide
-# or
-uv pip install openai-oxide
-```
 
 ```python
 import asyncio
