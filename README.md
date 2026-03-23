@@ -397,7 +397,7 @@ Use OpenAI's official guides — the same concepts apply directly. Here's how ea
 | [Responses API](https://platform.openai.com/docs/api-reference/responses) | `client.responses().create()` | `client.createText(model, input)` | `await client.create(model, input)` |
 | [Streaming](https://platform.openai.com/docs/api-reference/streaming) | `client.responses().create_stream()` | `client.createStream({...}, cb)` | `await client.create_stream(model, input)` |
 | [Function Calling](https://platform.openai.com/docs/guides/function-calling) | `client.responses().create_stream_fc()` | `client.createResponse({model, input, tools})` | `await client.create_with_tools(model, input, tools)` |
-| [Structured Output](https://platform.openai.com/docs/guides/structured-outputs) | `ResponseCreateRequest::new(model).text_format(schema)` | `client.createResponse({model, input, text})` | `await client.create_structured(model, input, name, schema)` |
+| [Structured Output](https://platform.openai.com/docs/guides/structured-outputs) | `client.chat().completions().parse::<T>()` | `client.createChatParsed(req, name, schema)` | `await client.create_parsed(model, input, PydanticModel)` |
 | [Embeddings](https://platform.openai.com/docs/guides/embeddings) | `client.embeddings().create()` | via `createResponse()` raw | via `create_raw()` |
 | [Image Generation](https://platform.openai.com/docs/guides/images) | `client.images().generate()` | via `createResponse()` raw | via `create_raw()` |
 | [Text-to-Speech](https://platform.openai.com/docs/guides/text-to-speech) | `client.audio().speech().create()` | via `createResponse()` raw | via `create_raw()` |
@@ -427,6 +427,109 @@ let client = OpenAI::azure(AzureConfig::new()                   // Azure OpenAI
 )?;
 ```
 
+
+## Structured Outputs
+
+Get typed, validated responses directly from the model — no manual JSON parsing.
+
+### Rust (feature: `structured`)
+
+```rust
+use openai_oxide::parsing::ParsedChatCompletion;
+use schemars::JsonSchema;
+use serde::Deserialize;
+
+#[derive(Deserialize, JsonSchema)]
+struct MathAnswer {
+    steps: Vec<String>,
+    final_answer: String,
+}
+
+// Chat API
+let result: ParsedChatCompletion<MathAnswer> = client.chat().completions()
+    .parse::<MathAnswer>(request).await?;
+println!("{}", result.parsed.unwrap().final_answer);
+
+// Responses API
+let result = client.responses().parse::<MathAnswer>(request).await?;
+```
+
+The SDK auto-generates a strict JSON schema from your Rust types, sends it as `response_format` (Chat) or `text.format` (Responses), and deserializes the response. The API guarantees the output matches your schema.
+
+### Node.js
+
+```javascript
+// With raw JSON schema
+const { parsed } = await client.createChatParsed(request, "MathAnswer", jsonSchema);
+
+// With Zod (optional: npm install zod-to-json-schema)
+const { zodParse } = require("openai-oxide/zod");
+const Answer = z.object({ steps: z.array(z.string()), final_answer: z.string() });
+const { parsed } = await zodParse(client, request, Answer);
+```
+
+### Python (Pydantic v2)
+
+```python
+from pydantic import BaseModel
+
+class MathAnswer(BaseModel):
+    steps: list[str]
+    final_answer: str
+
+result = await client.create_parsed("gpt-5.4-mini", "What is 2+2?", MathAnswer)
+print(result.final_answer)  # Typed Pydantic instance, not dict
+```
+
+---
+
+## Stream Helpers
+
+High-level streaming with typed events and automatic delta accumulation.
+
+```rust
+use openai_oxide::stream_helpers::ChatStreamEvent;
+
+// Option 1: Just get the final result
+let stream = client.chat().completions().create_stream_helper(request).await?;
+let completion = stream.get_final_completion().await?;
+
+// Option 2: React to typed events
+let mut stream = client.chat().completions().create_stream_helper(request).await?;
+while let Some(event) = stream.next().await {
+    match event? {
+        ChatStreamEvent::ContentDelta { delta, snapshot } => {
+            print!("{delta}");  // Print as it arrives
+            // snapshot = full text accumulated so far
+        }
+        ChatStreamEvent::ToolCallDone { name, arguments, .. } => {
+            // Arguments are complete — execute the tool
+            execute_tool(&name, &arguments).await;
+        }
+        ChatStreamEvent::ContentDone { content } => {
+            // Final text, fully assembled
+        }
+        _ => {}
+    }
+}
+```
+
+No manual chunk stitching. Tool call arguments are automatically assembled from index-based deltas.
+
+---
+
+## Webhook Verification
+
+Verify OpenAI webhook signatures (feature: `webhooks`).
+
+```rust
+use openai_oxide::resources::webhooks::Webhooks;
+
+let wh = Webhooks::new("whsec_your_secret")?;
+let event: MyEvent = wh.unwrap(payload, signature_header, timestamp_header)?;
+```
+
+---
 
 ## Roadmap
 
