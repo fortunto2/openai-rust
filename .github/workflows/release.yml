@@ -22,7 +22,7 @@ jobs:
         run: sleep 30
       - name: Publish openai-oxide
         continue-on-error: true
-        run: cargo publish --package openai-oxide --no-verify
+        run: cargo publish --package openai-oxide --no-verify --allow-dirty
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
