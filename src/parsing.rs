@@ -105,6 +105,34 @@ pub fn tool_from_type<T: JsonSchema>(
     crate::types::chat::Tool::function(name, description, value)
 }
 
+/// Generate a strict Responses API function tool from a Rust type.
+///
+/// Like [`tool_from_type`] but returns [`ResponseTool`] for the Responses API.
+///
+/// ```ignore
+/// use openai_oxide::parsing::response_tool_from_type;
+///
+/// #[derive(Deserialize, JsonSchema)]
+/// struct SearchArgs { query: String, limit: Option<u32> }
+///
+/// let tool = response_tool_from_type::<SearchArgs>("search", "Search items");
+/// ```
+pub fn response_tool_from_type<T: JsonSchema>(
+    name: impl Into<String>,
+    description: impl Into<String>,
+) -> crate::types::responses::ResponseTool {
+    let schema = schemars::schema_for!(T);
+    let mut value = serde_json::to_value(schema).unwrap_or_default();
+    ensure_strict(&mut value);
+
+    crate::types::responses::ResponseTool::Function {
+        name: name.into(),
+        description: Some(description.into()),
+        parameters: Some(value),
+        strict: Some(true),
+    }
+}
+
 /// Parse a chat completion response, extracting the content from the first choice.
 ///
 /// Returns an error if:
@@ -220,19 +248,77 @@ pub fn parse_response<T: DeserializeOwned>(
     Ok(ParsedResponse { response, parsed })
 }
 
-/// Enforce OpenAI's strict JSON schema rules recursively.
-fn ensure_strict(value: &mut serde_json::Value) {
+/// Make a JSON Schema compatible with OpenAI strict mode.
+///
+/// Mirrors the Python SDK's `_ensure_strict_json_schema()` from `openai/lib/_pydantic.py`.
+///
+/// OpenAI `strict: true` requires:
+/// 1. `additionalProperties: false` on every object
+/// 2. All properties listed in `required`
+/// 3. Optional fields use `anyOf: [{type}, {type: null}]` (not `nullable: true`)
+/// 4. `allOf` with 1 item → inline; multi-item → recurse
+/// 5. `oneOf` → `anyOf`
+/// 6. Recurse into `properties`, `items`, `anyOf`, `allOf`, `$defs`, `definitions`
+///
+/// See: <https://developers.openai.com/api/docs/guides/structured-outputs>
+pub fn ensure_strict(value: &mut serde_json::Value) {
     if let serde_json::Value::Object(map) = value {
-        // Add additionalProperties: false to all objects
-        if map.get("type").and_then(|t| t.as_str()) == Some("object") {
+        // Recurse into $defs / definitions first (like Python SDK)
+        for key in ["$defs", "definitions"] {
+            if let Some(defs) = map.get_mut(key).and_then(|v| v.as_object_mut()) {
+                for def in defs.values_mut() {
+                    ensure_strict(def);
+                }
+            }
+        }
+
+        let is_object = map.get("type").and_then(|t| t.as_str()) == Some("object");
+
+        if is_object {
             map.entry("additionalProperties")
                 .or_insert(serde_json::Value::Bool(false));
 
-            // Make all properties required
+            // Convert nullable properties: "nullable":true + "type":"T"
+            // → {"anyOf": [{"type":"T"}, {"type":"null"}]}
+            // schemars 0.8 uses "nullable" keyword; OpenAI requires anyOf pattern.
+            if let Some(props) = map.get_mut("properties").and_then(|v| v.as_object_mut()) {
+                for (_key, prop) in props.iter_mut() {
+                    if let Some(prop_obj) = prop.as_object_mut() {
+                        if prop_obj.remove("nullable").and_then(|v| v.as_bool()) == Some(true) {
+                            if let Some(type_val) = prop_obj.remove("type") {
+                                let desc = prop_obj.remove("description");
+                                let mut wrapper = serde_json::Map::new();
+                                wrapper.insert(
+                                    "anyOf".into(),
+                                    serde_json::json!([{"type": type_val}, {"type": "null"}]),
+                                );
+                                if let Some(d) = desc {
+                                    wrapper.insert("description".into(), d);
+                                }
+                                *prop = serde_json::Value::Object(wrapper);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // All properties must be required
             if let Some(props) = map.get("properties").and_then(|p| p.as_object()) {
                 let keys: Vec<String> = props.keys().cloned().collect();
                 map.insert("required".to_string(), serde_json::json!(keys));
             }
+
+            // Recurse into each property
+            if let Some(props) = map.get_mut("properties").and_then(|v| v.as_object_mut()) {
+                for prop in props.values_mut() {
+                    ensure_strict(prop);
+                }
+            }
+        }
+
+        // Recurse into array items
+        if let Some(items) = map.get_mut("items") {
+            ensure_strict(items);
         }
 
         // Remove null defaults (not meaningful in strict mode)
@@ -240,10 +326,46 @@ fn ensure_strict(value: &mut serde_json::Value) {
             map.remove("default");
         }
 
-        // Recurse into all values
-        for v in map.values_mut() {
-            ensure_strict(v);
+        // oneOf → anyOf (OpenAI strict doesn't support oneOf)
+        if let Some(one_of) = map.remove("oneOf") {
+            map.insert("anyOf".into(), one_of);
         }
+
+        // anyOf: recurse into variants
+        if let Some(any_of) = map.get_mut("anyOf").and_then(|v| v.as_array_mut()) {
+            for variant in any_of.iter_mut() {
+                ensure_strict(variant);
+            }
+        }
+
+        // allOf: inline single-item, recurse multi-item (matches Python SDK)
+        if let Some(all_of) = map.remove("allOf") {
+            if let Some(arr) = all_of.as_array() {
+                if arr.len() == 1 {
+                    // Inline single allOf entry
+                    if let Some(inner) = arr[0].as_object() {
+                        for (k, v) in inner {
+                            map.entry(k.clone()).or_insert(v.clone());
+                        }
+                    }
+                    // Re-run strict on this node (inlined content may need processing)
+                    ensure_strict(value);
+                    return;
+                } else {
+                    // Multi allOf: keep and recurse
+                    let mut all_of = all_of;
+                    if let Some(arr) = all_of.as_array_mut() {
+                        for entry in arr.iter_mut() {
+                            ensure_strict(entry);
+                        }
+                    }
+                    map.insert("allOf".into(), all_of);
+                }
+            }
+        }
+
+        // Remove top-level $schema (not needed in tool schemas)
+        map.remove("$schema");
     } else if let serde_json::Value::Array(arr) = value {
         for v in arr {
             ensure_strict(v);
