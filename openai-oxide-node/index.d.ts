@@ -3,6 +3,8 @@
 export declare class Client {
   constructor()
   createChatCompletion(request: Record<string, any>): Promise<Record<string, any>>
+  createChatParsed(request: Record<string, any>, schemaName: string, schema: Record<string, any>): Promise<{ completion: Record<string, any>; parsed: any }>
+  createResponseParsed(request: Record<string, any>, schemaName: string, schema: Record<string, any>): Promise<{ response: Record<string, any>; parsed: any }>
   createChatStream(request: Record<string, any>, tsfn: (err: Error | null, event: Record<string, any> | null) => void): Promise<void>
   createResponse(request: Record<string, any>): Promise<Record<string, any>>
   createText(model: string, input: string, maxOutputTokens?: number): Promise<string>

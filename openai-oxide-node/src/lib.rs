@@ -76,6 +76,101 @@ impl Client {
         Ok(res)
     }
 
+    /// Chat completion with structured output — auto-sets response_format to json_schema.
+    ///
+    /// Pass a JSON schema object. Returns the parsed content as a JS object.
+    /// Works with `zod-to-json-schema` or any JSON Schema generator.
+    #[napi(
+        ts_args_type = "request: Record<string, any>, schemaName: string, schema: Record<string, any>",
+        ts_return_type = "Promise<{ completion: Record<string, any>, parsed: any }>"
+    )]
+    pub async fn create_chat_parsed(
+        &self,
+        mut request: serde_json::Value,
+        schema_name: String,
+        schema: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        // Inject response_format
+        if let Some(obj) = request.as_object_mut() {
+            obj.insert(
+                "response_format".to_string(),
+                serde_json::json!({
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema_name,
+                        "schema": schema,
+                        "strict": true
+                    }
+                }),
+            );
+        }
+
+        let completion = self
+            .inner
+            .chat()
+            .completions()
+            .create_raw(&request)
+            .await
+            .map_err(|e| Error::from_reason(e.to_string()))?;
+
+        // Extract and parse content
+        let content = completion
+            .pointer("/choices/0/message/content")
+            .and_then(|c| c.as_str())
+            .unwrap_or("null");
+        let parsed: serde_json::Value =
+            serde_json::from_str(content).unwrap_or(serde_json::Value::Null);
+
+        Ok(serde_json::json!({
+            "completion": completion,
+            "parsed": parsed
+        }))
+    }
+
+    /// Responses API with structured output — auto-sets text.format to json_schema.
+    #[napi(
+        ts_args_type = "request: Record<string, any>, schemaName: string, schema: Record<string, any>",
+        ts_return_type = "Promise<{ response: Record<string, any>, parsed: any }>"
+    )]
+    pub async fn create_response_parsed(
+        &self,
+        mut request: serde_json::Value,
+        schema_name: String,
+        schema: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        // Inject text.format
+        if let Some(obj) = request.as_object_mut() {
+            let text = obj.entry("text").or_insert_with(|| serde_json::json!({}));
+            if let Some(text_obj) = text.as_object_mut() {
+                text_obj.insert(
+                    "format".to_string(),
+                    serde_json::json!({
+                        "type": "json_schema",
+                        "name": schema_name,
+                        "schema": schema,
+                        "strict": true
+                    }),
+                );
+            }
+        }
+
+        let response = self
+            .inner
+            .responses()
+            .create_raw(&request)
+            .await
+            .map_err(|e| Error::from_reason(e.to_string()))?;
+
+        let text = response_output_text(&response);
+        let parsed: serde_json::Value =
+            serde_json::from_str(&text).unwrap_or(serde_json::Value::Null);
+
+        Ok(serde_json::json!({
+            "response": response,
+            "parsed": parsed
+        }))
+    }
+
     #[napi(
         ts_args_type = "request: Record<string, any>, tsfn: (err: Error | null, event: Record<string, any> | null) => void",
         ts_return_type = "Promise<void>"
