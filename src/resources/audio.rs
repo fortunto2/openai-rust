@@ -1,7 +1,7 @@
 // Audio resource — client.audio().transcriptions() / translations() / speech()
 
 use crate::client::OpenAI;
-use crate::error::OpenAIError;
+use crate::error::{OpenAIError, enum_to_string};
 use crate::types::audio::{
     SpeechRequest, Transcription, TranscriptionParams, Translation, TranslationParams,
 };
@@ -66,14 +66,7 @@ impl<'a> Transcriptions<'a> {
             form = form.text("prompt", prompt);
         }
         if let Some(fmt) = params.response_format {
-            form = form.text(
-                "response_format",
-                serde_json::to_value(&fmt)
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            );
+            form = form.text("response_format", enum_to_string(&fmt)?);
         }
         if let Some(temp) = params.temperature {
             form = form.text("temperature", temp.to_string());
@@ -106,14 +99,7 @@ impl<'a> Translations<'a> {
             form = form.text("prompt", prompt);
         }
         if let Some(fmt) = params.response_format {
-            form = form.text(
-                "response_format",
-                serde_json::to_value(&fmt)
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            );
+            form = form.text("response_format", enum_to_string(&fmt)?);
         }
         if let Some(temp) = params.temperature {
             form = form.text("temperature", temp.to_string());

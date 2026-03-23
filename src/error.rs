@@ -2,6 +2,17 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Serialize a `#[serde(rename_all = "...")]` string enum to its JSON name.
+///
+/// Used in multipart form fields where we need the renamed string (e.g. `"fine-tune"`)
+/// instead of the Rust variant name.
+pub(crate) fn enum_to_string<T: Serialize>(value: &T) -> Result<String, OpenAIError> {
+    let v = serde_json::to_value(value)?;
+    v.as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| OpenAIError::InvalidArgument(format!("expected string enum, got {v}")))
+}
+
 /// Error response body from the OpenAI API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorResponse {

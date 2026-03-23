@@ -5,6 +5,7 @@
 
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 use futures_core::Stream;
 use futures_util::stream::SplitSink;
@@ -15,6 +16,9 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async_with_conf
 use crate::config::Config;
 use crate::error::OpenAIError;
 use crate::types::responses::{Response, ResponseCreateRequest, ResponseStreamEvent, ResponseTool};
+
+/// Default timeout for `read_until_completed` (5 minutes).
+const DEFAULT_WS_RESPONSE_TIMEOUT: Duration = Duration::from_secs(300);
 
 type WsStream = WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
 type WsSink = SplitSink<WsStream, Message>;
@@ -53,6 +57,7 @@ type WsReader = futures_util::stream::SplitStream<WsStream>;
 pub struct WsSession {
     sink: WsSink,
     reader: WsReader,
+    response_timeout: Duration,
 }
 
 impl WsSession {
@@ -96,8 +101,21 @@ impl WsSession {
         let (sink, reader) = stream.split();
 
         tracing::info!("WebSocket session connected");
+        let response_timeout = DEFAULT_WS_RESPONSE_TIMEOUT;
 
-        Ok(Self { sink, reader })
+        Ok(Self {
+            sink,
+            reader,
+            response_timeout,
+        })
+    }
+
+    /// Set the timeout for waiting on `response.completed`.
+    ///
+    /// Default is 5 minutes. Set to a lower value for latency-sensitive use cases.
+    pub fn with_response_timeout(mut self, timeout: Duration) -> Self {
+        self.response_timeout = timeout;
+        self
     }
 
     /// Send a request and wait for the complete `Response`.
@@ -211,7 +229,21 @@ impl WsSession {
     }
 
     /// Read messages until a `response.completed` event is received.
+    ///
+    /// Returns an error if `response_timeout` elapses before completion.
     async fn read_until_completed(&mut self) -> Result<Response, OpenAIError> {
+        tokio::time::timeout(self.response_timeout, self.read_until_completed_inner())
+            .await
+            .map_err(|_| {
+                OpenAIError::WebSocketError(format!(
+                    "timed out waiting for response.completed after {:?}",
+                    self.response_timeout
+                ))
+            })?
+    }
+
+    /// Inner loop that reads until `response.completed`.
+    async fn read_until_completed_inner(&mut self) -> Result<Response, OpenAIError> {
         loop {
             let msg = self
                 .reader
@@ -226,42 +258,30 @@ impl WsSession {
 
             match msg {
                 Message::Text(text) => {
-                    let mut event: ResponseStreamEvent = serde_json::from_str(&text)?;
+                    let event: ResponseStreamEvent = serde_json::from_str(&text)?;
 
-                    if event.type_ == "response.completed" {
-                        // Take ownership of response data — avoids cloning potentially large payload
-                        let response_data = event
-                            .data
-                            .as_object_mut()
-                            .and_then(|m| m.remove("response"))
-                            .unwrap_or_default();
-                        let response: Response =
-                            serde_json::from_value(response_data).map_err(|e| {
-                                OpenAIError::WebSocketError(format!(
-                                    "deserialize response.completed: {e}"
-                                ))
-                            })?;
-                        return Ok(response);
+                    match event {
+                        ResponseStreamEvent::ResponseCompleted { response } => {
+                            return Ok(response);
+                        }
+                        ResponseStreamEvent::ResponseFailed { response } => {
+                            let message = response
+                                .error
+                                .as_ref()
+                                .map(|e| e.message.clone())
+                                .unwrap_or_else(|| "unknown error".into());
+                            let code = response.error.as_ref().map(|e| e.code.clone());
+                            return Err(OpenAIError::ApiError {
+                                status: 0,
+                                message,
+                                type_: Some("response_failed".into()),
+                                code,
+                            });
+                        }
+                        other => {
+                            tracing::trace!(event_type = %other.event_type(), "ws event (ignored in send)");
+                        }
                     }
-
-                    if event.type_ == "response.failed" {
-                        let message = event.data["response"]["error"]["message"]
-                            .as_str()
-                            .unwrap_or("unknown error")
-                            .to_string();
-                        let code = event.data["response"]["error"]["code"]
-                            .as_str()
-                            .map(String::from);
-                        return Err(OpenAIError::ApiError {
-                            status: 0,
-                            message,
-                            type_: Some("response_failed".into()),
-                            code,
-                        });
-                    }
-
-                    // Other events (deltas, created, etc.) are ignored in send()
-                    tracing::trace!(event_type = %event.type_, "ws event (ignored in send)");
                 }
                 Message::Ping(data) => {
                     self.sink
@@ -308,7 +328,11 @@ impl<'a> Stream for WsEventStream<'a> {
             Poll::Ready(Some(Ok(msg))) => match msg {
                 Message::Text(text) => match serde_json::from_str::<ResponseStreamEvent>(&text) {
                     Ok(event) => {
-                        if event.type_ == "response.completed" || event.type_ == "response.failed" {
+                        if matches!(
+                            event,
+                            ResponseStreamEvent::ResponseCompleted { .. }
+                                | ResponseStreamEvent::ResponseFailed { .. }
+                        ) {
                             this.done = true;
                         }
                         Poll::Ready(Some(Ok(event)))

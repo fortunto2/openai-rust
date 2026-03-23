@@ -91,34 +91,15 @@ impl<'a> Responses<'a> {
         &self,
         request: &impl serde::Serialize,
     ) -> Result<crate::streaming::SseStream<serde_json::Value>, OpenAIError> {
-        let response = self
+        let builder = self
             .client
             .request(reqwest::Method::POST, "/responses")
             .header(reqwest::header::ACCEPT, "text/event-stream")
             .header(reqwest::header::CACHE_CONTROL, "no-cache")
-            .json(request)
-            .send()
-            .await?;
+            .json(request);
 
-        let status = response.status();
-        if !status.is_success() {
-            let status_code = status.as_u16();
-            let body = response.text().await.unwrap_or_default();
-            if let Ok(error_resp) = serde_json::from_str::<crate::error::ErrorResponse>(&body) {
-                return Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: error_resp.error.message,
-                    type_: error_resp.error.type_,
-                    code: error_resp.error.code,
-                });
-            }
-            return Err(OpenAIError::ApiError {
-                status: status_code,
-                message: body,
-                type_: None,
-                code: None,
-            });
-        }
+        let response = self.client.send_raw_with_retry(builder).await?;
+        let response = OpenAI::check_stream_response(response).await?;
         Ok(crate::streaming::SseStream::new(response))
     }
 
@@ -138,38 +119,15 @@ impl<'a> Responses<'a> {
         mut request: ResponseCreateRequest,
     ) -> Result<SseStream<ResponseStreamEvent>, OpenAIError> {
         request.stream = Some(true);
-        // We always receive usage from Responses API automatically or stream_options doesn't apply the same way,
-        // but let's make sure reasoning fields are aligned too if needed.
-        // Actually, Response API does not use StreamOptions, it sends usage automatically.
-        let response = self
+        let builder = self
             .client
             .request(reqwest::Method::POST, "/responses")
             .header(reqwest::header::ACCEPT, "text/event-stream")
             .header(reqwest::header::CACHE_CONTROL, "no-cache")
-            .json(&request)
-            .send()
-            .await?;
+            .json(&request);
 
-        let status = response.status();
-        if !status.is_success() {
-            let status_code = status.as_u16();
-            let body = response.text().await.unwrap_or_default();
-            if let Ok(error_resp) = serde_json::from_str::<crate::error::ErrorResponse>(&body) {
-                return Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: error_resp.error.message,
-                    type_: error_resp.error.type_,
-                    code: error_resp.error.code,
-                });
-            }
-            return Err(OpenAIError::ApiError {
-                status: status_code,
-                message: body,
-                type_: None,
-                code: None,
-            });
-        }
-
+        let response = self.client.send_raw_with_retry(builder).await?;
+        let response = OpenAI::check_stream_response(response).await?;
         Ok(SseStream::new(response))
     }
 
@@ -248,79 +206,58 @@ impl<'a> Responses<'a> {
                     }
                 };
 
-                match event.type_.as_str() {
-                    "response.created" => {
-                        if let Some(id) = event
-                            .data
-                            .get("response")
-                            .and_then(|r| r.get("id"))
-                            .and_then(|id| id.as_str())
-                        {
-                            response_id = Some(id.to_string());
-                            let _ = meta_tx.send(StreamFcMeta {
-                                response_id: response_id.clone(),
-                                error: None,
-                            });
+                match event {
+                    ResponseStreamEvent::ResponseCreated { response: resp } => {
+                        response_id = Some(resp.id.clone());
+                        let _ = meta_tx.send(StreamFcMeta {
+                            response_id: response_id.clone(),
+                            error: None,
+                        });
+                    }
+                    ResponseStreamEvent::OutputItemAdded {
+                        output_index, item, ..
+                    } => {
+                        if item.type_ == "function_call" {
+                            if let Some(name) = &item.name {
+                                pending_name.insert(output_index, name.clone());
+                            }
+                            let cid = item.call_id.as_deref().or(item.id.as_deref()).unwrap_or("");
+                            pending_call_id.insert(output_index, cid.to_string());
                         }
                     }
-                    "response.output_item.added" => {
-                        if let Some(item) = event.data.get("item")
-                            && item.get("type").and_then(|t| t.as_str()) == Some("function_call")
-                        {
-                            let idx = event
-                                .data
-                                .get("output_index")
-                                .and_then(|i| i.as_i64())
-                                .unwrap_or(-1);
-                            if let Some(name) = item.get("name").and_then(|n| n.as_str()) {
-                                pending_name.insert(idx, name.to_string());
-                            }
-                            if let Some(cid) = item.get("call_id").and_then(|c| c.as_str()) {
-                                pending_call_id.insert(idx, cid.to_string());
-                            }
-                        }
-                    }
-                    "response.function_call_arguments.done" => {
-                        let idx = event
-                            .data
-                            .get("output_index")
-                            .and_then(|i| i.as_i64())
-                            .unwrap_or(-1);
-                        let name = pending_name.remove(&idx).unwrap_or_default();
-                        let call_id = pending_call_id.remove(&idx).unwrap_or_default();
-                        let arguments = event
-                            .data
-                            .get("arguments")
-                            .and_then(|a| a.as_str())
-                            .and_then(|s| serde_json::from_str(s).ok())
+                    ResponseStreamEvent::FunctionCallArgumentsDone {
+                        output_index,
+                        arguments,
+                        ..
+                    } => {
+                        let name = pending_name.remove(&output_index).unwrap_or_default();
+                        let call_id = pending_call_id.remove(&output_index).unwrap_or_default();
+                        let parsed_args = serde_json::from_str(&arguments)
                             .unwrap_or(serde_json::Value::Object(Default::default()));
 
                         let fc = crate::types::responses::FunctionCall {
                             call_id,
                             name,
-                            arguments,
+                            arguments: parsed_args,
                         };
 
                         if fc_tx.send(fc).await.is_err() {
                             break; // receiver dropped
                         }
                     }
-                    "response.failed" => {
-                        let msg = event
-                            .data
-                            .get("response")
-                            .and_then(|r| r.get("error"))
-                            .and_then(|e| e.get("message"))
-                            .and_then(|m| m.as_str())
-                            .unwrap_or("response.failed")
-                            .to_string();
+                    ResponseStreamEvent::ResponseFailed { response: resp } => {
+                        let msg = resp
+                            .error
+                            .as_ref()
+                            .map(|e| e.message.clone())
+                            .unwrap_or_else(|| "response.failed".into());
                         let _ = meta_tx.send(StreamFcMeta {
                             response_id: response_id.clone(),
                             error: Some(msg),
                         });
                         break;
                     }
-                    "response.completed" => {
+                    ResponseStreamEvent::ResponseCompleted { .. } => {
                         let _ = meta_tx.send(StreamFcMeta {
                             response_id: response_id.clone(),
                             error: None,
@@ -360,28 +297,8 @@ impl<'a> Responses<'a> {
             .send()
             .await?;
 
-        let status = response.status();
-        if status.is_success() {
-            Ok(())
-        } else {
-            let status_code = status.as_u16();
-            let body = response.text().await.unwrap_or_default();
-            if let Ok(error_resp) = serde_json::from_str::<crate::error::ErrorResponse>(&body) {
-                Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: error_resp.error.message,
-                    type_: error_resp.error.type_,
-                    code: error_resp.error.code,
-                })
-            } else {
-                Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: body,
-                    type_: None,
-                    code: None,
-                })
-            }
-        }
+        OpenAI::check_stream_response(response).await?;
+        Ok(())
     }
 }
 

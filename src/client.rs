@@ -536,6 +536,109 @@ impl OpenAI {
         Err(last_error)
     }
 
+    /// Send a request with retry, returning the raw [`reqwest::Response`].
+    ///
+    /// Used by streaming and multipart endpoints that need retry but handle the
+    /// response body themselves. Retry happens BEFORE consuming the body.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) async fn send_raw_with_retry(
+        &self,
+        builder: reqwest::RequestBuilder,
+    ) -> Result<reqwest::Response, OpenAIError> {
+        // Fast path: first attempt
+        let response = match builder.try_clone() {
+            Some(cloned) => match cloned.send().await {
+                Ok(resp) => resp,
+                Err(e) if self.config.max_retries() == 0 => {
+                    return Err(OpenAIError::RequestError(e));
+                }
+                Err(e) => {
+                    return self
+                        .retry_loop_raw(builder, OpenAIError::RequestError(e), 1)
+                        .await;
+                }
+            },
+            None => {
+                // Cannot clone (e.g. streaming body) — no retry possible
+                return Ok(builder.send().await?);
+            }
+        };
+
+        let status = response.status().as_u16();
+        if !RETRYABLE_STATUS_CODES.contains(&status) {
+            return Ok(response);
+        }
+        if self.config.max_retries() == 0 {
+            return Ok(response);
+        }
+
+        let retry_after = response
+            .headers()
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<f64>().ok());
+        let last_error = Self::extract_error(status, response).await;
+        tokio::time::sleep(Self::backoff_delay(0, retry_after)).await;
+        self.retry_loop_raw(builder, last_error, 1).await
+    }
+
+    /// Retry loop for raw responses.
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn retry_loop_raw(
+        &self,
+        builder: reqwest::RequestBuilder,
+        initial_error: OpenAIError,
+        start_attempt: u32,
+    ) -> Result<reqwest::Response, OpenAIError> {
+        let max_retries = self.config.max_retries();
+        let mut last_error = initial_error;
+
+        for attempt in start_attempt..=max_retries {
+            let req = match builder.try_clone() {
+                Some(cloned) => cloned,
+                None => return Err(last_error),
+            };
+
+            let response = match req.send().await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    last_error = OpenAIError::RequestError(e);
+                    if attempt < max_retries {
+                        tokio::time::sleep(Self::backoff_delay(attempt, None)).await;
+                        continue;
+                    }
+                    break;
+                }
+            };
+
+            let status = response.status().as_u16();
+            if !RETRYABLE_STATUS_CODES.contains(&status) || attempt == max_retries {
+                return Ok(response);
+            }
+
+            let retry_after = response
+                .headers()
+                .get("retry-after")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse::<f64>().ok());
+            last_error = Self::extract_error(status, response).await;
+            tokio::time::sleep(Self::backoff_delay(attempt, retry_after)).await;
+        }
+
+        Err(last_error)
+    }
+
+    /// Check a streaming response status and return error if non-2xx.
+    pub(crate) async fn check_stream_response(
+        response: reqwest::Response,
+    ) -> Result<reqwest::Response, OpenAIError> {
+        if response.status().is_success() {
+            Ok(response)
+        } else {
+            Err(Self::extract_error(response.status().as_u16(), response).await)
+        }
+    }
+
     /// Calculate backoff delay: max(retry_after, 0.5 * 2^attempt) seconds.
     #[cfg(not(target_arch = "wasm32"))]
     fn backoff_delay(attempt: u32, retry_after_secs: Option<f64>) -> Duration {
@@ -591,7 +694,7 @@ impl OpenAI {
     }
 
     /// Extract an OpenAIError from a failed response.
-    async fn extract_error(status: u16, response: reqwest::Response) -> OpenAIError {
+    pub(crate) async fn extract_error(status: u16, response: reqwest::Response) -> OpenAIError {
         let body = response.text().await.unwrap_or_default();
         if let Ok(error_resp) = serde_json::from_str::<ErrorResponse>(&body) {
             OpenAIError::ApiError {

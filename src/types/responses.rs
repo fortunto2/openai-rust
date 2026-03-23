@@ -664,15 +664,135 @@ impl Response {
 // ── Streaming types ──
 
 /// A streaming event from the Responses API.
-/// Events are prefixed with `event:` in SSE and have a `data:` JSON payload.
+///
+/// Uses `#[serde(tag = "type")]` for typed deserialization. Unknown event types
+/// fall through to the `Other` variant to ensure forward compatibility.
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ResponseStreamEvent {
-    /// Event type, e.g. "response.created", "response.output_text.delta".
-    #[serde(rename = "type")]
-    pub type_: String,
-    /// The full payload (varies per event type).
-    #[serde(flatten)]
-    pub data: serde_json::Value,
+#[serde(tag = "type")]
+#[non_exhaustive]
+pub enum ResponseStreamEvent {
+    // ── Lifecycle events ──
+    #[serde(rename = "response.created")]
+    ResponseCreated { response: Response },
+    #[serde(rename = "response.in_progress")]
+    ResponseInProgress { response: Response },
+    #[serde(rename = "response.completed")]
+    ResponseCompleted { response: Response },
+    #[serde(rename = "response.failed")]
+    ResponseFailed { response: Response },
+    #[serde(rename = "response.incomplete")]
+    ResponseIncomplete { response: Response },
+
+    // ── Output item events ──
+    #[serde(rename = "response.output_item.added")]
+    OutputItemAdded {
+        output_index: i64,
+        item: ResponseOutputItem,
+    },
+    #[serde(rename = "response.output_item.done")]
+    OutputItemDone {
+        output_index: i64,
+        item: ResponseOutputItem,
+    },
+
+    // ── Content part events ──
+    #[serde(rename = "response.content_part.added")]
+    ContentPartAdded {
+        output_index: i64,
+        content_index: i64,
+        part: serde_json::Value,
+    },
+    #[serde(rename = "response.content_part.done")]
+    ContentPartDone {
+        output_index: i64,
+        content_index: i64,
+        part: serde_json::Value,
+    },
+
+    // ── Text delta events ──
+    #[serde(rename = "response.output_text.delta")]
+    OutputTextDelta {
+        output_index: i64,
+        content_index: i64,
+        delta: String,
+    },
+    #[serde(rename = "response.output_text.done")]
+    OutputTextDone {
+        output_index: i64,
+        content_index: i64,
+        text: String,
+    },
+
+    // ── Function call events ──
+    #[serde(rename = "response.function_call_arguments.delta")]
+    FunctionCallArgumentsDelta {
+        output_index: i64,
+        #[serde(default)]
+        item_id: Option<String>,
+        delta: String,
+    },
+    #[serde(rename = "response.function_call_arguments.done")]
+    FunctionCallArgumentsDone {
+        output_index: i64,
+        #[serde(default)]
+        item_id: Option<String>,
+        arguments: String,
+    },
+
+    // ── Reasoning events ──
+    #[serde(rename = "response.reasoning_summary_text.delta")]
+    ReasoningSummaryTextDelta {
+        output_index: i64,
+        #[serde(default)]
+        summary_index: Option<i64>,
+        delta: String,
+    },
+    #[serde(rename = "response.reasoning_summary_text.done")]
+    ReasoningSummaryTextDone {
+        output_index: i64,
+        #[serde(default)]
+        summary_index: Option<i64>,
+        text: String,
+    },
+
+    // ── Error event ──
+    #[serde(rename = "error")]
+    Error {
+        #[serde(default)]
+        message: Option<String>,
+        #[serde(default)]
+        code: Option<String>,
+    },
+
+    // ── Catch-all for unknown/new event types ──
+    /// Unknown event type. Contains the raw JSON data for forward compatibility.
+    #[serde(untagged)]
+    Other(serde_json::Value),
+}
+
+impl ResponseStreamEvent {
+    /// Get the event type string.
+    pub fn event_type(&self) -> &str {
+        match self {
+            Self::ResponseCreated { .. } => "response.created",
+            Self::ResponseInProgress { .. } => "response.in_progress",
+            Self::ResponseCompleted { .. } => "response.completed",
+            Self::ResponseFailed { .. } => "response.failed",
+            Self::ResponseIncomplete { .. } => "response.incomplete",
+            Self::OutputItemAdded { .. } => "response.output_item.added",
+            Self::OutputItemDone { .. } => "response.output_item.done",
+            Self::ContentPartAdded { .. } => "response.content_part.added",
+            Self::ContentPartDone { .. } => "response.content_part.done",
+            Self::OutputTextDelta { .. } => "response.output_text.delta",
+            Self::OutputTextDone { .. } => "response.output_text.done",
+            Self::FunctionCallArgumentsDelta { .. } => "response.function_call_arguments.delta",
+            Self::FunctionCallArgumentsDone { .. } => "response.function_call_arguments.done",
+            Self::ReasoningSummaryTextDelta { .. } => "response.reasoning_summary_text.delta",
+            Self::ReasoningSummaryTextDone { .. } => "response.reasoning_summary_text.done",
+            Self::Error { .. } => "error",
+            Self::Other(v) => v.get("type").and_then(|t| t.as_str()).unwrap_or("unknown"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -938,8 +1058,49 @@ mod tests {
             "content_index": 0
         }"#;
         let event: ResponseStreamEvent = serde_json::from_str(json).unwrap();
-        assert_eq!(event.type_, "response.output_text.delta");
-        assert_eq!(event.data["delta"], "Hello");
+        assert_eq!(event.event_type(), "response.output_text.delta");
+        match event {
+            ResponseStreamEvent::OutputTextDelta {
+                delta,
+                output_index,
+                content_index,
+            } => {
+                assert_eq!(delta, "Hello");
+                assert_eq!(output_index, 0);
+                assert_eq!(content_index, 0);
+            }
+            other => panic!("expected OutputTextDelta, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_stream_event_completed() {
+        let json = r#"{
+            "type": "response.completed",
+            "response": {
+                "id": "resp-1",
+                "object": "response",
+                "created_at": 1.0,
+                "model": "gpt-4o",
+                "output": [],
+                "status": "completed"
+            }
+        }"#;
+        let event: ResponseStreamEvent = serde_json::from_str(json).unwrap();
+        match event {
+            ResponseStreamEvent::ResponseCompleted { response } => {
+                assert_eq!(response.id, "resp-1");
+            }
+            other => panic!("expected ResponseCompleted, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_stream_event_unknown_type() {
+        let json = r#"{"type": "response.some_future_event", "foo": "bar"}"#;
+        let event: ResponseStreamEvent = serde_json::from_str(json).unwrap();
+        assert_eq!(event.event_type(), "response.some_future_event");
+        assert!(matches!(event, ResponseStreamEvent::Other(_)));
     }
 
     #[test]

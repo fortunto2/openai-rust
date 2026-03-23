@@ -91,12 +91,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(event) = stream.next().await {
         match event {
             Ok(ev) => {
-                if ev.type_ == "response.output_text.delta" {
-                    if let Some(delta) = ev.data.get("delta").and_then(|d| d.as_str()) {
-                        print!("{}", delta);
-                    }
-                } else if ev.type_ == "response.completed" {
-                    println!("\n[stream completed]");
+                use openai_oxide::types::responses::ResponseStreamEvent::*;
+                match ev {
+                    OutputTextDelta { delta, .. } => print!("{}", delta),
+                    ResponseCompleted { .. } => println!("\n[stream completed]"),
+                    _ => {}
                 }
             }
             Err(e) => {

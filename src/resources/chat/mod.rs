@@ -36,35 +36,15 @@ impl<'a> Completions<'a> {
         &self,
         request: &impl serde::Serialize,
     ) -> Result<crate::streaming::SseStream<serde_json::Value>, OpenAIError> {
-        let response = self
+        let builder = self
             .client
             .request(reqwest::Method::POST, "/chat/completions")
             .header(reqwest::header::ACCEPT, "text/event-stream")
             .header(reqwest::header::CACHE_CONTROL, "no-cache")
-            .json(request)
-            .send()
-            .await?;
+            .json(request);
 
-        let status = response.status();
-        if !status.is_success() {
-            let status_code = status.as_u16();
-            let body = response.text().await.unwrap_or_default();
-            if let Ok(error_resp) = serde_json::from_str::<crate::error::ErrorResponse>(&body) {
-                return Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: error_resp.error.message,
-                    type_: error_resp.error.type_,
-                    code: error_resp.error.code,
-                });
-            }
-            return Err(OpenAIError::ApiError {
-                status: status_code,
-                message: body,
-                type_: None,
-                code: None,
-            });
-        }
-
+        let response = self.client.send_raw_with_retry(builder).await?;
+        let response = OpenAI::check_stream_response(response).await?;
         Ok(crate::streaming::SseStream::new(response))
     }
 
@@ -111,35 +91,15 @@ impl<'a> Completions<'a> {
     ) -> Result<SseStream<ChatCompletionChunk>, OpenAIError> {
         Self::prepare_reasoning_request(&mut request);
         request.stream = Some(true);
-        let response = self
+        let builder = self
             .client
             .request(reqwest::Method::POST, "/chat/completions")
             .header(reqwest::header::ACCEPT, "text/event-stream")
             .header(reqwest::header::CACHE_CONTROL, "no-cache")
-            .json(&request)
-            .send()
-            .await?;
+            .json(&request);
 
-        let status = response.status();
-        if !status.is_success() {
-            let status_code = status.as_u16();
-            let body = response.text().await.unwrap_or_default();
-            if let Ok(error_resp) = serde_json::from_str::<crate::error::ErrorResponse>(&body) {
-                return Err(OpenAIError::ApiError {
-                    status: status_code,
-                    message: error_resp.error.message,
-                    type_: error_resp.error.type_,
-                    code: error_resp.error.code,
-                });
-            }
-            return Err(OpenAIError::ApiError {
-                status: status_code,
-                message: body,
-                type_: None,
-                code: None,
-            });
-        }
-
+        let response = self.client.send_raw_with_retry(builder).await?;
+        let response = OpenAI::check_stream_response(response).await?;
         Ok(SseStream::new(response))
     }
 
@@ -334,5 +294,65 @@ mod tests {
             }
             other => panic!("expected ApiError, got: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn test_chat_stream_retries_on_429() {
+        use futures_util::StreamExt;
+
+        let mut server = mockito::Server::new_async().await;
+
+        // First request: 429
+        let _mock_429 = server
+            .mock("POST", "/chat/completions")
+            .with_status(429)
+            .with_body(r#"{"error":{"message":"Rate limit","type":"rate_limit","param":null,"code":null}}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        // Second request: 200 with SSE
+        let _mock_ok = server
+            .mock("POST", "/chat/completions")
+            .with_status(200)
+            .with_header("content-type", "text/event-stream")
+            .with_body("data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"gpt-4o\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n\n")
+            .expect(1)
+            .create_async()
+            .await;
+
+        let client = OpenAI::with_config(
+            ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(2),
+        );
+
+        let request = ChatCompletionRequest::new(
+            "gpt-4o",
+            vec![ChatCompletionMessageParam::User {
+                content: UserContent::Text("Hi".into()),
+                name: None,
+            }],
+        );
+
+        let stream = client
+            .chat()
+            .completions()
+            .create_stream(request)
+            .await
+            .unwrap();
+
+        let chunks: Vec<_> = stream
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .filter_map(|r| r.ok())
+            .collect();
+
+        assert!(!chunks.is_empty());
+        assert_eq!(chunks[0].choices[0].delta.content.as_deref(), Some("Hi"));
+
+        _mock_429.assert_async().await;
+        _mock_ok.assert_async().await;
     }
 }

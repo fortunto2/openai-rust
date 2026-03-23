@@ -95,8 +95,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             // Map oxide SSE events → raw SSE text chunks for the client
             let sse_stream = stream.map(|event| match event {
                 Ok(ev) => {
-                    let json = serde_json::to_string(&ev.data).unwrap_or_default();
-                    let chunk = format!("event: {}\ndata: {}\n\n", ev.type_, json);
+                    let event_type = ev.event_type().to_string();
+                    let json = serde_json::to_string(&ev).unwrap_or_default();
+                    let chunk = format!("event: {}\ndata: {}\n\n", event_type, json);
                     Ok::<Vec<u8>, Error>(chunk.into_bytes())
                 }
                 Err(e) => {

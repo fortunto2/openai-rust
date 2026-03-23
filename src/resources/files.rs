@@ -1,7 +1,7 @@
 // Files resource — client.files().create() / list() / retrieve() / delete() / content()
 
 use crate::client::OpenAI;
-use crate::error::OpenAIError;
+use crate::error::{OpenAIError, enum_to_string};
 use crate::pagination::{Page, Paginator};
 use crate::types::file::{FileDeleted, FileList, FileListParams, FileObject, FileUploadParams};
 
@@ -26,14 +26,7 @@ impl<'a> Files<'a> {
                 "file",
                 reqwest::multipart::Part::bytes(params.file).file_name(params.filename),
             )
-            .text(
-                "purpose",
-                serde_json::to_value(&params.purpose)
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            );
+            .text("purpose", enum_to_string(&params.purpose)?);
 
         self.client.post_multipart("/files", form).await
     }

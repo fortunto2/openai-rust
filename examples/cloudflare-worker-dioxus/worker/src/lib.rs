@@ -276,20 +276,18 @@ impl ChatDurableObject {
                             if let Ok(worker::WebsocketEvent::Message(msg)) = openai_event {
                                 if let Some(text) = msg.text() {
                                     if let Ok(event) = serde_json::from_str::<ResponseStreamEvent>(&text) {
-                                        if event.type_ == "response.output_text.delta" {
-                                            if let Some(delta) = event.data["delta"].as_str() {
-                                                let reply = WsMessage {
-                                                    action: "chunk".into(),
-                                                    content: Some(delta.to_string()),
-                                                    messages: None,
-                                                    model: None,
-                                                    base_url: None,
-                                                };
-                                                if let Ok(json) = serde_json::to_string(&reply) {
-                                                    let _ = browser_ws.send_with_str(json);
-                                                }
+                                        if let ResponseStreamEvent::OutputTextDelta { delta, .. } = &event {
+                                            let reply = WsMessage {
+                                                action: "chunk".into(),
+                                                content: Some(delta.clone()),
+                                                messages: None,
+                                                model: None,
+                                                base_url: None,
+                                            };
+                                            if let Ok(json) = serde_json::to_string(&reply) {
+                                                let _ = browser_ws.send_with_str(json);
                                             }
-                                        } else if event.type_ == "response.completed" {
+                                        } else if matches!(event, ResponseStreamEvent::ResponseCompleted { .. }) {
                                             let done_msg = WsMessage {
                                                 action: "done".into(),
                                                 content: None,

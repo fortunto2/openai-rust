@@ -42,46 +42,45 @@ impl<T: serde::de::DeserializeOwned> Stream for SseStream<T> {
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
 
-        if this.done {
-            return Poll::Ready(None);
-        }
+        loop {
+            if this.done {
+                return Poll::Ready(None);
+            }
 
-        // Check if we already have a complete event in the buffer
-        if let Some(item) = try_parse_next::<T>(&mut this.buffer, &mut this.done) {
-            return Poll::Ready(Some(item));
-        }
+            // Check if we already have a complete event in the buffer
+            if let Some(item) = try_parse_next::<T>(&mut this.buffer, &mut this.done) {
+                return Poll::Ready(Some(item));
+            }
 
-        // Poll for more data from the byte stream
-        match this.inner.as_mut().poll_next(cx) {
-            Poll::Ready(Some(Ok(chunk))) => {
-                this.buffer.push_str(&String::from_utf8_lossy(&chunk));
-                // Safety cap: 4MB max buffer to prevent unbounded growth on malformed streams
-                if this.buffer.len() > 4 * 1024 * 1024 {
-                    this.done = true;
-                    return Poll::Ready(Some(Err(OpenAIError::StreamError(
-                        "SSE buffer exceeded 4MB".into(),
-                    ))));
-                }
-                match try_parse_next::<T>(&mut this.buffer, &mut this.done) {
-                    Some(item) => Poll::Ready(Some(item)),
-                    None => {
-                        cx.waker().wake_by_ref();
-                        Poll::Pending
+            // Poll for more data from the byte stream
+            match this.inner.as_mut().poll_next(cx) {
+                Poll::Ready(Some(Ok(chunk))) => {
+                    this.buffer.push_str(&String::from_utf8_lossy(&chunk));
+                    // Safety cap: 4MB max buffer to prevent unbounded growth on malformed streams
+                    if this.buffer.len() > 4 * 1024 * 1024 {
+                        this.done = true;
+                        return Poll::Ready(Some(Err(OpenAIError::StreamError(
+                            "SSE buffer exceeded 4MB".into(),
+                        ))));
                     }
+                    // Loop back to try_parse_next — avoids wake_by_ref() busy-poll.
+                    // If no complete event yet, we'll poll inner again which will
+                    // either give us more data or return Pending (registering waker).
+                    continue;
                 }
-            }
-            Poll::Ready(Some(Err(e))) => {
-                this.done = true;
-                Poll::Ready(Some(Err(OpenAIError::RequestError(e))))
-            }
-            Poll::Ready(None) => {
-                this.done = true;
-                match try_parse_next::<T>(&mut this.buffer, &mut this.done) {
-                    Some(item) => Poll::Ready(Some(item)),
-                    None => Poll::Ready(None),
+                Poll::Ready(Some(Err(e))) => {
+                    this.done = true;
+                    return Poll::Ready(Some(Err(OpenAIError::RequestError(e))));
                 }
+                Poll::Ready(None) => {
+                    this.done = true;
+                    return match try_parse_next::<T>(&mut this.buffer, &mut this.done) {
+                        Some(item) => Poll::Ready(Some(item)),
+                        None => Poll::Ready(None),
+                    };
+                }
+                Poll::Pending => return Poll::Pending,
             }
-            Poll::Pending => Poll::Pending,
         }
     }
 }
@@ -221,27 +220,136 @@ data: {"id":"c2","object":"chat.completion.chunk","created":1,"model":"gpt-4o","
     fn test_parse_sse_response_stream_events() {
         use crate::types::responses::ResponseStreamEvent;
 
-        let raw = r#"data: {"type":"response.created","response":{"id":"resp-1","object":"response","status":"in_progress"}}
+        let raw = r#"data: {"type":"response.created","response":{"id":"resp-1","object":"response","created_at":1.0,"model":"gpt-4o","output":[],"status":"in_progress"}}
 
 data: {"type":"response.output_text.delta","delta":"Hello","output_index":0,"content_index":0}
 
 data: {"type":"response.output_text.delta","delta":" world","output_index":0,"content_index":0}
 
-data: {"type":"response.completed","response":{"id":"resp-1","status":"completed"}}
+data: {"type":"response.completed","response":{"id":"resp-1","object":"response","created_at":1.0,"model":"gpt-4o","output":[],"status":"completed"}}
 
 data: [DONE]
 "#;
 
         let events = parse_sse_events::<ResponseStreamEvent>(raw);
         assert_eq!(events.len(), 4);
-        assert_eq!(events[0].as_ref().unwrap().type_, "response.created");
+        assert_eq!(events[0].as_ref().unwrap().event_type(), "response.created");
         assert_eq!(
-            events[1].as_ref().unwrap().type_,
+            events[1].as_ref().unwrap().event_type(),
             "response.output_text.delta"
         );
-        assert_eq!(events[1].as_ref().unwrap().data["delta"], "Hello");
-        assert_eq!(events[2].as_ref().unwrap().data["delta"], " world");
-        assert_eq!(events[3].as_ref().unwrap().type_, "response.completed");
+        match events[1].as_ref().unwrap() {
+            ResponseStreamEvent::OutputTextDelta { delta, .. } => assert_eq!(delta, "Hello"),
+            other => panic!("expected OutputTextDelta, got: {other:?}"),
+        }
+        match events[2].as_ref().unwrap() {
+            ResponseStreamEvent::OutputTextDelta { delta, .. } => assert_eq!(delta, " world"),
+            other => panic!("expected OutputTextDelta, got: {other:?}"),
+        }
+        assert_eq!(
+            events[3].as_ref().unwrap().event_type(),
+            "response.completed"
+        );
+    }
+
+    /// Test SSE streaming through actual HTTP (mockito), not just parsing.
+    #[tokio::test]
+    async fn test_sse_stream_via_http() {
+        use futures_util::StreamExt;
+        let mut server = mockito::Server::new_async().await;
+        let sse_body = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"gpt-4o\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\ndata: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"gpt-4o\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" there\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n\n";
+
+        let _mock = server
+            .mock("POST", "/chat/completions")
+            .with_status(200)
+            .with_header("content-type", "text/event-stream")
+            .with_body(sse_body)
+            .create_async()
+            .await;
+
+        let client = crate::OpenAI::with_config(
+            crate::config::ClientConfig::new("sk-test").base_url(server.url()),
+        );
+        let request = crate::types::chat::ChatCompletionRequest::new(
+            "gpt-4o",
+            vec![crate::types::chat::ChatCompletionMessageParam::User {
+                content: crate::types::chat::UserContent::Text("Hi".into()),
+                name: None,
+            }],
+        );
+        let stream = client
+            .chat()
+            .completions()
+            .create_stream(request)
+            .await
+            .unwrap();
+
+        let chunks: Vec<_> = stream
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .filter_map(|r| r.ok())
+            .collect();
+
+        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks[0].choices[0].delta.content.as_deref(), Some("Hi"));
+        assert_eq!(
+            chunks[1].choices[0].delta.content.as_deref(),
+            Some(" there")
+        );
+    }
+
+    /// Test that SSE stream surfaces API errors from the server.
+    #[tokio::test]
+    async fn test_sse_stream_api_error() {
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("POST", "/chat/completions")
+            .with_status(429)
+            .with_body(r#"{"error":{"message":"Rate limit exceeded","type":"rate_limit","param":null,"code":null}}"#)
+            .create_async()
+            .await;
+
+        let client = crate::OpenAI::with_config(
+            crate::config::ClientConfig::new("sk-test")
+                .base_url(server.url())
+                .max_retries(0),
+        );
+        let request = crate::types::chat::ChatCompletionRequest::new(
+            "gpt-4o",
+            vec![crate::types::chat::ChatCompletionMessageParam::User {
+                content: crate::types::chat::UserContent::Text("Hi".into()),
+                name: None,
+            }],
+        );
+        let err = client
+            .chat()
+            .completions()
+            .create_stream(request)
+            .await
+            .err()
+            .expect("expected error");
+
+        match err {
+            OpenAIError::ApiError { status, .. } => assert_eq!(status, 429),
+            other => panic!("expected ApiError, got: {other:?}"),
+        }
+    }
+
+    /// Test SSE with multi-byte UTF-8 that may split across chunks.
+    #[test]
+    fn test_parse_sse_multibyte_utf8() {
+        // Emoji in content
+        let raw = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"gpt-4o\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello 🌍\"},\"finish_reason\":null}]}\n\ndata: [DONE]\n";
+        let events = parse_sse_events::<ChatCompletionChunk>(raw);
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].as_ref().unwrap().choices[0]
+                .delta
+                .content
+                .as_deref(),
+            Some("Hello 🌍")
+        );
     }
 
     #[test]

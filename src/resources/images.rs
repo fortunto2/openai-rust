@@ -1,7 +1,7 @@
 // Images resource — client.images().generate() / edit() / create_variation()
 
 use crate::client::OpenAI;
-use crate::error::OpenAIError;
+use crate::error::{OpenAIError, enum_to_string};
 use crate::types::image::{
     ImageEditParams, ImageGenerateRequest, ImageVariationParams, ImagesResponse,
 };
@@ -53,14 +53,7 @@ impl<'a> Images<'a> {
             form = form.text("n", n.to_string());
         }
         if let Some(s) = params.size {
-            form = form.text(
-                "size",
-                serde_json::to_value(&s)
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            );
+            form = form.text("size", enum_to_string(&s)?);
         }
 
         self.client.post_multipart("/images/edits", form).await
@@ -85,14 +78,7 @@ impl<'a> Images<'a> {
             form = form.text("n", n.to_string());
         }
         if let Some(s) = params.size {
-            form = form.text(
-                "size",
-                serde_json::to_value(&s)
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            );
+            form = form.text("size", enum_to_string(&s)?);
         }
 
         self.client.post_multipart("/images/variations", form).await

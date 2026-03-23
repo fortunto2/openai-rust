@@ -49,18 +49,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut stream = session.send_stream(stream_request).await?;
     while let Some(event) = stream.next().await {
         let event = event?;
-        match event.type_.as_str() {
-            "response.output_text.delta" => {
-                if let Some(delta) = event.data["delta"].as_str() {
-                    print!("{delta}");
-                }
-            }
-            "response.completed" => {
-                println!("\n\n[completed]");
-            }
-            _ => {
-                // Other events: created, output_item.added, etc.
-            }
+        use openai_oxide::types::responses::ResponseStreamEvent::*;
+        match event {
+            OutputTextDelta { delta, .. } => print!("{delta}"),
+            ResponseCompleted { .. } => println!("\n\n[completed]"),
+            _ => {} // Other events: created, output_item.added, etc.
         }
     }
 

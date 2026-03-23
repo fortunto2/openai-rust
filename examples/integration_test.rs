@@ -167,10 +167,17 @@ async fn main() {
             let mut ttft = None;
             while let Some(ev) = stream.next().await {
                 let ev = ev?;
-                if ev.type_ == "response.output_text.delta" && ttft.is_none() {
+                if matches!(
+                    ev,
+                    openai_oxide::types::responses::ResponseStreamEvent::OutputTextDelta { .. }
+                ) && ttft.is_none()
+                {
                     ttft = Some(t0.elapsed().as_millis());
                 }
-                if ev.type_ == "response.completed" {
+                if matches!(
+                    ev,
+                    openai_oxide::types::responses::ResponseStreamEvent::ResponseCompleted { .. }
+                ) {
                     break;
                 }
             }

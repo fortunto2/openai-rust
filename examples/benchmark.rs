@@ -387,7 +387,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Measure time to first content delta
         while let Some(event) = stream.next().await {
             let ev = event?;
-            if ev.type_ == "response.output_text.delta" {
+            if matches!(
+                ev,
+                openai_oxide::types::responses::ResponseStreamEvent::OutputTextDelta { .. }
+            ) {
                 times.push(t0.elapsed().as_millis());
                 break;
             }
