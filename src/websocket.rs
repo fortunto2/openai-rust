@@ -184,6 +184,21 @@ impl WsSession {
                 "type".to_string(),
                 serde_json::Value::String("response.create".to_string()),
             );
+
+            // WORKAROUND: OpenAI WS bug — decimal temperature (0.7, 1.2) causes
+            // silent close=1000. Remove non-integer temperature from WS requests.
+            // HTTP is unaffected. Tracking: https://community.openai.com/t/1375536
+            if let Some(serde_json::Value::Number(n)) = map.get("temperature") {
+                if let Some(f) = n.as_f64() {
+                    if f.fract() != 0.0 {
+                        tracing::debug!(
+                            temperature = f,
+                            "stripping decimal temperature (OpenAI WS bug)"
+                        );
+                        map.remove("temperature");
+                    }
+                }
+            }
         }
         let text = serde_json::to_string(&value)?;
         tracing::debug!(len = text.len(), "sending WS request");
@@ -395,6 +410,108 @@ mod tests {
         eprintln!("Response: {text}");
         assert!(!text.is_empty(), "Expected non-empty response");
         session.close().await.ok();
+    }
+
+    /// WS with large payload — test if big messages cause close=1000.
+    /// Run: OPENAI_API_KEY=sk-... cargo test -p openai-oxide --features websocket ws_live_large -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore]
+    async fn ws_live_large() {
+        let client = crate::OpenAI::from_env().expect("OPENAI_API_KEY");
+        let mut session = WsSession::connect(&*client.config)
+            .await
+            .expect("ws connect");
+        // Build a ~70KB payload similar to coaching context
+        let big_system = "X".repeat(60_000);
+        let req = ResponseCreateRequest::new("gpt-5.4-mini")
+            .instructions(&big_system)
+            .input("Say hi in 3 words")
+            .max_output_tokens(50);
+        eprintln!("Sending ~70KB request via WS...");
+        match session.send(req).await {
+            Ok(resp) => eprintln!("OK with large payload: {}", resp.output_text()),
+            Err(e) => panic!("FAILED with large payload: {e}"),
+        }
+    }
+
+    /// WS with tools — test function calling format.
+    /// Run: OPENAI_API_KEY=sk-... cargo test -p openai-oxide --features websocket ws_live_tools -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore]
+    async fn ws_live_tools() {
+        let client = crate::OpenAI::from_env().expect("OPENAI_API_KEY");
+        let mut session = WsSession::connect(&*client.config)
+            .await
+            .expect("ws connect");
+        let req = ResponseCreateRequest::new("gpt-5.4-mini")
+            .input("What is 2+2?")
+            .tools(vec![ResponseTool::Function {
+                name: "calculate".into(),
+                description: Some("Math calculation".into()),
+                parameters: Some(serde_json::json!({"type":"object","properties":{"expr":{"type":"string"}},"required":["expr"]})),
+                strict: None,
+            }])
+            .store(true);
+        eprintln!("Sending WS request with tools...");
+        match session.send(req).await {
+            Ok(resp) => {
+                let fcs = resp.function_calls();
+                eprintln!(
+                    "OK tools: {} function calls, text={}",
+                    fcs.len(),
+                    resp.output_text()
+                );
+            }
+            Err(e) => panic!("FAILED with tools: {e}"),
+        }
+    }
+
+    /// WS simulating exact souffleur-server payload: large instructions + tools + store + Items input.
+    /// Run: OPENAI_API_KEY=sk-... cargo test -p openai-oxide --features websocket ws_live_server_sim -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore]
+    async fn ws_live_server_sim() {
+        let client = crate::OpenAI::from_env().expect("OPENAI_API_KEY");
+        let mut session = WsSession::connect(&*client.config)
+            .await
+            .expect("ws connect");
+
+        // Simulate souffleur coach payload: Items input + tools + store
+        let big_system = "You are a sales coach. ".repeat(2000); // ~44KB
+        let input = vec![
+            serde_json::json!({"type": "message", "role": "system", "content": big_system}),
+            serde_json::json!({"type": "message", "role": "user", "content": "Rep said hello to customer"}),
+        ];
+        let tools = vec![ResponseTool::Function {
+            name: "whisper".into(),
+            description: Some("Coach the rep".into()),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {"message": {"type": "string"}},
+                "required": ["message"]
+            })),
+            strict: None,
+        }];
+        let mut req = ResponseCreateRequest::new("gpt-5.4-mini");
+        req.input = Some(crate::types::responses::ResponseInput::Items(input));
+        req = req.tools(tools).store(true).max_output_tokens(100);
+
+        let payload = serde_json::to_string(&req).unwrap();
+        eprintln!(
+            "Sending server-sim payload via WS ({} bytes)...",
+            payload.len()
+        );
+        match session.send(req).await {
+            Ok(resp) => {
+                let fcs = resp.function_calls();
+                eprintln!(
+                    "OK: {} function_calls, text={}",
+                    fcs.len(),
+                    resp.output_text()
+                );
+            }
+            Err(e) => panic!("FAILED server-sim: {e}"),
+        }
     }
 
     /// WS with delay — test idle tolerance.
