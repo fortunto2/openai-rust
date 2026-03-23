@@ -13,6 +13,8 @@ use super::common::Role;
 pub enum ResponseInput {
     Text(String),
     Messages(Vec<ResponseInputItem>),
+    /// Raw items array — for mixed types (messages + function_call_output).
+    Items(Vec<serde_json::Value>),
 }
 
 impl From<&str> for ResponseInput {

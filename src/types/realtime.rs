@@ -181,12 +181,15 @@ pub struct TurnDetection {
 /// Input audio transcription configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputAudioTranscription {
-    /// Transcription model.
+    /// Transcription model (gpt-4o-transcribe, gpt-4o-mini-transcribe, whisper-1).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     /// Language code (ISO-639-1).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    /// Optional text to guide the model's style or continue a previous audio segment.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<String>,
 }
 
 // ── Response types ──
@@ -229,6 +232,162 @@ pub struct SessionCreateResponse {
     pub turn_detection: Option<TurnDetection>,
     #[serde(default)]
     pub speed: Option<f64>,
+}
+
+// ── Transcription session types ──
+
+/// Noise reduction type for input audio.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum NoiseReductionType {
+    NearField,
+    FarField,
+}
+
+/// Input audio noise reduction configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InputAudioNoiseReduction {
+    #[serde(rename = "type")]
+    pub type_: NoiseReductionType,
+}
+
+/// Client secret configuration for request (controls token expiration).
+#[derive(Debug, Clone, Serialize)]
+pub struct ClientSecretConfig {
+    /// Expiration configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<ClientSecretExpiresAt>,
+}
+
+/// Expiration anchor + duration for client secret.
+#[derive(Debug, Clone, Serialize)]
+pub struct ClientSecretExpiresAt {
+    /// Anchor point — only "created_at" is currently supported.
+    pub anchor: String,
+    /// Seconds from anchor to expiration (10–7200).
+    pub seconds: i64,
+}
+
+/// Request body for `POST /realtime/transcription_sessions`.
+///
+/// Creates a transcription-only Realtime session with an ephemeral token.
+/// Unlike `/realtime/sessions`, this endpoint is specialized for STT
+/// (no voice output, no response generation).
+#[derive(Debug, Clone, Serialize)]
+pub struct TranscriptionSessionCreateRequest {
+    /// Configuration for the ephemeral token expiration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_secret: Option<ClientSecretConfig>,
+
+    /// Items to include in transcription (e.g. "item.input_audio_transcription.logprobs").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include: Option<Vec<String>>,
+
+    /// The format of input audio (pcm16, g711_ulaw, g711_alaw).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_audio_format: Option<RealtimeAudioFormat>,
+
+    /// Configuration for input audio noise reduction.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_audio_noise_reduction: Option<InputAudioNoiseReduction>,
+
+    /// Configuration for input audio transcription (model + language + prompt).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_audio_transcription: Option<InputAudioTranscription>,
+
+    /// Modalities: ["text"] or ["text", "audio"].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modalities: Option<Vec<String>>,
+
+    /// Turn detection configuration (server_vad or semantic_vad).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub turn_detection: Option<TurnDetection>,
+}
+
+impl TranscriptionSessionCreateRequest {
+    pub fn new() -> Self {
+        Self {
+            client_secret: None,
+            include: None,
+            input_audio_format: None,
+            input_audio_noise_reduction: None,
+            input_audio_transcription: None,
+            modalities: None,
+            turn_detection: None,
+        }
+    }
+
+    pub fn input_audio_format(mut self, format: RealtimeAudioFormat) -> Self {
+        self.input_audio_format = Some(format);
+        self
+    }
+
+    pub fn transcription(mut self, model: impl Into<String>, language: impl Into<String>) -> Self {
+        self.input_audio_transcription = Some(InputAudioTranscription {
+            model: Some(model.into()),
+            language: Some(language.into()),
+            prompt: None,
+        });
+        self
+    }
+
+    pub fn turn_detection(mut self, td: TurnDetection) -> Self {
+        self.turn_detection = Some(td);
+        self
+    }
+
+    pub fn noise_reduction(mut self, type_: NoiseReductionType) -> Self {
+        self.input_audio_noise_reduction = Some(InputAudioNoiseReduction { type_ });
+        self
+    }
+
+    pub fn include(mut self, items: Vec<String>) -> Self {
+        self.include = Some(items);
+        self
+    }
+
+    pub fn modalities(mut self, modalities: Vec<String>) -> Self {
+        self.modalities = Some(modalities);
+        self
+    }
+
+    pub fn expires_in(mut self, seconds: i64) -> Self {
+        self.client_secret = Some(ClientSecretConfig {
+            expires_at: Some(ClientSecretExpiresAt {
+                anchor: "created_at".into(),
+                seconds,
+            }),
+        });
+        self
+    }
+}
+
+impl Default for TranscriptionSessionCreateRequest {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Response from `POST /realtime/transcription_sessions`.
+///
+/// Simpler than `SessionCreateResponse` — no model/voice/tools/instructions.
+#[derive(Debug, Clone, Deserialize)]
+pub struct TranscriptionSession {
+    /// Ephemeral client secret for client-side authentication.
+    pub client_secret: ClientSecret,
+    /// The format of input audio.
+    #[serde(default)]
+    pub input_audio_format: Option<String>,
+    /// Transcription configuration.
+    #[serde(default)]
+    pub input_audio_transcription: Option<InputAudioTranscription>,
+    /// Modalities.
+    #[serde(default)]
+    pub modalities: Option<Vec<String>>,
+    /// Turn detection configuration.
+    #[serde(default)]
+    pub turn_detection: Option<TurnDetection>,
 }
 
 #[cfg(test)]
@@ -318,5 +477,32 @@ mod tests {
         let turn = resp.turn_detection.unwrap();
         assert_eq!(turn.type_, TurnDetectionType::ServerVad);
         assert_eq!(turn.threshold, Some(0.5));
+    }
+
+    #[test]
+    fn test_serialize_transcription_session_request() {
+        let req = TranscriptionSessionCreateRequest::new()
+            .input_audio_format(RealtimeAudioFormat::Pcm16)
+            .transcription("gpt-4o-transcribe", "en")
+            .turn_detection(TurnDetection {
+                type_: TurnDetectionType::ServerVad,
+                threshold: Some(0.5),
+                prefix_padding_ms: Some(300),
+                silence_duration_ms: Some(500),
+                create_response: None,
+                interrupt_response: None,
+                eagerness: None,
+            })
+            .noise_reduction(NoiseReductionType::NearField);
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["input_audio_format"], "pcm16");
+        assert_eq!(
+            json["input_audio_transcription"]["model"],
+            "gpt-4o-transcribe"
+        );
+        assert_eq!(json["input_audio_transcription"]["language"], "en");
+        assert_eq!(json["turn_detection"]["type"], "server_vad");
+        assert_eq!(json["input_audio_noise_reduction"]["type"], "near_field");
     }
 }

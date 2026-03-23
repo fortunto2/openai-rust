@@ -187,6 +187,7 @@ impl WsSession {
         }
         let text = serde_json::to_string(&value)?;
         tracing::debug!(len = text.len(), "sending WS request");
+        tracing::trace!(body = %text, "WS request body");
         self.sink
             .send(Message::Text(text.into()))
             .await
@@ -253,10 +254,15 @@ impl WsSession {
                         .await
                         .map_err(|e| OpenAIError::WebSocketError(format!("pong: {e}")))?;
                 }
-                Message::Close(_) => {
-                    return Err(OpenAIError::WebSocketError(
-                        "server closed connection".into(),
-                    ));
+                Message::Close(frame) => {
+                    let reason = frame
+                        .as_ref()
+                        .map(|f| format!("code={}, reason={}", f.code, f.reason))
+                        .unwrap_or_else(|| "no close frame".into());
+                    tracing::warn!(reason = %reason, "WS server closed connection");
+                    return Err(OpenAIError::WebSocketError(format!(
+                        "server closed connection: {reason}"
+                    )));
                 }
                 _ => {}
             }
@@ -342,6 +348,7 @@ fn build_ws_url(config: &dyn Config) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::ClientConfig;
 
     #[test]
     fn test_build_ws_url_default() {
@@ -369,6 +376,44 @@ mod tests {
         let config = ClientConfig::new("sk-x").base_url("wss://already-wss.com/v1");
         let url = build_ws_url(&config);
         assert_eq!(url, "wss://already-wss.com/v1/responses");
+    }
+
+    /// Live WS test — requires OPENAI_API_KEY.
+    /// Run: OPENAI_API_KEY=sk-... cargo test -p openai-oxide ws_live -- --ignored
+    #[tokio::test]
+    #[ignore]
+    async fn ws_live() {
+        let client = crate::OpenAI::from_env().expect("OPENAI_API_KEY");
+        eprintln!("Connecting WS...");
+        let mut session = WsSession::connect(&*client.config)
+            .await
+            .expect("ws connect failed");
+        eprintln!("Connected. Sending request...");
+        let req = ResponseCreateRequest::new("gpt-5.4-mini").input("Say hello in exactly 3 words");
+        let resp = session.send(req).await.expect("ws send failed");
+        let text = resp.output_text();
+        eprintln!("Response: {text}");
+        assert!(!text.is_empty(), "Expected non-empty response");
+        session.close().await.ok();
+    }
+
+    /// WS with delay — test idle tolerance.
+    /// Run: OPENAI_API_KEY=sk-... cargo test -p openai-oxide --features websocket ws_live_delay -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore]
+    async fn ws_live_delay() {
+        let client = crate::OpenAI::from_env().expect("OPENAI_API_KEY");
+        let mut session = WsSession::connect(&*client.config)
+            .await
+            .expect("ws connect");
+        eprintln!("Connected. Waiting 5 seconds...");
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        eprintln!("Sending after 5s delay...");
+        let req = ResponseCreateRequest::new("gpt-5.4-mini").input("Say hi");
+        match session.send(req).await {
+            Ok(resp) => eprintln!("OK after delay: {}", resp.output_text()),
+            Err(e) => panic!("FAILED after 5s delay: {e}"),
+        }
     }
 
     #[test]
