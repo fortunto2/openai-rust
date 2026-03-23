@@ -1,7 +1,8 @@
 <p align="center">
-  <h1 align="center">openai-oxide</h1>
+  <img src="docs/logo.png" alt="openai-oxide" width="480">
+  <br>
   <p align="center">
-    A high-performance, feature-complete OpenAI client for Rust and Python.<br>Designed for agentic workflows, low-latency streaming, and WebAssembly.
+    A high-performance, feature-complete OpenAI client for <strong>Rust</strong>, <strong>Node.js</strong>, and <strong>Python</strong>.<br>Designed for agentic workflows, low-latency streaming, and WebAssembly.
   </p>
   <p align="center">
     <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/v/openai-oxide.svg" alt="crates.io"></a>
