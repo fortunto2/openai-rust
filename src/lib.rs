@@ -39,6 +39,8 @@ pub mod error;
 pub mod hedged;
 pub mod middleware;
 pub mod pagination;
+#[cfg(feature = "structured")]
+pub mod parsing;
 pub mod rate_limit;
 pub mod request_options;
 pub mod resources;

@@ -32,6 +32,7 @@ simd-json = { version = "0.17", optional = true }
 tokio-tungstenite = { version = "0.26", optional = true, features = ["native-tls"] }
 hmac = { version = "0.12", optional = true }
 sha2 = { version = "0.10", optional = true }
+schemars = { version = "0.8", optional = true }
 async-trait = "0.1.89"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -74,6 +75,7 @@ simd = ["dep:simd-json"]
 websocket = ["dep:tokio-tungstenite"]
 websocket-wasm = ["dep:gloo-net", "dep:web-sys"]
 webhooks = ["dep:hmac", "dep:sha2", "base64"]
+structured = ["dep:schemars"]
 
 [[example]]
 name = "chat"

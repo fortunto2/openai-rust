@@ -81,6 +81,34 @@ impl<'a> Completions<'a> {
         self.client.post("/chat/completions", &request).await
     }
 
+    /// Create a chat completion and parse the response into a typed struct.
+    ///
+    /// Automatically sets `response_format` to a strict JSON schema derived
+    /// from `T` using [`schemars::JsonSchema`]. The response content is
+    /// deserialized into `T` and returned in [`ParsedChatCompletion::parsed`].
+    ///
+    /// ```ignore
+    /// #[derive(Deserialize, JsonSchema)]
+    /// struct Answer { text: String, confidence: f64 }
+    ///
+    /// let result = client.chat().completions()
+    ///     .parse::<Answer>(request).await?;
+    /// println!("{}", result.parsed.unwrap().text);
+    /// ```
+    ///
+    /// Requires the `structured` feature.
+    #[cfg(feature = "structured")]
+    pub async fn parse<T: serde::de::DeserializeOwned + schemars::JsonSchema>(
+        &self,
+        mut request: ChatCompletionRequest,
+    ) -> Result<crate::parsing::ParsedChatCompletion<T>, OpenAIError> {
+        request.response_format = Some(crate::parsing::response_format_from_type::<T>());
+        Self::prepare_reasoning_request(&mut request);
+        let response: ChatCompletionResponse =
+            self.client.post("/chat/completions", &request).await?;
+        crate::parsing::parse_completion(response)
+    }
+
     /// Create a streaming chat completion.
     ///
     /// Returns a `Stream<Item = Result<ChatCompletionChunk>>`.
