@@ -393,20 +393,22 @@ Use OpenAI's official guides — the same concepts apply directly. Here's how ea
 
 | OpenAI Guide | Rust | Node.js | Python |
 |---|---|---|---|
-| [Chat Completions](https://platform.openai.com/docs/guides/chat-completions) | `client.chat().completions().create()` | `client.createResponse({model, input})` | `await client.create(model, input)` |
+| [Chat Completions](https://platform.openai.com/docs/guides/chat-completions) | `client.chat().completions().create()` | `client.createChatCompletion({...})` | `await client.create(model, input)` |
 | [Responses API](https://platform.openai.com/docs/api-reference/responses) | `client.responses().create()` | `client.createText(model, input)` | `await client.create(model, input)` |
-| [Streaming](https://platform.openai.com/docs/api-reference/streaming) | `client.responses().create_stream()` | `client.createStream(model, input)` | `await client.create_stream(model, input)` |
+| [Streaming](https://platform.openai.com/docs/api-reference/streaming) | `client.responses().create_stream()` | `client.createStream({...}, cb)` | `await client.create_stream(model, input)` |
 | [Function Calling](https://platform.openai.com/docs/guides/function-calling) | `client.responses().create_stream_fc()` | `client.createResponse({model, input, tools})` | `await client.create_with_tools(model, input, tools)` |
 | [Structured Output](https://platform.openai.com/docs/guides/structured-outputs) | `ResponseCreateRequest::new(model).text_format(schema)` | `client.createResponse({model, input, text})` | `await client.create_structured(model, input, name, schema)` |
-| [Embeddings](https://platform.openai.com/docs/guides/embeddings) | `client.embeddings().create()` | — | — |
-| [Image Generation](https://platform.openai.com/docs/guides/images) | `client.images().generate()` | — | — |
-| [Text-to-Speech](https://platform.openai.com/docs/guides/text-to-speech) | `client.audio().speech().create()` | — | — |
-| [Speech-to-Text](https://platform.openai.com/docs/guides/speech-to-text) | `client.audio().transcriptions().create()` | — | — |
-| [Fine-tuning](https://platform.openai.com/docs/guides/fine-tuning) | `client.fine_tuning().jobs().create()` | — | — |
+| [Embeddings](https://platform.openai.com/docs/guides/embeddings) | `client.embeddings().create()` | via `createResponse()` raw | via `create_raw()` |
+| [Image Generation](https://platform.openai.com/docs/guides/images) | `client.images().generate()` | via `createResponse()` raw | via `create_raw()` |
+| [Text-to-Speech](https://platform.openai.com/docs/guides/text-to-speech) | `client.audio().speech().create()` | via `createResponse()` raw | via `create_raw()` |
+| [Speech-to-Text](https://platform.openai.com/docs/guides/speech-to-text) | `client.audio().transcriptions().create()` | via `createResponse()` raw | via `create_raw()` |
+| [Fine-tuning](https://platform.openai.com/docs/guides/fine-tuning) | `client.fine_tuning().jobs().create()` | via `createResponse()` raw | via `create_raw()` |
 | [Realtime API](https://platform.openai.com/docs/guides/realtime) | `client.ws_session()` | `client.wsSession()` | — |
-| [Assistants](https://platform.openai.com/docs/assistants) | `client.beta().assistants()` | — | — |
+| [Assistants](https://platform.openai.com/docs/assistants) | `client.beta().assistants()` | via `createResponse()` raw | via `create_raw()` |
 
 > **Tip:** Parameter names match the official Python SDK exactly. If OpenAI docs show `model="gpt-4o"`, use `.model("gpt-4o")` in Rust or `{model: "gpt-4o"}` in Node.js.
+>
+> **Note:** Node.js and Python bindings have typed helpers for Responses, Chat, Streaming, Function Calling, and Structured Output. All other endpoints are available via the raw JSON methods (`createResponse()` / `create_raw()`) which accept any OpenAI API request body.
 
 ---
 
