@@ -14,6 +14,7 @@
   - [WebSocket Sessions](./guides/websockets.md)
   - [Structured Output](./guides/structured-output.md)
   - [Hedged Requests](./guides/hedged-requests.md)
+  - [Webhooks](./guides/webhooks.md)
   - [WASM / Cloudflare Workers](./guides/wasm.md)
 - [API Reference](./api-reference.md)
 - [OpenAI Docs Mapping](./openai-mapping.md)
