@@ -38,6 +38,7 @@ impl<'a> Uploads<'a> {
     /// Add a part to an upload.
     ///
     /// `POST /uploads/{upload_id}/parts`
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_part(
         &self,
         upload_id: &str,

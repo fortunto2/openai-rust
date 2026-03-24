@@ -24,6 +24,7 @@ impl<'a> Files<'a> {
     /// ```ignore
     /// let file = client.files().create_from_path("data.jsonl", FilePurpose::FineTune).await?;
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn create_from_path(
         &self,
         path: impl AsRef<std::path::Path>,
@@ -45,6 +46,7 @@ impl<'a> Files<'a> {
     /// Upload a file.
     ///
     /// `POST /files`
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn create(&self, params: FileUploadParams) -> Result<FileObject, OpenAIError> {
         let form = reqwest::multipart::Form::new()
             .part(

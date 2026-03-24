@@ -19,10 +19,16 @@ pub struct Page<T> {
 }
 
 /// Type alias for the boxed future returned by the page fetcher.
+#[cfg(not(target_arch = "wasm32"))]
 type PageFuture<T> = Pin<Box<dyn Future<Output = Result<Page<T>, OpenAIError>> + Send>>;
+#[cfg(target_arch = "wasm32")]
+type PageFuture<T> = Pin<Box<dyn Future<Output = Result<Page<T>, OpenAIError>>>>;
 
 /// Type alias for the page fetcher closure.
+#[cfg(not(target_arch = "wasm32"))]
 type PageFetcher<T> = Box<dyn Fn(Option<String>) -> PageFuture<T> + Send + Sync>;
+#[cfg(target_arch = "wasm32")]
+type PageFetcher<T> = Box<dyn Fn(Option<String>) -> PageFuture<T>>;
 
 /// An async stream that automatically paginates through all results.
 ///
@@ -59,10 +65,26 @@ impl<T> Paginator<T> {
     ///
     /// The closure receives `Option<String>` (`None` for first page, `Some(cursor)` for
     /// subsequent pages) and returns a future resolving to `Result<Page<T>, OpenAIError>`.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new<F, Fut>(fetch: F) -> Self
     where
         F: Fn(Option<String>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<Page<T>, OpenAIError>> + Send + 'static,
+    {
+        Self {
+            fetch: Box::new(move |cursor| Box::pin(fetch(cursor))),
+            buffer: Vec::new(),
+            next_cursor: None,
+            done: false,
+            pending: None,
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn new<F, Fut>(fetch: F) -> Self
+    where
+        F: Fn(Option<String>) -> Fut + 'static,
+        Fut: Future<Output = Result<Page<T>, OpenAIError>> + 'static,
     {
         Self {
             fetch: Box::new(move |cursor| Box::pin(fetch(cursor))),
