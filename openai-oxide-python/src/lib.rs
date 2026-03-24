@@ -246,7 +246,28 @@ impl Client {
         })
     }
 
-    /// Raw request — send any JSON, get raw JSON back.
+    /// Raw Chat Completions request — send any JSON, get raw JSON back.
+    #[pyo3(signature = (request_json,))]
+    fn create_chat_raw<'py>(
+        &self,
+        py: Python<'py>,
+        request_json: String,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let client = self.inner.clone();
+        future_into_py(py, async move {
+            let body: serde_json::Value = serde_json::from_str(&request_json)
+                .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+            let resp: serde_json::Value = client
+                .chat()
+                .completions()
+                .create_raw(&body)
+                .await
+                .map_err(to_py_err)?;
+            Ok(resp.to_string())
+        })
+    }
+
+    /// Raw Responses API request — send any JSON, get raw JSON back.
     #[pyo3(signature = (request_json,))]
     fn create_raw<'py>(
         &self,
