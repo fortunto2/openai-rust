@@ -175,6 +175,42 @@ impl<'a> Runs<'a> {
             .await?;
         OpenAI::handle_response(response).await
     }
+
+    /// List run steps.
+    ///
+    /// `GET /threads/{thread_id}/runs/{run_id}/steps`
+    pub async fn list_steps(&self, run_id: &str) -> Result<serde_json::Value, OpenAIError> {
+        let response = self
+            .client
+            .request(
+                reqwest::Method::GET,
+                &format!("/threads/{}/runs/{run_id}/steps", self.thread_id),
+            )
+            .header(BETA_HEADER.0, BETA_HEADER.1)
+            .send()
+            .await?;
+        OpenAI::handle_response(response).await
+    }
+
+    /// Retrieve a run step.
+    ///
+    /// `GET /threads/{thread_id}/runs/{run_id}/steps/{step_id}`
+    pub async fn retrieve_step(
+        &self,
+        run_id: &str,
+        step_id: &str,
+    ) -> Result<serde_json::Value, OpenAIError> {
+        let response = self
+            .client
+            .request(
+                reqwest::Method::GET,
+                &format!("/threads/{}/runs/{run_id}/steps/{step_id}", self.thread_id),
+            )
+            .header(BETA_HEADER.0, BETA_HEADER.1)
+            .send()
+            .await?;
+        OpenAI::handle_response(response).await
+    }
 }
 
 #[cfg(test)]

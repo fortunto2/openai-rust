@@ -340,6 +340,18 @@ impl<'a> Responses<'a> {
         self.client.post("/responses/input_tokens", request).await
     }
 
+    /// Compact a conversation — reduces token count for long-running sessions.
+    ///
+    /// `POST /responses/compact`
+    ///
+    /// See [conversation state guide](https://platform.openai.com/docs/guides/conversation-state#managing-the-context-window).
+    pub async fn compact(
+        &self,
+        body: &impl serde::Serialize,
+    ) -> Result<serde_json::Value, OpenAIError> {
+        self.client.post("/responses/compact", body).await
+    }
+
     /// Delete a response.
     ///
     /// `DELETE /responses/{response_id}`

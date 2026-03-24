@@ -130,6 +130,27 @@ impl<'a> VectorStores<'a> {
             .await?;
         OpenAI::handle_response(response).await
     }
+
+    /// Search a vector store.
+    ///
+    /// `POST /vector_stores/{vector_store_id}/search`
+    pub async fn search(
+        &self,
+        vector_store_id: &str,
+        body: &impl serde::Serialize,
+    ) -> Result<serde_json::Value, OpenAIError> {
+        let response = self
+            .client
+            .request(
+                reqwest::Method::POST,
+                &format!("/vector_stores/{vector_store_id}/search"),
+            )
+            .header(BETA_HEADER.0, BETA_HEADER.1)
+            .json(body)
+            .send()
+            .await?;
+        OpenAI::handle_response(response).await
+    }
 }
 
 #[cfg(test)]

@@ -163,6 +163,32 @@ impl<'a> Jobs<'a> {
             }
         })
     }
+    /// List checkpoints for a fine-tuning job.
+    ///
+    /// `GET /fine_tuning/jobs/{job_id}/checkpoints`
+    pub async fn list_checkpoints(&self, job_id: &str) -> Result<serde_json::Value, OpenAIError> {
+        self.client
+            .get(&format!("/fine_tuning/jobs/{job_id}/checkpoints"))
+            .await
+    }
+
+    /// Pause a fine-tuning job.
+    ///
+    /// `POST /fine_tuning/jobs/{job_id}/pause`
+    pub async fn pause(&self, job_id: &str) -> Result<FineTuningJob, OpenAIError> {
+        self.client
+            .post_empty(&format!("/fine_tuning/jobs/{job_id}/pause"))
+            .await
+    }
+
+    /// Resume a paused fine-tuning job.
+    ///
+    /// `POST /fine_tuning/jobs/{job_id}/resume`
+    pub async fn resume(&self, job_id: &str) -> Result<FineTuningJob, OpenAIError> {
+        self.client
+            .post_empty(&format!("/fine_tuning/jobs/{job_id}/resume"))
+            .await
+    }
 }
 
 #[cfg(test)]

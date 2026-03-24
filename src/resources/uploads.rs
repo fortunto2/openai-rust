@@ -35,6 +35,23 @@ impl<'a> Uploads<'a> {
             .await
     }
 
+    /// Add a part to an upload.
+    ///
+    /// `POST /uploads/{upload_id}/parts`
+    pub async fn add_part(
+        &self,
+        upload_id: &str,
+        data: Vec<u8>,
+    ) -> Result<serde_json::Value, OpenAIError> {
+        let form = reqwest::multipart::Form::new().part(
+            "data",
+            reqwest::multipart::Part::bytes(data).file_name("part"),
+        );
+        self.client
+            .post_multipart(&format!("/uploads/{upload_id}/parts"), form)
+            .await
+    }
+
     /// Complete an upload with part IDs.
     ///
     /// `POST /uploads/{upload_id}/complete`

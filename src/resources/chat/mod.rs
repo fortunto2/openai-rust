@@ -232,6 +232,22 @@ impl<'a> Completions<'a> {
             .delete(&format!("/chat/completions/{completion_id}"))
             .await
     }
+
+    /// List messages in a stored chat completion.
+    ///
+    /// `GET /chat/completions/{completion_id}/messages`
+    pub async fn list_messages(
+        &self,
+        completion_id: &str,
+        params: &[(String, String)],
+    ) -> Result<serde_json::Value, OpenAIError> {
+        self.client
+            .get_with_query(
+                &format!("/chat/completions/{completion_id}/messages"),
+                params,
+            )
+            .await
+    }
 }
 
 #[cfg(test)]
