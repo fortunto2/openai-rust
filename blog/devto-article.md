@@ -1,13 +1,17 @@
 ---
-title: "Squeezing Every Millisecond from the OpenAI API in Rust"
+title: "I ported the OpenAI Python SDK to Rust in 5 days with Claude Code. Here's what I learned."
 published: false
-tags: rust, openai, performance, webassembly
+tags: rust, openai, ai, webassembly
 canonical_url: https://github.com/fortunto2/openai-oxide
 ---
 
-When you're building an AI agent that makes 20-50 tool calls per cycle, every round-trip matters. A 300ms overhead per call compounds to 6-15 seconds of pure waste. We built openai-oxide to eliminate this.
+I needed a fast OpenAI client for a realtime voice agent project. The official Python SDK is great, but I needed Rust — for WebSocket audio streaming, edge deployment to Cloudflare Workers, and sub-second latency in agentic loops with dozens of tool calls.
 
-## The Problem
+So I ported it. 259 commits, 5 days, 100+ API methods. The first day — 120 commits — was mostly Claude Code translating types from Python to Rust while I set up pre-commit hooks, WASM checks, and benchmarks. The rest was architecture decisions, performance tuning, and Node/Python bindings.
+
+The result: [openai-oxide](https://github.com/fortunto2/openai-oxide) — a Rust client that matches the official Python SDK's API surface while being faster and deployable to WASM.
+
+## Why Not Just Use What Exists?
 
 The official Python and Node SDKs are solid — they reuse HTTP/2 connections, have WebSocket support for the Realtime API, and cover all endpoints. But they don't compile to WASM, and their WebSocket mode is only for the Realtime API (audio/multimodal), not for regular text-based Responses API calls.
 
