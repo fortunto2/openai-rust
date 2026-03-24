@@ -313,6 +313,15 @@ impl OpenAI {
         self.post(path, body).await
     }
 
+    /// Send a POST request with no body and deserialize the response.
+    pub(crate) async fn post_empty<T: serde::de::DeserializeOwned>(
+        &self,
+        path: &str,
+    ) -> Result<T, OpenAIError> {
+        self.send_with_retry(reqwest::Method::POST, path, None::<&()>)
+            .await
+    }
+
     /// Send a POST request with a multipart form body and deserialize the response.
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) async fn post_multipart<T: serde::de::DeserializeOwned>(

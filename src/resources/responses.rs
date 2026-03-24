@@ -312,6 +312,34 @@ impl<'a> Responses<'a> {
         self.client.get(&format!("/responses/{response_id}")).await
     }
 
+    /// Cancel a background response.
+    ///
+    /// `POST /responses/{response_id}/cancel`
+    pub async fn cancel(&self, response_id: &str) -> Result<Response, OpenAIError> {
+        self.client
+            .post_empty(&format!("/responses/{response_id}/cancel"))
+            .await
+    }
+
+    /// List input items for a response.
+    ///
+    /// `GET /responses/{response_id}/input_items`
+    pub async fn input_items(&self, response_id: &str) -> Result<serde_json::Value, OpenAIError> {
+        self.client
+            .get(&format!("/responses/{response_id}/input_items"))
+            .await
+    }
+
+    /// Count input tokens for a request without creating a response.
+    ///
+    /// `POST /responses/input_tokens`
+    pub async fn count_tokens(
+        &self,
+        request: &ResponseCreateRequest,
+    ) -> Result<serde_json::Value, OpenAIError> {
+        self.client.post("/responses/input_tokens", request).await
+    }
+
     /// Delete a response.
     ///
     /// `DELETE /responses/{response_id}`

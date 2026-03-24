@@ -197,6 +197,41 @@ impl<'a> Completions<'a> {
             }
         }
     }
+
+    /// Retrieve a stored chat completion by ID.
+    ///
+    /// `GET /chat/completions/{completion_id}`
+    ///
+    /// Requires the completion to have been created with `store: true`.
+    pub async fn retrieve(
+        &self,
+        completion_id: &str,
+    ) -> Result<ChatCompletionResponse, OpenAIError> {
+        self.client
+            .get(&format!("/chat/completions/{completion_id}"))
+            .await
+    }
+
+    /// List stored chat completions.
+    ///
+    /// `GET /chat/completions`
+    pub async fn list_stored(
+        &self,
+        params: &[(String, String)],
+    ) -> Result<serde_json::Value, OpenAIError> {
+        self.client
+            .get_with_query("/chat/completions", params)
+            .await
+    }
+
+    /// Delete a stored chat completion.
+    ///
+    /// `DELETE /chat/completions/{completion_id}`
+    pub async fn delete(&self, completion_id: &str) -> Result<serde_json::Value, OpenAIError> {
+        self.client
+            .delete(&format!("/chat/completions/{completion_id}"))
+            .await
+    }
 }
 
 #[cfg(test)]
