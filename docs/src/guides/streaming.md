@@ -9,47 +9,7 @@ See the official [Streaming documentation](https://platform.openai.com/docs/api-
 High-level wrapper with typed events and automatic accumulation — no manual chunk stitching.
 
 ```rust
-use futures_util::StreamExt;
-use openai_oxide::{OpenAI, types::chat::*};
-use openai_oxide::stream_helpers::ChatStreamEvent;
-
-#[tokio::main]
-async fn main() -> Result<(), openai_oxide::OpenAIError> {
-    let client = OpenAI::from_env()?;
-    let request = ChatCompletionRequest::new(
-        "gpt-5.4-mini",
-        vec![ChatCompletionMessageParam::User {
-            content: UserContent::Text("Count to 5".into()),
-            name: None,
-        }],
-    );
-
-    let mut stream = client.chat().completions()
-        .create_stream_helper(request).await?;
-
-    while let Some(event) = stream.next().await {
-        match event? {
-            ChatStreamEvent::ContentDelta { delta, .. } => print!("{delta}"),
-            ChatStreamEvent::ToolCallDone { name, arguments, .. } => {
-                println!("\nTool call: {name}({arguments})");
-            }
-            ChatStreamEvent::Done { .. } => break,
-            _ => {}
-        }
-    }
-    Ok(())
-}
-```
-
-### `get_final_completion()`
-
-Consume the stream and return the assembled response — useful when you want streaming latency but don't need intermediate events:
-
-```rust
-let stream = client.chat().completions()
-    .create_stream_helper(request).await?;
-let completion = stream.get_final_completion().await?;
-println!("{}", completion.choices[0].message.content.as_deref().unwrap_or(""));
+{{#include ../../../examples/chat_stream.rs}}
 ```
 
 ### Event Types
@@ -64,21 +24,28 @@ println!("{}", completion.choices[0].message.content.as_deref().unwrap_or(""));
 | `RefusalDelta/Done` | Model refuses | `delta`/`refusal` |
 | `Done` | Stream finished | `finish_reason` |
 
-## Raw SSE Stream
+## Node.js (drop-in replacement)
 
-For full control, use the low-level stream directly:
+Same syntax as official `openai` package — `for await` over stream:
 
-```rust
-{{#include ../../../examples/chat_stream.rs}}
+```javascript
+{{#include ../../../openai-oxide-node/examples/demo-compat.js}}
 ```
 
-Run: `OPENAI_API_KEY=sk-... cargo run --example chat_stream`
+## Python (drop-in replacement)
+
+Same syntax as official `openai` package — `async for` over stream:
+
+```python
+{{#include ../../../openai-oxide-python/examples/demo.py}}
+```
 
 ## Responses API Streaming
 
 Typed events for the Responses API:
 
 ```rust
+use futures_util::StreamExt;
 use openai_oxide::types::responses::{ResponseCreateRequest, ResponseStreamEvent};
 
 let mut stream = client.responses()

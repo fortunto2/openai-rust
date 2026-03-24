@@ -20,7 +20,7 @@ openai-oxide and [async-openai](https://github.com/64bit/async-openai) are both 
 // async-openai
 let client = Client::new();
 let request = CreateChatCompletionRequestArgs::default()
-    .model("gpt-4o")
+    .model("gpt-5.4")
     .messages(vec![ChatCompletionRequestUserMessageArgs::default()
         .content("Hello")
         .build()?
@@ -33,7 +33,7 @@ let response = client.chat().create(request).await?;
 // openai-oxide
 let client = OpenAI::from_env()?;
 let response = client.chat().completions().create(
-    ChatCompletionRequest::new("gpt-4o")
+    ChatCompletionRequest::new("gpt-5.4")
         .messages(vec![ChatMessage::user("Hello")])
 ).await?;
 ```

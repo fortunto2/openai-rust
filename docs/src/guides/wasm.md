@@ -22,7 +22,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let client = OpenAI::new(env.secret("OPENAI_API_KEY")?.to_string());
 
     let response = client.responses().create(
-        ResponseCreateRequest::new("gpt-4o-mini")
+        ResponseCreateRequest::new("gpt-5.4-mini")
             .input("Hello from the edge!")
     ).await.map_err(|e| worker::Error::from(e.to_string()))?;
 

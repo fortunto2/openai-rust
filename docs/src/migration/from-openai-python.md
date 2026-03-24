@@ -19,7 +19,7 @@ openai-oxide uses the same parameter names and resource structure as the officia
 ```python
 # Python
 response = client.responses.create(
-    model="gpt-4o",
+    model="gpt-5.4",
     input="Hello",
     max_output_tokens=100,
     temperature=0.7,
@@ -29,7 +29,7 @@ response = client.responses.create(
 ```rust
 // Rust
 let response = client.responses().create(
-    ResponseCreateRequest::new("gpt-4o")
+    ResponseCreateRequest::new("gpt-5.4")
         .input("Hello")
         .max_output_tokens(100)
         .temperature(0.7)

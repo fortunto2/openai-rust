@@ -27,7 +27,7 @@ Parameter names match the Python SDK exactly:
 
 | OpenAI Python | Rust | Node.js |
 |---|---|---|
-| `model="gpt-4o"` | `.model("gpt-4o")` | `{ model: "gpt-4o" }` |
+| `model="gpt-5.4"` | `.model("gpt-5.4")` | `{ model: "gpt-5.4" }` |
 | `max_output_tokens=100` | `.max_output_tokens(100)` | `{ maxOutputTokens: 100 }` |
 | `temperature=0.7` | `.temperature(0.7)` | `{ temperature: 0.7 }` |
 | `stream=True` | `create_stream()` | `createStream()` |

@@ -13,7 +13,7 @@ let client = OpenAI::from_env()?;
 
 // Race 2 identical requests, return whichever finishes first
 let response = client.responses().hedged_request(
-    ResponseCreateRequest::new("gpt-4o-mini")
+    ResponseCreateRequest::new("gpt-5.4-mini")
         .input("Quick question: what is 2+2?"),
     2, // number of concurrent requests
 ).await?;

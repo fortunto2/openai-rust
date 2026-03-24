@@ -23,6 +23,6 @@ openai-oxide implements the full [Responses API](https://platform.openai.com/doc
 
 ## OpenAI Compatibility
 
-Parameter names match the official Python SDK exactly. If the [OpenAI docs](https://platform.openai.com/docs) show `model="gpt-4o"`, use `.model("gpt-4o")` in Rust or `{model: "gpt-4o"}` in Node.js.
+Parameter names match the official Python SDK exactly. If the [OpenAI docs](https://platform.openai.com/docs) show `model="gpt-5.4"`, use `.model("gpt-5.4")` in Rust or `{model: "gpt-5.4"}` in Node.js.
 
 See the [OpenAI Docs Mapping](./openai-mapping.md) for a complete cross-reference.
