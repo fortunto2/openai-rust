@@ -543,6 +543,12 @@ let event: MyEvent = wh.unwrap(payload, signature_header, timestamp_header)?;
 
 ---
 
+## Built With AI
+
+This crate was built in days, not months — using [Claude Code](https://claude.ai/claude-code) with a harness engineering approach: pre-commit quality gates, OpenAPI spec as ground truth, official Python SDK as reference. Planning and code intelligence via [solo-factory](https://github.com/fortunto2/solo-factory) skills and [solograph](https://github.com/fortunto2/solograph) MCP server.
+
+---
+
 ## Roadmap
 
 Our goal is to make `openai-oxide` the universal engine for all LLM integrations across the entire software stack.

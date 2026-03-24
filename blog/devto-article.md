@@ -184,11 +184,16 @@ const client = new OpenAI();
 
 This library started as a need for a fast OpenAI client for my realtime TTS voice agent project. The official Python SDK worked, but I needed Rust-level performance for WebSocket audio streaming and edge deployment.
 
-The entire crate — 100+ API methods, typed streaming, structured outputs, WASM support, Node/Python bindings with drop-in compatibility — was built in a few days using a harness engineering approach: Claude Code as the primary coding agent, with the official Python SDK source as the reference implementation. Every type was cross-checked against OpenAI's OpenAPI spec and the Python SDK's types directory.
+The entire crate — 100+ API methods, typed streaming, structured outputs, WASM support, Node/Python bindings — was built in a few days using a harness engineering approach with [Claude Code](https://claude.ai/claude-code) and my own toolkit:
 
-The key insight: instead of writing an SDK from scratch, treat the Python SDK as a spec and systematically port every pattern — retry logic, error handling, streaming, structured outputs — into idiomatic Rust. The coding agent handles the mechanical translation; you focus on architecture decisions like "should this be a tagged enum or a struct with a type field?"
+1. **Setup**: configured pre-commit hooks (tests, clippy, WASM check, secret scan), OpenAPI spec as ground truth, Python SDK source as reference
+2. **Planning**: used [solo-factory](https://github.com/fortunto2/solo-factory) skills (`/plan`, `/build`) with [solograph](https://github.com/fortunto2/solograph) for code intelligence — MCP server that indexes the codebase and provides semantic search across projects
+3. **Building**: initial scaffold via Ralph Loop (autonomous agent loop), then manual refinement — architecture decisions, API design, performance tuning
+4. **Quality gates**: every commit runs 189 tests + clippy + WASM compilation check. [Artifacts and docs](https://github.com/fortunto2/openai-oxide/tree/main/docs) are auto-generated from code
 
-The result: a crate that matches Python SDK parity while adding Rust-specific features (zero-copy parsing, WASM, WebSockets) that aren't possible in Python.
+The key insight: treat the Python SDK as a spec, not as code to port line-by-line. The agent handles mechanical translation (types, error mapping, serialization); you focus on Rust-specific wins (zero-copy, tagged enums, WASM cfg gates). More on the tooling approach in a separate post.
+
+The result: Python SDK parity plus Rust-specific features (zero-copy parsing, WASM, persistent WebSockets) that aren't possible in Python.
 
 ## Try It
 
