@@ -12,7 +12,7 @@ struct ChatRequest {
 }
 
 fn default_model() -> String {
-    "gpt-4.1-nano".to_string()
+    "gpt-5.4-mini".to_string()
 }
 
 /// Resolve API key: request header > worker secret > error
