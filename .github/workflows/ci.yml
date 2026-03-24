@@ -33,6 +33,12 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Install wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: WASM compilation check
+        run: cargo check --target wasm32-unknown-unknown --no-default-features --features "chat,responses"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 

@@ -24,6 +24,9 @@ cargo clippy -- -D warnings
 echo "=== Format ==="
 cargo fmt -- --check
 
+echo "=== WASM ==="
+cargo check --target wasm32-unknown-unknown --no-default-features --features "chat,responses" --quiet
+
 echo "=== Quality: no serde_json::Value in public types ==="
 VALUE_COUNT=$(grep -r "pub.*: .*serde_json::Value" src/types/*.rs 2>/dev/null | grep -v "//\|#\[" | wc -l | tr -d ' ')
 if [ "$VALUE_COUNT" -gt 8 ]; then

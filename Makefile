@@ -9,7 +9,10 @@ clippy:
 fmt:
 	cargo fmt -- --check
 
-check: fmt clippy test
+wasm:
+	cargo check --target wasm32-unknown-unknown --no-default-features --features "chat,responses" --quiet
+
+check: fmt clippy test wasm
 
 live:
 	cargo test --features "live-tests"
@@ -50,5 +53,6 @@ help:
 	@echo "bench-python — Python benchmark"
 	@echo "bench-node   — Node benchmark"
 	@echo "bench-all    — all three benchmarks"
+	@echo "wasm         — check WASM compilation"
 	@echo "bench-update — regenerate tables from results.json"
 	@echo "clean        — remove build artifacts"
