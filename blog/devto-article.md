@@ -9,9 +9,11 @@ When you're building an AI agent that makes 20-50 tool calls per cycle, every ro
 
 ## The Problem
 
-Standard OpenAI clients — including the official Python and Node SDKs — perform a full HTTP round-trip for each API call. TLS handshake, header negotiation, connection setup. Every. Single. Time.
+The official Python and Node SDKs are solid — they reuse HTTP/2 connections, have WebSocket support for the Realtime API, and cover all endpoints. But they don't compile to WASM, and their WebSocket mode is only for the Realtime API (audio/multimodal), not for regular text-based Responses API calls.
 
-For a simple Q&A chatbot, this is fine. For an agentic loop where the model calls `read_file`, `search_code`, `edit_file`, `run_tests` in sequence — it's a bottleneck.
+In the Rust ecosystem, you pick async-openai for types or genai for multi-provider support — but no single crate gives you persistent WebSocket sessions for the Responses API, structured outputs with auto-generated schemas, stream helpers, and WASM deployment in one package.
+
+For an agentic loop where the model calls `read_file`, `search_code`, `edit_file`, `run_tests` in sequence — you want all of this together. That's what we built.
 
 ## Persistent WebSockets
 
