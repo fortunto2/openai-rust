@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "model": "gpt-5.4",
+    "runs": 3,
+    "iterations_per_run": 5,
+    "method": "median of medians",
+    "date": "2026-03-24",
+    "environment": "macOS (M-series), release mode, warm HTTP/2 connections"
+  },
+  "rust": {
+    "description": "openai-oxide vs async-openai vs genai (Responses API)",
+    "tests": [
+      { "name": "Plain text", "oxide": 1011, "async_openai": 960, "genai": 835 },
+      { "name": "Structured output", "oxide": 1331, "async_openai": null, "genai": 1197 },
+      { "name": "Function calling", "oxide": 1192, "async_openai": 1748, "genai": 1030 },
+      { "name": "Multi-turn (2 reqs)", "oxide": 2362, "async_openai": 3275, "genai": 1641 },
+      { "name": "Streaming TTFT", "oxide": 645, "async_openai": 685, "genai": 670 },
+      { "name": "Parallel 3x", "oxide": 1165, "async_openai": 1053, "genai": 866 }
+    ],
+    "websocket": [
+      { "name": "Plain text", "ws": 710, "http": 1011, "improvement": "-29%" },
+      { "name": "Multi-turn (2 reqs)", "ws": 1425, "http": 2362, "improvement": "-40%" },
+      { "name": "Rapid-fire (5 calls)", "ws": 3227, "http": 5807, "improvement": "-44%" }
+    ]
+  },
+  "python": {
+    "description": "openai-oxide-python (Rust/PyO3) vs openai (httpx)",
+    "oxide_version": "0.9.7",
+    "official_version": "openai 2.29.0",
+    "wins": "10/12",
+    "tests": [
+      { "name": "Plain text", "oxide": 845, "official": 997 },
+      { "name": "Structured output", "oxide": 1367, "official": 1379 },
+      { "name": "Function calling", "oxide": 1195, "official": 1230 },
+      { "name": "Multi-turn (2 reqs)", "oxide": 2260, "official": 3089 },
+      { "name": "Web search", "oxide": 3157, "official": 3499 },
+      { "name": "Nested structured", "oxide": 5377, "official": 5339 },
+      { "name": "Agent loop (2-step)", "oxide": 4570, "official": 5144 },
+      { "name": "Rapid-fire (5 calls)", "oxide": 5667, "official": 6136 },
+      { "name": "Prompt-cached", "oxide": 4425, "official": 5564 },
+      { "name": "Streaming TTFT", "oxide": 626, "official": 638 },
+      { "name": "Parallel 3x", "oxide": 1184, "official": 1090 },
+      { "name": "Hedged (2x race)", "oxide": 893, "official": 995 }
+    ]
+  },
+  "node": {
+    "description": "openai-oxide (napi-rs) vs openai (npm)",
+    "wins": "8/8",
+    "tests": [
+      { "name": "Plain text", "oxide": 1075, "official": 1311 },
+      { "name": "Structured output", "oxide": 1370, "official": 1765 },
+      { "name": "Function calling", "oxide": 1725, "official": 1832 },
+      { "name": "Multi-turn (2 reqs)", "oxide": 2283, "official": 2859 },
+      { "name": "Rapid-fire (5 calls)", "oxide": 6246, "official": 6936 },
+      { "name": "Streaming TTFT", "oxide": 534, "official": 580 },
+      { "name": "Parallel 3x", "oxide": 1937, "official": 1991 },
+      { "name": "WebSocket hot pair", "oxide": 2181, "official": null }
+    ]
+  }
+}

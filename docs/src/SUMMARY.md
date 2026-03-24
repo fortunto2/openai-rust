@@ -16,6 +16,7 @@
   - [Hedged Requests](./guides/hedged-requests.md)
   - [Webhooks](./guides/webhooks.md)
   - [WASM / Cloudflare Workers](./guides/wasm.md)
+  - [Benchmarks](./guides/benchmarks.md)
 - [API Reference](./api-reference.md)
 - [OpenAI Docs Mapping](./openai-mapping.md)
 - [Migration](./migration/README.md)

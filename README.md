@@ -173,48 +173,53 @@ All benchmarks were run to ensure a fair, real-world comparison of the clients:
 
 <br>
 
+<!-- BENCH:python:START -->
 ### Python Ecosystem (`openai-oxide-python` vs `openai`)
 
-`openai-oxide` comes with native Python bindings via PyO3, exposing a drop-in async interface that outperforms the official Python SDK (`openai` + `httpx`).
+`openai-oxide` wins **10/12** tests. Native PyO3 bindings vs `openai` (openai 2.29.0).
 
-Run `uv run python examples/bench_python.py` from the `openai-oxide-python` directory to test locally (Python 3.13).
-
-| Test | `openai-oxide-python` | `openai` (httpx) | Winner |
+| Test | `openai-oxide` | `openai` | Winner |
 | :--- | :--- | :--- | :--- |
 | **Plain text** | **845ms** | 997ms | OXIDE (+15%) |
 | **Structured output** | **1367ms** | 1379ms | OXIDE (+1%) |
 | **Function calling** | **1195ms** | 1230ms | OXIDE (+3%) |
 | **Multi-turn (2 reqs)** | **2260ms** | 3089ms | OXIDE (+27%) |
 | **Web search** | **3157ms** | 3499ms | OXIDE (+10%) |
-| **Nested structured output** | 5377ms | **5339ms** | python (+1%) |
+| **Nested structured** | 5377ms | **5339ms** | python (+1%) |
 | **Agent loop (2-step)** | **4570ms** | 5144ms | OXIDE (+11%) |
-| **Rapid-fire (5 sequential calls)** | **5667ms** | 6136ms | OXIDE (+8%) |
+| **Rapid-fire (5 calls)** | **5667ms** | 6136ms | OXIDE (+8%) |
 | **Prompt-cached** | **4425ms** | 5564ms | OXIDE (+20%) |
 | **Streaming TTFT** | **626ms** | 638ms | OXIDE (+2%) |
-| **Parallel 3x (fan-out)** | 1184ms | **1090ms** | python (+9%) |
+| **Parallel 3x** | 1184ms | **1090ms** | python (+9%) |
 | **Hedged (2x race)** | **893ms** | 995ms | OXIDE (+10%) |
+
+*median of medians, 3×5 iterations. Model: gpt-5.4.*
+
+Reproduce: `cd openai-oxide-python && uv run python ../examples/bench_python.py`
+<!-- BENCH:python:END -->
 
 ---
 
+<!-- BENCH:node:START -->
 ### Node.js Ecosystem (`openai-oxide` vs `openai`)
 
-The Node package uses native `napi-rs` bindings and now includes low-overhead fast paths for hot loops:
-`createText`, `createStoredResponseId`, and `createTextFollowup`.
-
-Run `BENCH_ITERATIONS=5 pnpm bench` from the `openai-oxide-node` directory to reproduce locally.
+`openai-oxide` wins **8/8** tests. Native napi-rs bindings vs official `openai` npm.
 
 | Test | `openai-oxide` | `openai` | Winner |
-| :--- | ---: | ---: | :--- |
+| :--- | :--- | :--- | :--- |
 | **Plain text** | **1075ms** | 1311ms | OXIDE (+18%) |
 | **Structured output** | **1370ms** | 1765ms | OXIDE (+22%) |
 | **Function calling** | **1725ms** | 1832ms | OXIDE (+6%) |
 | **Multi-turn (2 reqs)** | **2283ms** | 2859ms | OXIDE (+20%) |
 | **Rapid-fire (5 calls)** | **6246ms** | 6936ms | OXIDE (+10%) |
 | **Streaming TTFT** | **534ms** | 580ms | OXIDE (+8%) |
-| **Parallel 3x (fan-out)** | **1937ms** | 1991ms | OXIDE (+3%) |
+| **Parallel 3x** | **1937ms** | 1991ms | OXIDE (+3%) |
 | **WebSocket hot pair** | **2181ms** | N/A | OXIDE |
 
-See the full Node package guide and benchmark notes in [openai-oxide-node/README.md](/Users/rustam/startups/active/openai-rust/openai-oxide-node/README.md).
+*median of medians, 3×5 iterations. Model: gpt-5.4.*
+
+Reproduce: `cd openai-oxide-node && BENCH_ITERATIONS=5 node examples/bench_node.js`
+<!-- BENCH:node:END -->
 
 ---
 
