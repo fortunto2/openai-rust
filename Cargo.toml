@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "openai-oxide-macros", "openai-oxide-node"]
+members = [".", "openai-oxide-macros", "openai-oxide-node", "openai-oxide-types"]
 exclude = ["openai-oxide-python", "examples/cloudflare-worker/", "examples/cloudflare-worker-dioxus/worker"]
 
 

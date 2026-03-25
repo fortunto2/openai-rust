@@ -40,7 +40,8 @@ TYPE_MAP = {
 _known_types: set[str] = set()
 
 
-def python_type_to_rust(type_node: ast.expr, optional: bool = False) -> str:
+def python_type_to_rust(type_node: ast.expr, optional: bool = False,
+                        field_name: str = "", class_name: str = "") -> str:
     """Convert a Python type annotation AST node to Rust type string."""
 
     if isinstance(type_node, ast.Constant):
@@ -67,7 +68,7 @@ def python_type_to_rust(type_node: ast.expr, optional: bool = False) -> str:
 
             # Optional[T] → Option<T>
             if origin_name == "Optional":
-                inner = python_type_to_rust(type_node.slice)
+                inner = python_type_to_rust(type_node.slice, field_name=field_name, class_name=class_name)
                 return f"Option<{inner}>"
 
             # List[T] → Vec<T>
@@ -81,7 +82,7 @@ def python_type_to_rust(type_node: ast.expr, optional: bool = False) -> str:
 
             # Literal["a", "b", "c"] → enum (handled separately)
             if origin_name == "Literal":
-                return extract_literal(type_node)
+                return extract_literal(type_node, field_name, class_name)
 
             # Union[A, B] → enum or serde_json::Value
             if origin_name == "Union":
@@ -110,8 +111,34 @@ def python_type_to_rust(type_node: ast.expr, optional: bool = False) -> str:
     return "serde_json::Value"
 
 
-def extract_literal(node: ast.Subscript) -> str:
-    """Extract Literal["a", "b"] values and return an inline comment."""
+# Accumulates enum definitions to emit before the struct that uses them
+_pending_enums: list[str] = []
+
+
+def literal_to_enum_name(field_name: str, class_name: str) -> str:
+    """Generate enum name from field + class context."""
+    parts = field_name.split("_")
+    camel = "".join(p.capitalize() for p in parts)
+    return f"{class_name}{camel}"
+
+
+def value_to_variant(v: str) -> str:
+    """Convert a literal string value to a Rust enum variant name."""
+    # Handle special cases
+    if v == "24h":
+        return "Hours24"
+    # Remove special chars, split by - and _, capitalize
+    clean = v.replace("-", "_").replace(".", "_").replace(" ", "_")
+    parts = clean.split("_")
+    variant = "".join(p.capitalize() for p in parts if p)
+    # Ensure starts with letter
+    if variant and variant[0].isdigit():
+        variant = "V" + variant
+    return variant or "Unknown"
+
+
+def extract_literal(node: ast.Subscript, field_name: str = "", class_name: str = "") -> str:
+    """Extract Literal["a", "b"] — generate enum for 2+ variants, String for 1."""
     slice_node = node.slice
     if isinstance(slice_node, ast.Tuple):
         values = [
@@ -123,12 +150,32 @@ def extract_literal(node: ast.Subscript) -> str:
     else:
         return "String"
 
-    # If all values are strings, generate enum hint
-    if all(isinstance(v, str) for v in values):
-        if len(values) <= 1:
-            return "String"
-        return f"String /* {' | '.join(values)} */"
-    return "String"
+    if not all(isinstance(v, str) for v in values):
+        return "String"
+
+    # Single value — just a String (type discriminator, e.g. type: Literal["message"])
+    if len(values) <= 1:
+        return "String"
+
+    # Generate enum
+    enum_name = literal_to_enum_name(field_name, class_name)
+    if enum_name in _known_types:
+        return enum_name  # Already generated
+
+    lines = []
+    lines.append(f"#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]")
+    lines.append(f"#[non_exhaustive]")
+    lines.append(f"pub enum {enum_name} {{")
+    for v in values:
+        variant = value_to_variant(v)
+        if variant.lower() != v:
+            lines.append(f'    #[serde(rename = "{v}")]')
+        lines.append(f"    {variant},")
+    lines.append("}")
+
+    _pending_enums.append("\n".join(lines))
+    _known_types.add(enum_name)
+    return enum_name
 
 
 def extract_union(node: ast.Subscript) -> str:
@@ -181,6 +228,7 @@ def to_snake_case(name: str) -> str:
 
 def process_class(cls: ast.ClassDef) -> str:
     """Convert a Pydantic class to Rust struct."""
+    _pending_enums.clear()
     lines = []
 
     # Docstring
@@ -214,7 +262,7 @@ def process_class(cls: ast.ClassDef) -> str:
             continue
 
         field_name = node.target.id if isinstance(node.target, ast.Name) else str(node.target)
-        rust_type = python_type_to_rust(node.annotation)
+        rust_type = python_type_to_rust(node.annotation, field_name=field_name, class_name=cls.name)
 
         # Handle Optional with default None
         is_optional = node.value is not None and (
@@ -253,7 +301,11 @@ def process_class(cls: ast.ClassDef) -> str:
         lines.append(f"    pub {rust_field}: {rust_type},")
 
     lines.append("}")
-    return "\n".join(lines)
+
+    # Prepend any enums generated from Literal fields
+    parts = list(_pending_enums) + ["\n".join(lines)]
+    _pending_enums.clear()
+    return "\n\n".join(parts)
 
 
 def process_file(path: Path, prefix: str = "") -> list[tuple[str, str]]:
