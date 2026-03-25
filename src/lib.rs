@@ -59,6 +59,8 @@ pub mod streaming;
 pub mod types;
 #[cfg(feature = "websocket")]
 pub mod websocket;
+#[cfg(feature = "websocket")]
+pub mod ws_pool;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn ensure_tls_provider() {

@@ -261,16 +261,17 @@ impl WsSession {
                     let event: ResponseStreamEvent = serde_json::from_str(&text)?;
 
                     match event {
-                        ResponseStreamEvent::ResponseCompleted { response } => {
-                            return Ok(response);
+                        ResponseStreamEvent::ResponseCompleted(evt) => {
+                            return Ok(evt.response);
                         }
-                        ResponseStreamEvent::ResponseFailed { response } => {
-                            let message = response
+                        ResponseStreamEvent::ResponseFailed(evt) => {
+                            let message = evt
+                                .response
                                 .error
                                 .as_ref()
                                 .map(|e| e.message.clone())
                                 .unwrap_or_else(|| "unknown error".into());
-                            let code = response.error.as_ref().map(|e| e.code.clone());
+                            let code = evt.response.error.as_ref().map(|e| e.code.clone());
                             return Err(OpenAIError::ApiError {
                                 status: 0,
                                 message,
@@ -331,8 +332,8 @@ impl<'a> Stream for WsEventStream<'a> {
                     Ok(event) => {
                         if matches!(
                             event,
-                            ResponseStreamEvent::ResponseCompleted { .. }
-                                | ResponseStreamEvent::ResponseFailed { .. }
+                            ResponseStreamEvent::ResponseCompleted(_)
+                                | ResponseStreamEvent::ResponseFailed(_)
                         ) {
                             this.done = true;
                         }
