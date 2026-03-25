@@ -1,3 +1,4 @@
+// MANUAL — hand-maintained. py2rust sync will not overwrite.
 // Main Response struct and related types.
 
 use serde::{Deserialize, Serialize};

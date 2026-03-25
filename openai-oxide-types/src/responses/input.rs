@@ -1,3 +1,4 @@
+// MANUAL — hand-maintained. py2rust sync will not overwrite.
 // Input items for the Responses API.
 
 use serde::{Deserialize, Serialize};

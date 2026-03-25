@@ -2,17 +2,24 @@
 """Convert Python Pydantic models (OpenAI SDK) to Rust serde structs.
 
 Usage:
-  python3 scripts/py2rust.py <python_file_or_dir> [--out FILE]
+  python3 scripts/py2rust.py <python_dir> [--out FILE]
+  python3 scripts/py2rust.py <python_file>
+  python3 scripts/py2rust.py sync <python_dir> <rust_crate_dir>
+
+Modes:
+  (default)  Generate all types into one file or stdout
+  sync       Update openai-oxide-types crate — generates AUTO files,
+             preserves MANUAL files, reports new types from Python SDK
 
 Examples:
-  # Single file
+  # Single file to stdout
   python3 scripts/py2rust.py ~/openai-python/src/openai/types/responses/easy_input_message.py
 
-  # Whole directory
+  # Whole directory into one file
   python3 scripts/py2rust.py ~/openai-python/src/openai/types/responses/ --out /tmp/responses.rs
 
-  # Pipe to clipboard
-  python3 scripts/py2rust.py ~/openai-python/src/openai/types/responses/response_reasoning_item.py | pbcopy
+  # Sync crate with Python SDK (main workflow)
+  python3 scripts/py2rust.py sync ~/openai-python/src/openai/types/responses/ openai-oxide-types/src/responses/
 """
 
 import ast
@@ -359,32 +366,188 @@ def file_prefix(path: Path) -> str:
     return "".join(p.capitalize() for p in parts[:2])
 
 
+# ── Python filename → Rust file routing ──
+
+# Maps Python filename patterns to Rust destination file.
+# Order matters — first match wins.
+ROUTE_TABLE = [
+    # Streaming events
+    ("response_*_event.py", "streaming"),
+    ("response_completed_event.py", "streaming"),
+    ("response_failed_event.py", "streaming"),
+    ("response_incomplete_event.py", "streaming"),
+    ("response_queued_event.py", "streaming"),
+    # Tools
+    ("function_tool.py", "tools"),
+    ("file_search_tool.py", "tools"),
+    ("computer_tool.py", "tools"),
+    ("computer_use_preview_tool.py", "tools"),
+    ("web_search_tool.py", "tools"),
+    ("code_interpreter_tool.py", "tools"),
+    ("custom_tool.py", "tools"),
+    ("apply_patch_tool.py", "tools"),
+    ("function_shell_tool.py", "tools"),
+    ("namespace_tool.py", "tools"),
+    # Output types
+    ("response_function_tool_call*.py", "output"),
+    ("response_output_*.py", "output"),
+    ("response_reasoning_item.py", "output"),
+    ("response_custom_tool_call*.py", "output"),
+    ("response_computer_tool_call*.py", "output"),
+    ("response_file_search_tool_call*.py", "output"),
+    ("response_code_interpreter_tool_call*.py", "output"),
+    # Input types
+    ("easy_input_message.py", "input"),
+    ("response_input_*.py", "input"),
+    ("input_item*.py", "input"),
+    ("response_function_call_output*.py", "input"),
+    # Response
+    ("response.py", "response"),
+    ("compacted_response.py", "response"),
+    ("parsed_response.py", "response"),
+    # Create/config
+    ("response_format*.py", "create"),
+    ("container_*.py", "create"),
+    ("local_*.py", "create"),
+    ("inline_skill*.py", "create"),
+]
+
+import fnmatch
+
+
+def route_python_file(filename: str) -> str:
+    """Determine which Rust file a Python file's types should go into."""
+    for pattern, dest in ROUTE_TABLE:
+        if fnmatch.fnmatch(filename, pattern):
+            return dest
+    return "extra"  # Uncategorized — goes to extra.rs
+
+
+def is_manual_file(rust_file: Path) -> bool:
+    """Check if a Rust file is marked MANUAL (hand-maintained, don't overwrite)."""
+    if not rust_file.exists():
+        return False
+    first_lines = rust_file.read_text()[:200]
+    return "// MANUAL" in first_lines
+
+
+def generate_file_header(dest_name: str) -> str:
+    """Generate header for an auto-generated Rust file."""
+    return (
+        f"// AUTO-GENERATED — do not edit manually.\n"
+        f"// Re-generate: python3 scripts/py2rust.py sync <python_dir> <rust_dir>\n"
+        f"// Source: OpenAI Python SDK responses/\n\n"
+        f"use serde::{{Deserialize, Serialize}};\n"
+    )
+
+
+def sync_crate(python_dir: Path, rust_dir: Path):
+    """Sync Python SDK types into openai-oxide-types crate structure."""
+    # Collect all Python types, routed to Rust files
+    routed: dict[str, list[tuple[str, str]]] = {}  # dest → [(name, code)]
+    seen_names: set[str] = set()
+
+    for f in sorted(python_dir.glob("*.py")):
+        if f.name.startswith("_") or f.name.endswith("_param.py"):
+            continue
+        dest = route_python_file(f.name)
+        prefix = file_prefix(f)
+        structs = process_file(f, prefix=prefix)
+        for name, code in structs:
+            if name in seen_names:
+                continue
+            seen_names.add(name)
+            routed.setdefault(dest, []).append((name, code))
+
+    # Read existing manual files to see which types we already have
+    existing_types: set[str] = set()
+    for rs_file in rust_dir.glob("*.rs"):
+        if rs_file.name == "mod.rs":
+            continue
+        content = rs_file.read_text()
+        for line in content.split("\n"):
+            if line.startswith("pub struct ") or line.startswith("pub enum "):
+                type_name = line.split("{")[0].split("(")[0].strip().split()[-1]
+                existing_types.add(type_name)
+
+    # Report
+    total_generated = 0
+    total_new = 0
+    total_skipped = 0
+
+    for dest, types in sorted(routed.items()):
+        rust_path = rust_dir / f"{dest}.rs"
+
+        if is_manual_file(rust_path):
+            # Don't overwrite manual files — just report new types
+            new_types = [name for name, _ in types if name not in existing_types]
+            if new_types:
+                print(f"  MANUAL {dest}.rs — {len(new_types)} new types to add:")
+                for t in new_types:
+                    print(f"    + {t}")
+                total_new += len(new_types)
+            else:
+                print(f"  MANUAL {dest}.rs — up to date")
+            total_skipped += len(types)
+            continue
+
+        # Auto-generated file — overwrite
+        content = generate_file_header(dest)
+        # Import from sibling modules if needed
+        if dest not in ("common", "mod"):
+            content += "use super::common::*;\n"
+            if dest == "streaming":
+                content += "use super::output::OutputItem;\n"
+                content += "use super::response::Response;\n"
+            elif dest == "output":
+                content += "use super::response::Response;\n"
+        content += "\n"
+        content += "\n\n".join(code for _, code in types)
+        content += "\n"
+
+        rust_path.write_text(content)
+        print(f"  AUTO   {dest}.rs — {len(types)} types")
+        total_generated += len(types)
+
+    print(f"\nSummary: {total_generated} generated, {total_skipped} in manual files, {total_new} new types to review")
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
 
+    # Sync mode
+    if sys.argv[1] == "sync":
+        if len(sys.argv) < 4:
+            print("Usage: py2rust.py sync <python_dir> <rust_dir>")
+            sys.exit(1)
+        python_dir = Path(sys.argv[2])
+        rust_dir = Path(sys.argv[3])
+        print(f"Syncing {python_dir} → {rust_dir}\n")
+        sync_crate(python_dir, rust_dir)
+        sys.exit(0)
+
+    # Default mode — single file or flat output
     target = Path(sys.argv[1])
     out_file = None
     if "--out" in sys.argv:
         out_file = Path(sys.argv[sys.argv.index("--out") + 1])
 
-    all_structs: list[tuple[str, str]] = []  # (name, code)
+    all_structs: list[tuple[str, str]] = []
     seen_names: set[str] = set()
 
     if target.is_file():
         all_structs.extend(process_file(target))
     elif target.is_dir():
         for f in sorted(target.glob("*.py")):
-            if f.name.startswith("_"):
-                continue
-            if f.name.endswith("_param.py"):
+            if f.name.startswith("_") or f.name.endswith("_param.py"):
                 continue
             prefix = file_prefix(f)
             structs = process_file(f, prefix=prefix)
             for name, code in structs:
                 if name in seen_names:
-                    continue  # Skip duplicate across files
+                    continue
                 seen_names.add(name)
                 all_structs.append((name, code))
 

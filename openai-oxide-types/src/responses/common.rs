@@ -1,3 +1,4 @@
+// MANUAL — hand-maintained. py2rust sync will not overwrite.
 // Shared enums used across Responses API types.
 
 use serde::{Deserialize, Serialize};

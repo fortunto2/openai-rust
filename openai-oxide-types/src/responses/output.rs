@@ -1,3 +1,4 @@
+// MANUAL — hand-maintained. py2rust sync will not overwrite.
 // Output items — the typed output from a Response.
 
 use serde::{Deserialize, Serialize};
