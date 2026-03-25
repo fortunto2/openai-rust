@@ -589,6 +589,23 @@ Coverage is enforced on every commit via pre-commit hooks. Current field coverag
 
 
 
+## AI Agent Skills
+
+This repo includes an [Agent Skill](https://agentskills.io/) — a portable knowledge pack that teaches AI coding assistants how to use `openai-oxide` correctly (gotchas, patterns, API reference).
+
+Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, VS Code, and [30+ other agents](https://agentskills.io/).
+
+```bash
+# Context7
+npx ctx7 skills search openai-oxide
+npx ctx7 skills install /fortunto2/openai-oxide
+
+# skills.sh
+npx skills add fortunto2/openai-oxide
+```
+
+---
+
 ## See Also
 
 - [openai-python](https://github.com/openai/openai-python) — Official Python SDK (our benchmark baseline)
