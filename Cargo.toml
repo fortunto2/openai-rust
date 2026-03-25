@@ -37,6 +37,7 @@ async-trait = "0.1.89"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "json", "stream", "multipart", "gzip", "http2", "query"] }
+reqwest012 = { package = "reqwest", version = ">=0.12, <0.13", default-features = false, features = ["rustls-tls-no-provider", "json", "stream", "multipart", "gzip", "http2"], optional = true }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 tokio = { version = "1", features = ["full"] }
 
@@ -76,6 +77,7 @@ websocket = ["dep:tokio-tungstenite"]
 websocket-wasm = ["dep:gloo-net", "dep:web-sys"]
 webhooks = ["dep:hmac", "dep:sha2", "base64"]
 structured = ["dep:schemars"]
+reqwest-012 = ["dep:reqwest012"]
 
 [[example]]
 name = "chat"

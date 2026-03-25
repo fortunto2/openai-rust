@@ -31,6 +31,13 @@
 //! }
 //! ```
 
+// When `reqwest-012` feature is enabled, alias reqwest012 → reqwest.
+// Code uses `reqwest::` everywhere — this makes 0.12 transparent.
+// Consumer adds: openai-oxide = { features = ["reqwest-012"] }
+// Cargo unifies with their workspace's reqwest 0.12, avoiding dual versions.
+#[cfg(feature = "reqwest-012")]
+extern crate reqwest012 as reqwest;
+
 pub mod azure;
 pub mod client;
 pub mod config;
