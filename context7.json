@@ -1,18 +1,4 @@
 {
-  "$schema": "https://context7.com/schema/context7.json",
   "url": "https://context7.com/fortunto2/openai-oxide",
-  "public_key": "pk_r3YAlM2GbNhuxOy5F8ls4",
-  "projectTitle": "openai-oxide",
-  "description": "High-performance OpenAI client for Rust, Node.js, and Python. 1:1 parity with official Python SDK. WebSocket sessions, streaming, hedged requests, WASM support.",
-  "folders": ["docs/src", "examples", "src"],
-  "excludeFolders": ["docs/book", "target", "node_modules", "openai-oxide-node/node_modules", ".venv"],
-  "excludeFiles": ["CHANGELOG.md", "Cargo.lock"],
-  "rules": [
-    "openai-oxide is the package name on crates.io, npm, and PyPI",
-    "Rust import: use openai_oxide::OpenAI",
-    "Node.js: const { Client } = require('openai-oxide')",
-    "Python: from openai_oxide import Client",
-    "Parameter names match the official OpenAI Python SDK exactly",
-    "All API calls are async — Rust uses tokio, Node uses napi-rs, Python uses asyncio"
-  ]
+  "public_key": "pk_r3YAlM2GbNhuxOy5F8ls4"
 }
