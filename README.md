@@ -24,7 +24,7 @@ We built `openai-oxide` to squeeze every millisecond out of the OpenAI API.
 
 - **Structured Outputs — `parse::<T>()`:** Auto-generates JSON schema from Rust types via `schemars` and deserializes the response in one call — `parse::<MyStruct>()`. Works with Chat and Responses APIs. Node (Zod) and Python (Pydantic v2) bindings included.
 - **Stream Helpers:** High-level `ChatStreamEvent` with automatic text/tool-call accumulation, typed `ContentDelta`/`ToolCallDone` events, `get_final_completion()`, and `current_content()` snapshots. No manual chunk stitching.
-- **Streaming:** Custom SSE parser with `Accept: text/event-stream` and `Cache-Control: no-cache` headers to prevent reverse-proxy buffering.
+- **Streaming:** SSE parser with anti-buffering headers (`Accept: text/event-stream`, `Cache-Control: no-cache`). On mock benchmarks, per-chunk processing is 2.6x faster than the official JS SDK (283µs vs 742µs for 114 chunks, p<0.001).
 - **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Measured 29-44% faster on multi-turn benchmarks vs HTTP (warm connections).
 - **Stream FC Early Parse:** Yields function calls the exact moment `arguments.done` is emitted, letting you start executing local tools before the overall response finishes.
 - **Hardware-Accelerated JSON (`simd`):** Opt-in AVX2/NEON vector instructions for parsing massive agent histories and complex tool calls in microseconds.
@@ -170,7 +170,8 @@ All benchmarks were run to ensure a fair, real-world comparison of the clients:
 **Where WebSocket mode helps:**
 WebSocket avoids HTTP/2 framing overhead and may route differently server-side. Savings are 29-44% on multi-turn workloads. Single requests show smaller gains.
 
-**Important caveat:** On single API calls, server-side latency (500-2000ms) dominates. SDK overhead is <1% of wall time. The live benchmark differences between Rust clients are within API variance. SDK choice matters more for throughput (many requests, local/cached backends) than for single-call latency.
+**Where SDK overhead matters:**
+On single API calls, server latency (500-2000ms) dominates — SDK choice won't help. But for high-throughput pipelines, local/cached model backends, or agent loops with many sequential calls, SDK overhead compounds. Mock benchmarks (localhost, zero network) show oxide's Rust core is 2-3x faster on light payloads and 1.2x on heavy 657KB requests (p<0.001). Node fast-path (`createResponseFast`) adds another 40-67% by skipping the JS↔Rust object copy.
 
 
 <br>
