@@ -2,7 +2,7 @@
   <img src="docs/logo.png" alt="openai-oxide" width="480">
   <br>
   <p align="center">
-    A high-performance, feature-complete OpenAI client for <strong>Rust</strong>, <strong>Node.js</strong>, and <strong>Python</strong>.<br>Designed for agentic workflows, low-latency streaming, and WebAssembly.
+    Feature-complete OpenAI client for <strong>Rust</strong>, <strong>Node.js</strong>, and <strong>Python</strong>.<br>Streaming, WebSockets, structured outputs, WASM — built for agentic workflows.
   </p>
   <p align="center">
     <a href="https://crates.io/crates/openai-oxide"><img src="https://img.shields.io/crates/v/openai-oxide.svg" alt="crates.io"></a>
@@ -16,15 +16,15 @@
   </p>
 </p>
 
-`openai-oxide` implements the full [Responses API](https://platform.openai.com/docs/api-reference/responses), [Chat Completions](https://platform.openai.com/docs/api-reference/chat), and 20+ other endpoints. It introduces performance primitives like **persistent WebSockets**, **hedged requests**, **early-parsing for function calls**, and **type-safe Structured Outputs** — features previously unavailable in the Rust ecosystem.
+`openai-oxide` implements the full [Responses API](https://platform.openai.com/docs/api-reference/responses), [Chat Completions](https://platform.openai.com/docs/api-reference/chat), and 20+ other endpoints with **persistent WebSockets**, **hedged requests**, **early-parsing for function calls**, and **type-safe Structured Outputs**. Types are provided by the standalone [`openai-types`](https://crates.io/crates/openai-types) crate (1100+ types, auto-synced from the Python SDK).
 
 ## Why openai-oxide?
 
-We built `openai-oxide` to squeeze every millisecond out of the OpenAI API.
+What you get out of the box:
 
 - **Structured Outputs — `parse::<T>()`:** Auto-generates JSON schema from Rust types via `schemars` and deserializes the response in one call — `parse::<MyStruct>()`. Works with Chat and Responses APIs. Node (Zod) and Python (Pydantic v2) bindings included.
 - **Stream Helpers:** High-level `ChatStreamEvent` with automatic text/tool-call accumulation, typed `ContentDelta`/`ToolCallDone` events, `get_final_completion()`, and `current_content()` snapshots. No manual chunk stitching.
-- **Streaming:** SSE parser with anti-buffering headers (`Accept: text/event-stream`, `Cache-Control: no-cache`). On mock benchmarks, per-chunk processing is 2.6x faster than the official JS SDK (283µs vs 742µs for 114 chunks, p<0.001).
+- **Streaming:** SSE parser with anti-buffering headers. On mock benchmarks, 2.5x faster per-chunk processing vs official JS SDK (312µs vs 783µs for 114 chunks, p<0.001).
 - **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Measured 29-44% faster on multi-turn benchmarks vs HTTP (warm connections).
 - **Stream FC Early Parse:** Yields function calls the exact moment `arguments.done` is emitted, letting you start executing local tools before the overall response finishes.
 - **Hardware-Accelerated JSON (`simd`):** Opt-in AVX2/NEON vector instructions for parsing massive agent histories and complex tool calls in microseconds.
@@ -84,6 +84,7 @@ uv pip install openai-oxide
 | Package | Registry | Link |
 |---------|----------|------|
 | `openai-oxide` | crates.io | [crates.io/crates/openai-oxide](https://crates.io/crates/openai-oxide) |
+| `openai-types` | crates.io | [crates.io/crates/openai-types](https://crates.io/crates/openai-types) |
 | `openai-oxide` | npm | [npmjs.com/package/openai-oxide](https://www.npmjs.com/package/openai-oxide) |
 | `openai-oxide` | PyPI | [pypi.org/project/openai-oxide](https://pypi.org/project/openai-oxide/) |
 | `openai-oxide-macros` | crates.io | [crates.io/crates/openai-oxide-macros](https://crates.io/crates/openai-oxide-macros) |
