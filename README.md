@@ -24,34 +24,36 @@ We built `openai-oxide` to squeeze every millisecond out of the OpenAI API.
 
 - **Structured Outputs — `parse::<T>()`:** Auto-generates JSON schema from Rust types via `schemars` and deserializes the response in one call — `parse::<MyStruct>()`. Works with Chat and Responses APIs. Node (Zod) and Python (Pydantic v2) bindings included.
 - **Stream Helpers:** High-level `ChatStreamEvent` with automatic text/tool-call accumulation, typed `ContentDelta`/`ToolCallDone` events, `get_final_completion()`, and `current_content()` snapshots. No manual chunk stitching.
-- **Zero-Overhead Streaming:** Custom zero-copy SSE parser with strict `Accept: text/event-stream` and `Cache-Control: no-cache` headers to prevent reverse-proxy buffering — TTFT in ~580ms.
-- **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Bypasses per-request TLS handshakes, reducing multi-turn agent loop latency by up to 37%.
-- **Stream FC Early Parse:** Yields function calls the exact moment `arguments.done` is emitted, letting you execute local tools ~400ms before the overall response finishes.
+- **Streaming:** Custom SSE parser with `Accept: text/event-stream` and `Cache-Control: no-cache` headers to prevent reverse-proxy buffering.
+- **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Measured 29-44% faster on multi-turn benchmarks vs HTTP (warm connections).
+- **Stream FC Early Parse:** Yields function calls the exact moment `arguments.done` is emitted, letting you start executing local tools before the overall response finishes.
 - **Hardware-Accelerated JSON (`simd`):** Opt-in AVX2/NEON vector instructions for parsing massive agent histories and complex tool calls in microseconds.
-- **Hedged Requests:** Send redundant requests and cancel the slower ones. Costs 2-7% extra tokens but reliably reduces P99 tail latency by 50-96% (inspired by Google's "The Tail at Scale").
+- **Hedged Requests:** Send redundant requests and cancel the slower ones. Trades extra tokens for lower tail latency (technique from Google's "The Tail at Scale").
 - **Webhook Verification:** HMAC-SHA256 signature verification with timestamp replay protection — production-ready webhook handling out of the box.
 - **HTTP Tuning:** gzip, TCP_NODELAY, HTTP/2 keep-alive with adaptive window, connection pooling — enabled by default. Neither async-openai nor genai set these.
 - **WASM First-Class:** Compiles to `wasm32-unknown-unknown` without dropping features. Streaming, retries, and early-parsing work flawlessly in Cloudflare Workers and browsers. [Live demo](https://cloudflare-worker-dioxus.nameless-sunset-8f24.workers.dev).
 
-### The Agentic Multiplier Effect
+### WebSocket Mode for Agent Loops
 
-In complex agent loops (e.g. coding agents, researchers) where a model calls dozens of tools sequentially, standard SDKs introduce compounding delays. `openai-oxide` collapses this latency through architectural pipelining:
-
-1. **Persistent Connections:** Standard SDKs perform a full HTTP round-trip (TCP/TLS handshake + headers) for every step. With `openai-oxide`'s WebSocket mode, the connection stays hot. You save ~300ms per tool call. Over 50 tool calls, that's **15 seconds** of pure network overhead eliminated.
-2. **Asynchronous Execution:** Standard SDKs wait for the `[DONE]` signal from OpenAI before parsing the response and yielding the tool call to your code. `openai-oxide` parses the SSE stream on the fly. The moment `{"type": "response.function_call.arguments.done"}` arrives, your local function (e.g. `ls` or `cat`) starts executing while OpenAI is still generating the final metadata.
-3. **Strict Typings:** Unlike wrappers that treat tool arguments as raw dynamic `Value`s, `openai-oxide` enforces strict typings. If OpenAI hallucinates invalid JSON structure, it is caught at the SDK boundary, allowing the agent to immediately self-correct without crashing the application.
+In multi-turn agent loops, WebSocket mode avoids per-request HTTP/2 framing and header overhead. Both HTTP and WebSocket reuse the same TCP+TLS connection (no per-request handshake), but WebSocket eliminates HTTP/2 frame negotiation.
 
 ```text
-Standard Client (HTTP/REST)
-Request 1 (ls)   : [TLS Handshake] -> [Req] -> [Wait TTFT] -> [Wait Done] -> [Parse JSON] -> [Exec Tool]
-Request 2 (cat)  : [TLS Handshake] -> [Req] -> [Wait TTFT] -> [Wait Done] -> [Parse JSON] -> [Exec Tool]
+Standard Client (HTTP/2, warm connection)
+Request 1 (ls)   : [HTTP/2 frames] -> [Wait TTFT] -> [Wait Done] -> [Parse] -> [Exec Tool]
+Request 2 (cat)  : [HTTP/2 frames] -> [Wait TTFT] -> [Wait Done] -> [Parse] -> [Exec Tool]
 
-openai-oxide (WebSockets + Early Parse)
+openai-oxide (WebSocket + Early Parse)
 Connection       : [TLS Handshake] (Done once)
-Request 1 (ls)   : [Req] -> [Wait TTFT] -> [Exec Tool Early!]
-Request 2 (cat)  :                      [Req] -> [Wait TTFT] -> [Exec Tool Early!]
+Request 1 (ls)   : [Send JSON] -> [Wait TTFT] -> [Exec Tool Early!]
+Request 2 (cat)  :             [Send JSON] -> [Wait TTFT] -> [Exec Tool Early!]
 ```
-*Result: An agent performing 10 tool calls completes its task up to 50% faster.*
+
+Measured savings on warm connections (gpt-5.4, median of medians):
+- **Plain text:** 710ms WS vs 1011ms HTTP (29% faster)
+- **Multi-turn (2 reqs):** 1425ms vs 2362ms (40% faster)
+- **Rapid-fire (5 calls):** 3227ms vs 5807ms (44% faster)
+
+The gap likely reflects both reduced framing overhead and different server-side routing for the WebSocket endpoint. Early parse (yielding tool calls before `[DONE]`) provides additional savings in streaming mode.
 
 ---
 
@@ -148,28 +150,27 @@ All benchmarks were run to ensure a fair, real-world comparison of the clients:
 
 ### Rust Ecosystem (`openai-oxide` vs `async-openai` vs `genai`)
 
-| Test | `openai-oxide`<br>*(WebSockets)* | `openai-oxide`<br>*(Responses API)* | [`async-openai`](https://crates.io/crates/async-openai)<br>*(Responses API)* | [`genai`](https://crates.io/crates/genai)<br>*(Responses API)* | `openai-oxide`<br>*(Chat API)* | `genai`<br>*(Chat API)* |
+| Test | `openai-oxide`<br>*(Responses API)* | [`async-openai`](https://crates.io/crates/async-openai)<br>*(Responses API)* | [`genai`](https://crates.io/crates/genai)<br>*(Responses API)* | `openai-oxide`<br>*(Chat API)* | `genai`<br>*(Chat API)* | `openai-oxide`<br>*(WebSockets)* |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Plain text** | **710ms** *( -29% )* | 1000ms | 960ms | 835ms | 753ms | 722ms |
-| **Structured output** | **~1000ms** | 1352ms | N/A | 1197ms | 1304ms | N/A |
-| **Function calling** | **~850ms** | 1164ms | 1748ms | 1030ms | 1252ms | N/A |
-| **Streaming TTFT** | **~400ms** | 670ms | 685ms | 670ms | 695ms | N/A |
-| **Multi-turn (2 reqs)** | **1425ms** *( -35% )* | 2219ms | 3275ms | 1641ms | 2011ms | 1560ms |
-| **Rapid-fire (5 calls)** | **3227ms** *( -37% )* | 5147ms | 5166ms | 3807ms | 4671ms | 3540ms |
-| **Parallel 3x (fan-out)**| **N/A** *( Sync )* | 1081ms | 1053ms | 866ms | 978ms | 801ms |
+| **Plain text** | 1000ms | 960ms | 835ms | 753ms | 722ms | **710ms** |
+| **Structured output** | 1352ms | N/A | 1197ms | 1304ms | N/A | — |
+| **Function calling** | 1164ms | 1748ms | 1030ms | 1252ms | N/A | — |
+| **Streaming TTFT** | 670ms | 685ms | 670ms | 695ms | N/A | — |
+| **Multi-turn (2 reqs)** | 2219ms | 3275ms | 1641ms | 2011ms | 1560ms | **1425ms** |
+| **Rapid-fire (5 calls)** | 5147ms | 5166ms | 3807ms | 4671ms | 3540ms | **3227ms** |
+| **Parallel 3x (fan-out)** | 1081ms | 1053ms | 866ms | 978ms | 801ms | N/A |
 
 *Reproduce: `cargo run --example benchmark --features responses --release`*
 
 ### Understanding the Results
 
-**1. Why is `genai` sometimes slightly faster in HTTP Plain Text?**
-`genai` is designed as a universal, loosely-typed adapter. When OpenAI sends a 3KB JSON response, `genai` only extracts the raw text (`value["output"][0]["content"][0]["text"]`) and drops the rest. 
-`openai-oxide` is a full SDK. We rigorously deserialize and validate the *entire* response tree into strict Rust structs—including token usage, logprobs, finish reasons, and tool metadata. This guarantees type safety and gives you full access to the API, at the cost of ~100-150ms of CPU deserialization time.
+**Why is `genai` sometimes faster in HTTP?**
+`genai` is a loosely-typed adapter — it extracts raw text and drops the rest. `openai-oxide` deserializes the entire response into typed structs (usage, logprobs, finish reasons, tool metadata). Full deserialization costs ~100-150ms of CPU time on these payloads.
 
-**2. Where `openai-oxide` destroys the competition:**
-- **Streaming (TTFT):** Our custom zero-copy SSE parser bypasses `serde_json` overhead, matching the theoretical network limit (~670ms).
-- **Function Calling:** Because `async-openai` and `genai` aren't hyper-optimized for the complex nested schemas of OpenAI's tool calls, our strict deserialization engine actually overtakes them by a massive margin (1164ms vs 1748ms).
-- **WebSockets:** By holding the TCP/TLS connection open, our WebSocket mode bypasses HTTP overhead entirely, making `openai-oxide` significantly faster than any HTTP-only client (710ms).
+**Where WebSocket mode helps:**
+WebSocket avoids HTTP/2 framing overhead and may route differently server-side. Savings are 29-44% on multi-turn workloads. Single requests show smaller gains.
+
+**Important caveat:** On single API calls, server-side latency (500-2000ms) dominates. SDK overhead is <1% of wall time. The live benchmark differences between Rust clients are within API variance. SDK choice matters more for throughput (many requests, local/cached backends) than for single-call latency.
 
 
 <br>
