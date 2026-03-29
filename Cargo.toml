@@ -1,6 +1,6 @@
 [workspace]
 members = [".", "openai-oxide-macros", "openai-oxide-node", "openai-types"]
-exclude = ["openai-oxide-python", "examples/cloudflare-worker/", "examples/cloudflare-worker-dioxus/worker"]
+exclude = ["openai-oxide-python", "examples/cloudflare-worker/", "examples/cloudflare-worker-dioxus/worker", "benchmarks/rust-compare"]
 
 
 [package]
