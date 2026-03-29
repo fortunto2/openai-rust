@@ -206,20 +206,20 @@ Reproduce: `cd openai-oxide-python && uv run python ../examples/bench_python.py`
 <!-- BENCH:node:START -->
 ### Node.js Ecosystem (`openai-oxide` vs `openai`)
 
-`openai-oxide` wins **6/8** tests. Native napi-rs bindings vs official `openai` npm.
+Live API results are **noisy** — single-call differences are within API variance (n=10). Neither SDK consistently wins on single requests. The real advantages show on streaming, parallel, and WebSocket workloads.
 
-| Test | `openai-oxide` | `openai` | Winner |
+| Test | `openai-oxide` | `openai` | Notes |
 | :--- | :--- | :--- | :--- |
-| **Plain text** | **1047ms** | 1232ms | OXIDE (+15%) |
-| **Structured output** | **1539ms** | 1659ms | OXIDE (+7%) |
-| **Function calling** | 1474ms | **1127ms** | official (+24%) |
-| **Multi-turn (2 reqs)** | **2356ms** | 2944ms | OXIDE (+20%) |
-| **Rapid-fire (5 calls)** | 4818ms | 4797ms | tie |
-| **Streaming TTFT** | **619ms** | 672ms | OXIDE (+8%) |
-| **Parallel 3x** | **979ms** | 1064ms | OXIDE (+8%) |
-| **WebSocket hot pair** | **2203ms** | N/A | OXIDE |
+| **Plain text** | ~1050ms | ~1000ms | within noise |
+| **Structured output** | ~1400ms | ~1350ms | within noise |
+| **Function calling** | ~1220ms | ~1210ms | within noise |
+| **Multi-turn (2 reqs)** | ~2200ms | ~2500ms | oxide +12% (varies) |
+| **Rapid-fire (5 calls)** | ~4900ms | ~4800ms | within noise |
+| **Streaming TTFT** | **~600ms** | ~670ms | oxide consistently faster |
+| **Parallel 3x** | **~1000ms** | ~1060ms | oxide consistently faster |
+| **WebSocket hot pair** | **~2300ms** | N/A | no official equivalent |
 
-*10 iterations, median. Model: gpt-5.4. Date: 2026-03-29.*
+*10 iterations, median. Model: gpt-5.4. Date: 2026-03-29. Results vary between runs.*
 
 Reproduce: `cd openai-oxide-node && BENCH_ITERATIONS=10 node examples/bench_node.js`
 <!-- BENCH:node:END -->
@@ -233,21 +233,23 @@ server (zero network, zero inference). Fixtures are captured from a real coding 
 
 | Test | `openai-oxide` | `openai` npm | oxide faster | sig |
 | :--- | :--- | :--- | :--- | :--- |
-| Tiny req → Tiny resp | 190µs | 424µs | **+55%** | *** |
-| Tiny req → Structured 5KB | 169µs | 393µs | **+57%** | *** |
-| Medium 150KB → Tool call | 544µs | 1.2ms | **+53%** | *** |
-| Heavy 657KB → Real agent resp | 2.8ms | 2.7ms | -4% | ns |
-| SSE stream (114 real chunks) | 309µs | 744µs | **+58%** | *** |
-| Agent 20x sequential (tiny) | 2.0ms | 4.8ms | **+59%** | *** |
-| Agent 10x sequential (heavy) | 28.7ms | 26.7ms | -7% | *** |
+| Tiny req → Tiny resp | 112µs | 431µs | **+74%** | *** |
+| Tiny req → Structured 5KB | 172µs | 393µs | **+56%** | *** |
+| Medium 150KB → Tool call | 839µs | 1.2ms | **+29%** | *** |
+| Heavy 657KB → Real agent resp | 2.3ms | 2.7ms | **+16%** | *** |
+| SSE stream (114 real chunks) | 312µs | 783µs | **+60%** | *** |
+| Agent 20x sequential (tiny) | 1.9ms | 4.6ms | **+58%** | *** |
+| Agent 10x sequential (heavy) | 22.7ms | 26.0ms | **+13%** | *** |
 
-*50 iterations, 20 warmup, `--expose-gc`, Welch's t-test. Date: 2026-03-29.*
+*50 iterations, 20 warmup, `--expose-gc`, Welch's t-test — all p<0.001. Date: 2026-03-29.*
 
-**Where oxide is faster:** light-to-medium payloads (55-59%), SSE streaming (58%). On agent loops with tiny payloads, overhead compounds linearly — 20 calls save ~2.8ms.
+**oxide wins 12/12 mock tests** (was 10/12 before auto fast-path wrapper).
 
-**Where official is faster:** heavy 657KB payloads (-4% to -7%). The napi boundary crossing cost on large JSON objects exceeds V8's native advantage. The `createResponseFast(JSON.stringify(req))` fast path avoids this: 981µs vs 2.7ms (**+64%**) even on heavy payloads.
+The wrapper auto-detects large payloads (>8KB) and routes through `JSON.stringify` → Rust, bypassing the napi object→Value copy. This fixed the heavy-payload regression: 657KB went from -7% (slower) to **+16%** (faster).
 
-**Where it doesn't matter:** single API calls to OpenAI with 200ms-2s latency. SDK overhead (0.1-3ms) is <1% of wall time. Live benchmarks show mixed results within API variance.
+**Where oxide is faster:** everything on mock — 13-74% depending on payload size. SSE streaming 60% faster (zero-copy parser). Agent loops compound: 20 tiny calls save 2.7ms, 10 heavy calls save 3.3ms.
+
+**Where it doesn't matter:** single API calls to OpenAI with 200ms-2s latency. SDK overhead (0.1-3ms) is <1% of wall time. Live benchmarks show no consistent winner on single requests — API variance dominates. Real advantages are streaming TTFT, parallel fan-out, and WebSocket mode.
 
 Reproduce: `node --expose-gc benchmarks/bench_science.js`
 
