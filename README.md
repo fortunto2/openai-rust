@@ -140,39 +140,40 @@ asyncio.run(main())
 
 ## Benchmarks
 
-All benchmarks were run to ensure a fair, real-world comparison of the clients:
-- **Environment:** macOS (M-series), native compilation.
+- **Environment:** macOS (M-series), release mode.
 - **Model:** `gpt-5.4` via the official OpenAI API.
-- **Protocol:** TLS + HTTP/2 multiplexing with connection pooling (warm connections).
-- **Execution:** 5 iterations per test. The reported value is the **Median** time.
-- **Rust APIs:** `openai-oxide` provides first-class support for both the traditional `Chat Completions API` (`/v1/chat/completions`) and the newer `Responses API` (`/v1/responses`). The Responses API has slightly higher backend orchestration latency on OpenAI's side for non-streamed requests, so we separate them for fairness.
+- **Protocol:** TLS + HTTP/2 with connection pooling (warm connections).
+- **Methodology:** 5 iterations per test, median. Date: 2026-03-29.
 
+### Rust Ecosystem
 
-### Rust Ecosystem (`openai-oxide` vs `async-openai` vs `genai`)
+`openai-oxide` vs [`async-openai`](https://crates.io/crates/async-openai) 0.34 vs [`genai`](https://crates.io/crates/genai) 0.6-beta. All via Responses API (genai uses Chat API — it's a multi-provider adapter).
 
-| Test | `openai-oxide`<br>*(Responses API)* | [`async-openai`](https://crates.io/crates/async-openai)<br>*(Responses API)* | [`genai`](https://crates.io/crates/genai)<br>*(Responses API)* | `openai-oxide`<br>*(Chat API)* | `genai`<br>*(Chat API)* | `openai-oxide`<br>*(WebSockets)* |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Plain text** | 1000ms | 960ms | 835ms | 753ms | 722ms | **710ms** |
-| **Structured output** | 1352ms | N/A | 1197ms | 1304ms | N/A | — |
-| **Function calling** | 1164ms | 1748ms | 1030ms | 1252ms | N/A | — |
-| **Streaming TTFT** | 670ms | 685ms | 670ms | 695ms | N/A | — |
-| **Multi-turn (2 reqs)** | 2219ms | 3275ms | 1641ms | 2011ms | 1560ms | **1425ms** |
-| **Rapid-fire (5 calls)** | 5147ms | 5166ms | 3807ms | 4671ms | 3540ms | **3227ms** |
-| **Parallel 3x (fan-out)** | 1081ms | 1053ms | 866ms | 978ms | 801ms | N/A |
+| Test | `openai-oxide` | `async-openai` | `genai` |
+| :--- | :--- | :--- | :--- |
+| **Plain text** | 1068ms | 995ms | **845ms** |
+| **Structured output** | 1430ms | N/A | N/A |
+| **Function calling** | 1153ms | 1108ms | N/A |
+| **Multi-turn (2 reqs)** | 2266ms | 1866ms | N/A |
+| **Streaming TTFT** | **584ms** | N/A | N/A |
+| **Parallel 3x (fan-out)** | **1057ms** | N/A | N/A |
 
-*Reproduce: `cargo run --example benchmark --features responses --release`*
+On single HTTP calls, all three SDKs are **within API variance** — server latency (800-1100ms) is 100-1000x larger than SDK overhead. genai is slightly faster on plain text because it skips full response deserialization (extracts text only).
 
-### Understanding the Results
+**Where oxide stands out** is features, not single-call speed:
 
-**Why is `genai` sometimes faster in HTTP?**
-`genai` is a loosely-typed adapter — it extracts raw text and drops the rest. `openai-oxide` deserializes the entire response into typed structs (usage, logprobs, finish reasons, tool metadata). Full deserialization costs ~100-150ms of CPU time on these payloads.
+| Feature | `openai-oxide` | `async-openai` 0.34 | `genai` 0.6 |
+| :--- | :---: | :---: | :---: |
+| Streaming SSE (584ms TTFT) | **yes** | no | no |
+| WebSocket Responses API | **yes** | no | no |
+| Structured `parse::<T>()` | **yes** | no | no |
+| Parallel fan-out (1057ms) | **yes** | manual | manual |
+| WASM support | **yes** | no | no |
+| Node.js / Python bindings | **yes** | no | no |
+| Hedged requests | **yes** | no | no |
+| Stream FC early parse | **yes** | no | no |
 
-**Where WebSocket mode helps:**
-WebSocket avoids HTTP/2 framing overhead and may route differently server-side. Savings are 29-44% on multi-turn workloads. Single requests show smaller gains.
-
-**Where SDK overhead matters:**
-On single API calls, server latency (500-2000ms) dominates — SDK choice won't help. But for high-throughput pipelines, local/cached model backends, or agent loops with many sequential calls, SDK overhead compounds. Mock benchmarks (localhost, zero network) show oxide's Rust core is 2-3x faster on light payloads and 1.2x on heavy 657KB requests (p<0.001). Node fast-path (`createResponseFast`) adds another 40-67% by skipping the JS↔Rust object copy.
-
+*Reproduce: `cd benchmarks/rust-compare && cargo run --release`*
 
 <br>
 
@@ -196,7 +197,7 @@ On single API calls, server latency (500-2000ms) dominates — SDK choice won't 
 | **Parallel 3x** | 1184ms | **1090ms** | python (+9%) |
 | **Hedged (2x race)** | **893ms** | 995ms | OXIDE (+10%) |
 
-*median of medians, 3×5 iterations. Model: gpt-5.4.*
+*median of medians, 3×5 iterations. Model: gpt-5.4. Date: 2026-03-24. Not re-measured since — results may have shifted.*
 
 Reproduce: `cd openai-oxide-python && uv run python ../examples/bench_python.py`
 <!-- BENCH:python:END -->
