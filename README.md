@@ -206,22 +206,22 @@ Reproduce: `cd openai-oxide-python && uv run python ../examples/bench_python.py`
 <!-- BENCH:node:START -->
 ### Node.js Ecosystem (`openai-oxide` vs `openai`)
 
-`openai-oxide` wins **8/8** tests. Native napi-rs bindings vs official `openai` npm.
+`openai-oxide` wins **6/8** tests. Native napi-rs bindings vs official `openai` npm.
 
 | Test | `openai-oxide` | `openai` | Winner |
 | :--- | :--- | :--- | :--- |
-| **Plain text** | **1075ms** | 1311ms | OXIDE (+18%) |
-| **Structured output** | **1370ms** | 1765ms | OXIDE (+22%) |
-| **Function calling** | **1725ms** | 1832ms | OXIDE (+6%) |
-| **Multi-turn (2 reqs)** | **2283ms** | 2859ms | OXIDE (+20%) |
-| **Rapid-fire (5 calls)** | **6246ms** | 6936ms | OXIDE (+10%) |
-| **Streaming TTFT** | **534ms** | 580ms | OXIDE (+8%) |
-| **Parallel 3x** | **1937ms** | 1991ms | OXIDE (+3%) |
-| **WebSocket hot pair** | **2181ms** | N/A | OXIDE |
+| **Plain text** | **1047ms** | 1232ms | OXIDE (+15%) |
+| **Structured output** | **1539ms** | 1659ms | OXIDE (+7%) |
+| **Function calling** | 1474ms | **1127ms** | official (+24%) |
+| **Multi-turn (2 reqs)** | **2356ms** | 2944ms | OXIDE (+20%) |
+| **Rapid-fire (5 calls)** | 4818ms | 4797ms | tie |
+| **Streaming TTFT** | **619ms** | 672ms | OXIDE (+8%) |
+| **Parallel 3x** | **979ms** | 1064ms | OXIDE (+8%) |
+| **WebSocket hot pair** | **2203ms** | N/A | OXIDE |
 
-*median of medians, 3×5 iterations. Model: gpt-5.4.*
+*10 iterations, median. Model: gpt-5.4. Date: 2026-03-29.*
 
-Reproduce: `cd openai-oxide-node && BENCH_ITERATIONS=5 node examples/bench_node.js`
+Reproduce: `cd openai-oxide-node && BENCH_ITERATIONS=10 node examples/bench_node.js`
 <!-- BENCH:node:END -->
 
 ### SDK Overhead (synthetic, Node.js)
@@ -231,25 +231,23 @@ To isolate **pure SDK overhead**, we also run a synthetic benchmark with a local
 server (zero network, zero inference). Fixtures are captured from a real coding agent session
 (320 messages, 42 tools, 718KB request body).
 
-| Test | `openai-oxide` | `openai` npm | oxide faster |
-| :--- | :--- | :--- | :--- |
-| Tiny req → Tiny resp | 172µs | 443µs | **+61%** |
-| Tiny req → Structured 5KB | 161µs | 499µs | **+68%** |
-| Medium 150KB → Tool call | 1.1ms | 1.7ms | **+37%** |
-| Heavy 657KB → Real agent resp | 4.9ms | 6.2ms | **+21%** |
-| SSE stream (114 real chunks) | 283µs | 742µs | **+62%** |
-| Agent 20x sequential (tiny) | 2.1ms | 5.4ms | **+61%** |
-| Agent 10x sequential (heavy) | 51.7ms | 62.2ms | **+17%** |
+| Test | `openai-oxide` | `openai` npm | oxide faster | sig |
+| :--- | :--- | :--- | :--- | :--- |
+| Tiny req → Tiny resp | 190µs | 424µs | **+55%** | *** |
+| Tiny req → Structured 5KB | 169µs | 393µs | **+57%** | *** |
+| Medium 150KB → Tool call | 544µs | 1.2ms | **+53%** | *** |
+| Heavy 657KB → Real agent resp | 2.8ms | 2.7ms | -4% | ns |
+| SSE stream (114 real chunks) | 309µs | 744µs | **+58%** | *** |
+| Agent 20x sequential (tiny) | 2.0ms | 4.8ms | **+59%** | *** |
+| Agent 10x sequential (heavy) | 28.7ms | 26.7ms | -7% | *** |
 
-*50 iterations, 20 warmup, `--expose-gc`, Welch's t-test — all p<0.001.*
+*50 iterations, 20 warmup, `--expose-gc`, Welch's t-test. Date: 2026-03-29.*
 
-**Where this matters:** high-throughput pipelines, local/cached model backends, agent loops
-with many sequential calls. On light payloads, oxide is 2-3x faster. On heavy 657KB agent
-requests, the gap narrows to 1.2x because `JSON.stringify` (~2ms) is shared by both SDKs.
+**Where oxide is faster:** light-to-medium payloads (55-59%), SSE streaming (58%). On agent loops with tiny payloads, overhead compounds linearly — 20 calls save ~2.8ms.
 
-**Where this doesn't matter:** single API calls to OpenAI with 200ms-2s latency.
-SDK overhead (0.1-5ms) is <1% of total time. Live tests with gpt-5.4 show +8% on
-a 3-step agent, but results are not statistically significant at n=10 due to API variance.
+**Where official is faster:** heavy 657KB payloads (-4% to -7%). The napi boundary crossing cost on large JSON objects exceeds V8's native advantage. The `createResponseFast(JSON.stringify(req))` fast path avoids this: 981µs vs 2.7ms (**+64%**) even on heavy payloads.
+
+**Where it doesn't matter:** single API calls to OpenAI with 200ms-2s latency. SDK overhead (0.1-3ms) is <1% of wall time. Live benchmarks show mixed results within API variance.
 
 Reproduce: `node --expose-gc benchmarks/bench_science.js`
 
