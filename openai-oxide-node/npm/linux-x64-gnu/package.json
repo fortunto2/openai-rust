@@ -1,6 +1,6 @@
 {
   "name": "openai-oxide-linux-x64-gnu",
-  "version": "0.9.6",
+  "version": "0.11.1",
   "cpu": [
     "x64"
   ],
