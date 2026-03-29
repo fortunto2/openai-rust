@@ -176,7 +176,8 @@ fn chat_completion_request_coverage() {
         .get("CreateChatCompletionRequest")
         .expect("schema not found");
 
-    let rust_fields = fields_from_source("src/types/chat.rs", "ChatCompletionRequest");
+    let rust_fields =
+        fields_from_source("openai-types/src/chat/manual.rs", "ChatCompletionRequest");
     eprintln!("  Rust fields found: {:?}", rust_fields);
 
     let pct = check_coverage("CreateChatCompletionRequest", spec, &rust_fields);
@@ -231,7 +232,10 @@ fn embedding_request_coverage() {
         .get("CreateEmbeddingRequest")
         .expect("schema not found");
 
-    let rust_fields = fields_from_source("src/types/embedding.rs", "EmbeddingCreateRequest");
+    let rust_fields = fields_from_source(
+        "openai-types/src/embedding/manual.rs",
+        "EmbeddingCreateRequest",
+    );
 
     let pct = check_coverage("CreateEmbeddingRequest", spec, &rust_fields);
     assert!(pct >= 80.0, "coverage {pct:.0}% < 80%");
@@ -244,19 +248,22 @@ fn overall_coverage_report() {
     let request_checks: Vec<(&str, HashSet<String>)> = vec![
         (
             "CreateChatCompletionRequest",
-            fields_from_source("src/types/chat.rs", "ChatCompletionRequest"),
+            fields_from_source("openai-types/src/chat/manual.rs", "ChatCompletionRequest"),
         ),
         (
             "CreateEmbeddingRequest",
-            fields_from_source("src/types/embedding.rs", "EmbeddingRequest"),
+            fields_from_source(
+                "openai-types/src/embedding/manual.rs",
+                "EmbeddingCreateRequest",
+            ),
         ),
         (
             "CreateImageRequest",
-            fields_from_source("src/types/image.rs", "ImageGenerateRequest"),
+            fields_from_source("openai-types/src/image/manual.rs", "ImageGenerateRequest"),
         ),
         (
             "CreateModerationRequest",
-            fields_from_source("src/types/moderation.rs", "ModerationRequest"),
+            fields_from_source("openai-types/src/moderation/manual.rs", "ModerationRequest"),
         ),
     ];
 
@@ -292,7 +299,8 @@ fn chat_completion_response_coverage() {
         .get("CreateChatCompletionResponse")
         .expect("schema not found");
 
-    let rust_fields = fields_from_source("src/types/chat.rs", "ChatCompletionResponse");
+    let rust_fields =
+        fields_from_source("openai-types/src/chat/manual.rs", "ChatCompletionResponse");
     let pct = check_coverage("CreateChatCompletionResponse", spec, &rust_fields);
     assert!(pct >= 80.0, "coverage {pct:.0}% < 80%");
 }
@@ -341,7 +349,7 @@ fn chat_request_new_fields_serialize() {
     req.modalities = Some(vec!["text".into(), "audio".into()]);
     req.audio = Some(ChatCompletionAudioParam {
         format: "mp3".into(),
-        voice: openai_oxide::types::audio::AudioVoice::Alloy,
+        voice: "alloy".into(),
     });
     req.prediction = Some(PredictionContent {
         type_: "content".into(),
