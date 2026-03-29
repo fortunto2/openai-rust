@@ -3,6 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::chat::WebSearchUserLocation;
+
 /// A function tool definition for the Responses API.
 ///
 /// Maps to Python SDK `FunctionTool`. Standalone struct for typed tool definitions.
@@ -73,7 +75,7 @@ pub enum ResponseTool {
         /// User location.
         #[serde(default)]
         #[serde(skip_serializing_if = "Option::is_none")]
-        user_location: Option<serde_json::Value>,
+        user_location: Option<WebSearchUserLocation>,
     },
     /// File search tool.
     #[serde(rename = "file_search")]

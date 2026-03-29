@@ -256,3 +256,10 @@ impl Response {
         self.output.iter().any(|item| item.type_ == "function_call")
     }
 }
+
+// Compat aliases for async-openai migration.
+
+/// Alias for [`InputTokensDetails`].
+pub type InputTokenDetails = InputTokensDetails;
+/// Alias for [`OutputTokensDetails`].
+pub type OutputTokenDetails = OutputTokensDetails;

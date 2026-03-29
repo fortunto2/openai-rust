@@ -36,7 +36,14 @@ impl Reasoning {
         self.summary = Some(summary);
         self
     }
+    /// Compat with async-openai's derive_builder pattern.
+    pub fn build(&self) -> Result<Self, String> {
+        Ok(self.clone())
+    }
 }
+
+/// Compat alias for async-openai builder pattern.
+pub type ReasoningArgs = Reasoning;
 
 /// Text output configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -312,3 +319,11 @@ impl ResponseCreateRequest {
         self
     }
 }
+
+// Compat aliases for async-openai migration (their names differ from OpenAPI spec).
+// Users switching from async-openai can use these to minimize code changes.
+
+/// Alias for [`ResponseCreateRequest`].
+pub type CreateResponse = ResponseCreateRequest;
+/// Alias for [`ResponseCreateRequest`].
+pub type CreateResponseArgs = ResponseCreateRequest;

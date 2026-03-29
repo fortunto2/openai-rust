@@ -214,3 +214,17 @@ pub enum IncludeEnum {
     #[serde(rename = "message.output_text.logprobs")]
     MessageOutputTextLogprobs,
 }
+
+/// Input parameter for the Responses API — text or structured items.
+///
+/// Used in `CreateResponse` builder.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "structured", derive(schemars::JsonSchema))]
+#[serde(untagged)]
+#[non_exhaustive]
+pub enum InputParam {
+    /// Plain text input.
+    Text(String),
+    /// Structured input items.
+    Items(Vec<InputItem>),
+}
