@@ -19,7 +19,7 @@ exclude = [".solo/", ".githooks/", "docs/", "CLAUDE.md", "Makefile"]
 
 [dependencies]
 openai-oxide-macros = { version = "0.1.0", path = "openai-oxide-macros", optional = true }
-openai-types = { version = "0.1.0", path = "openai-types", default-features = false, features = [
+openai-types = { version = "0.1.1", path = "openai-types", default-features = false, features = [
     "audio", "chat", "responses", "realtime", "embedding", "image", "file", "model",
     "moderation", "batch", "uploads", "beta", "websocket", "shared",
     "completion", "containers", "conversations", "evals", "fine-tuning", "graders",

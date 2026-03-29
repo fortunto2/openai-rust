@@ -1,6 +1,6 @@
 [package]
 name = "openai-types"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Typed OpenAI API models — zero dependencies beyond serde"
 license = "MIT"
