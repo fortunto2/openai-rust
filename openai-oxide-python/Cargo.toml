@@ -2,7 +2,7 @@
 
 [package]
 name = "openai-oxide-python"
-version = "0.9.8"
+version = "0.11.1"
 edition = "2024"
 description = "Python bindings for openai-oxide — fastest OpenAI client"
 license = "MIT"

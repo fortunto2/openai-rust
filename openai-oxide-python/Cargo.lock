@@ -703,13 +703,14 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "openai-oxide"
-version = "0.9.7"
+version = "0.11.1"
 dependencies = [
  "async-trait",
  "bytes",
  "futures-core",
  "futures-util",
  "gloo-timers",
+ "openai-types",
  "pin-project-lite",
  "reqwest",
  "rustls",
@@ -723,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "openai-oxide-python"
-version = "0.9.7"
+version = "0.11.1"
 dependencies = [
  "futures-util",
  "openai-oxide",
@@ -731,6 +732,14 @@ dependencies = [
  "pyo3-async-runtimes",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "openai-types"
+version = "0.1.1"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
