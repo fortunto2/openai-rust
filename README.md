@@ -25,7 +25,7 @@ What you get out of the box:
 - **Structured Outputs — `parse::<T>()`:** Auto-generates JSON schema from Rust types via `schemars` and deserializes the response in one call — `parse::<MyStruct>()`. Works with Chat and Responses APIs. Node (Zod) and Python (Pydantic v2) bindings included.
 - **Stream Helpers:** High-level `ChatStreamEvent` with automatic text/tool-call accumulation, typed `ContentDelta`/`ToolCallDone` events, `get_final_completion()`, and `current_content()` snapshots. No manual chunk stitching.
 - **Streaming:** SSE parser with anti-buffering headers. On mock benchmarks, 2.5x faster per-chunk processing vs official JS SDK (312µs vs 783µs for 114 chunks, p<0.001).
-- **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Measured 29-44% faster on multi-turn benchmarks vs HTTP (warm connections).
+- **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Preliminary measurements show 29-44% faster on multi-turn benchmarks vs HTTP (warm connections, n=5 — needs more iterations to confirm).
 - **Stream FC Early Parse:** Yields function calls the exact moment `arguments.done` is emitted, letting you start executing local tools before the overall response finishes.
 - **Hardware-Accelerated JSON (`simd`):** Opt-in AVX2/NEON vector instructions for parsing massive agent histories and complex tool calls in microseconds.
 - **Hedged Requests:** Send redundant requests and cancel the slower ones. Trades extra tokens for lower tail latency (technique from Google's "The Tail at Scale").
@@ -38,20 +38,22 @@ What you get out of the box:
 In multi-turn agent loops, WebSocket mode avoids per-request HTTP/2 framing and header overhead. Both HTTP and WebSocket reuse the same TCP+TLS connection (no per-request handshake), but WebSocket eliminates HTTP/2 frame negotiation.
 
 ```text
-Standard Client (HTTP/2, warm connection)
+Standard Client (HTTP/2, warm connection — TLS reused via pool)
 Request 1 (ls)   : [HTTP/2 frames] -> [Wait TTFT] -> [Wait Done] -> [Parse] -> [Exec Tool]
 Request 2 (cat)  : [HTTP/2 frames] -> [Wait TTFT] -> [Wait Done] -> [Parse] -> [Exec Tool]
 
-openai-oxide (WebSocket + Early Parse)
-Connection       : [TLS Handshake] (Done once)
+openai-oxide (WebSocket + Early Parse — TLS reused via persistent conn)
+Connection       : [WS Upgrade] (Done once)
 Request 1 (ls)   : [Send JSON] -> [Wait TTFT] -> [Exec Tool Early!]
 Request 2 (cat)  :             [Send JSON] -> [Wait TTFT] -> [Exec Tool Early!]
 ```
 
-Measured savings on warm connections (gpt-5.4, median of medians):
+Preliminary measurements on warm connections (gpt-5.4, median of medians, n=5):
 - **Plain text:** 710ms WS vs 1011ms HTTP (29% faster)
 - **Multi-turn (2 reqs):** 1425ms vs 2362ms (40% faster)
 - **Rapid-fire (5 calls):** 3227ms vs 5807ms (44% faster)
+
+*These numbers are preliminary and need a reproducible benchmark script with more iterations to be conclusive. At n=5, API-side variance is significant.*
 
 The gap likely reflects both reduced framing overhead and different server-side routing for the WebSocket endpoint. Early parse (yielding tool calls before `[DONE]`) provides additional savings in streaming mode.
 
@@ -144,22 +146,22 @@ asyncio.run(main())
 - **Environment:** macOS (M-series), release mode.
 - **Model:** `gpt-5.4` via the official OpenAI API.
 - **Protocol:** TLS + HTTP/2 with connection pooling (warm connections).
-- **Methodology:** 5 iterations per test, median. Date: 2026-03-29.
+- **Methodology:** 5 iterations per test, median. At n=5, differences <15% are within API jitter. Date: 2026-03-29.
 
 ### Rust Ecosystem
 
 `openai-oxide` vs [`async-openai`](https://crates.io/crates/async-openai) 0.34 vs [`genai`](https://crates.io/crates/genai) 0.6-beta. All via Responses API (genai uses Chat API — it's a multi-provider adapter).
 
-| Test | `openai-oxide` | `async-openai` | `genai` |
-| :--- | :--- | :--- | :--- |
-| **Plain text** | 1068ms | 995ms | **845ms** |
-| **Structured output** | 1430ms | N/A | N/A |
-| **Function calling** | 1153ms | 1108ms | N/A |
-| **Multi-turn (2 reqs)** | 2266ms | 1866ms | N/A |
-| **Streaming TTFT** | **584ms** | N/A | N/A |
-| **Parallel 3x (fan-out)** | **1057ms** | N/A | N/A |
+| Test | `openai-oxide` | `async-openai` | `genai` | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **Plain text** | 1068ms | **995ms** | **845ms** | oxide slower |
+| **Structured output** | 1430ms | N/A | N/A | oxide-only |
+| **Function calling** | 1153ms | **1108ms** | N/A | within API noise |
+| **Multi-turn (2 reqs)** | 2266ms | **1866ms** | N/A | oxide slower |
+| **Streaming TTFT** | **584ms** | N/A | N/A | oxide-only |
+| **Parallel 3x (fan-out)** | **1057ms** | N/A | N/A | oxide-only |
 
-On single HTTP calls, all three SDKs are **within API variance** — server latency (800-1100ms) is 100-1000x larger than SDK overhead. genai is slightly faster on plain text because it skips full response deserialization (extracts text only).
+**Honesty note:** On single HTTP requests, `async-openai` is faster than oxide in these measurements. However, at n=5 with live API calls, differences <15% are within API jitter and not statistically significant. genai is fastest on plain text because it skips full response deserialization (extracts text only). All three SDKs have negligible SDK overhead compared to server latency (800-1100ms).
 
 **Where oxide stands out** is features, not single-call speed:
 
@@ -181,24 +183,24 @@ On single HTTP calls, all three SDKs are **within API variance** — server late
 <!-- BENCH:python:START -->
 ### Python Ecosystem (`openai-oxide-python` vs `openai`)
 
-`openai-oxide` wins **10/12** tests. Native PyO3 bindings vs `openai` (openai 2.29.0).
+Native PyO3 bindings vs `openai` (openai 2.29.0).
 
-| Test | `openai-oxide` | `openai` | Winner |
-| :--- | :--- | :--- | :--- |
-| **Plain text** | **845ms** | 997ms | OXIDE (+15%) |
-| **Structured output** | **1367ms** | 1379ms | OXIDE (+1%) |
-| **Function calling** | **1195ms** | 1230ms | OXIDE (+3%) |
-| **Multi-turn (2 reqs)** | **2260ms** | 3089ms | OXIDE (+27%) |
-| **Web search** | **3157ms** | 3499ms | OXIDE (+10%) |
-| **Nested structured** | 5377ms | **5339ms** | python (+1%) |
-| **Agent loop (2-step)** | **4570ms** | 5144ms | OXIDE (+11%) |
-| **Rapid-fire (5 calls)** | **5667ms** | 6136ms | OXIDE (+8%) |
-| **Prompt-cached** | **4425ms** | 5564ms | OXIDE (+20%) |
-| **Streaming TTFT** | **626ms** | 638ms | OXIDE (+2%) |
-| **Parallel 3x** | 1184ms | **1090ms** | python (+9%) |
-| **Hedged (2x race)** | **893ms** | 995ms | OXIDE (+10%) |
+| Test | `openai-oxide` | `openai` | Diff | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **Plain text** | **845ms** | 997ms | +15% | |
+| **Structured output** | **1367ms** | 1379ms | +1% | within API noise |
+| **Function calling** | **1195ms** | 1230ms | +3% | within API noise |
+| **Multi-turn (2 reqs)** | **2260ms** | 3089ms | +27% | |
+| **Web search** | **3157ms** | 3499ms | +10% | within API noise |
+| **Nested structured** | 5377ms | **5339ms** | -1% | within API noise |
+| **Agent loop (2-step)** | **4570ms** | 5144ms | +11% | within API noise |
+| **Rapid-fire (5 calls)** | **5667ms** | 6136ms | +8% | within API noise |
+| **Prompt-cached** | **4425ms** | 5564ms | +20% | |
+| **Streaming TTFT** | **626ms** | 638ms | +2% | within API noise |
+| **Parallel 3x** | 1184ms | **1090ms** | -9% | within API noise |
+| **Hedged (2x race)** | **893ms** | 995ms | +10% | within API noise |
 
-*median of medians, 3×5 iterations. Model: gpt-5.4. Date: 2026-03-24. Not re-measured since — results may have shifted.*
+*median of medians, 3x5 iterations (n=5 per measurement). Model: gpt-5.4. Date: 2026-03-24. Not re-measured since — results may have shifted. Differences <15% are within API jitter at this sample size and should not be treated as statistically significant.*
 
 Reproduce: `cd openai-oxide-python && uv run python ../examples/bench_python.py`
 <!-- BENCH:python:END -->
@@ -219,7 +221,7 @@ Live API results are **noisy** — single-call differences are within API varian
 | **Rapid-fire (5 calls)** | ~4900ms | ~4800ms | within noise |
 | **Streaming TTFT** | **~600ms** | ~670ms | oxide consistently faster |
 | **Parallel 3x** | **~1000ms** | ~1060ms | oxide consistently faster |
-| **WebSocket hot pair** | **~2300ms** | N/A | no official equivalent |
+| **WebSocket hot pair** | **~2300ms** | N/A | preliminary, no official equivalent |
 
 *10 iterations, median. Model: gpt-5.4. Date: 2026-03-29. Results vary between runs.*
 
@@ -245,7 +247,7 @@ server (zero network, zero inference). Fixtures are captured from a real coding 
 
 *50 iterations, 20 warmup, `--expose-gc`, Welch's t-test — all p<0.001. Date: 2026-03-29.*
 
-**oxide wins 12/12 mock tests** (was 10/12 before auto fast-path wrapper).
+oxide wins all mock tests (was 10/12 before auto fast-path wrapper). Note: the mock server uses HTTP/1.1, so these results measure SDK serialization/parsing overhead, not HTTP/2 multiplexing benefits.
 
 The wrapper auto-detects large payloads (>8KB) and routes through `JSON.stringify` → Rust, bypassing the napi object→Value copy. This fixed the heavy-payload regression: 657KB went from -7% (slower) to **+16%** (faster).
 
@@ -283,7 +285,7 @@ asyncio.run(main())
 ## Advanced Features Guide
 
 ### WebSocket Mode
-Persistent connections bypass the TLS handshake penalty for every request. Ideal for high-speed agent loops.
+Persistent connections eliminate per-request HTTP/2 framing overhead. Both HTTP and WebSocket reuse TCP+TLS connections (reqwest uses connection pooling), but WebSocket avoids HTTP/2 frame negotiation entirely. Ideal for high-speed agent loops.
 
 ```rust
 let client = OpenAI::from_env()?;
@@ -325,7 +327,7 @@ let response = hedged_request(&client, request, Some(Duration::from_secs(2))).aw
 ```
 
 ### Parallel Fan-Out
-Leverage HTTP/2 multiplexing natively. Send 3 concurrent requests over a single connection; the total wall time is equal to the slowest single request.
+Send 3 concurrent requests; the total wall time is equal to the slowest single request. Uses HTTP/2 multiplexing when connecting to OpenAI (the real API supports HTTP/2), but note that local mock servers typically use HTTP/1.1.
 
 ```rust
 let (c1, c2, c3) = (client.clone(), client.clone(), client.clone());

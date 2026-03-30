@@ -115,8 +115,9 @@ comes from the runtime, not code quality:
 ## Methodology
 
 ### Mock
-- HTTP server on 127.0.0.1, instant response, keep-alive enabled
-- Fixtures captured from a real kimi-k2.5 coding agent session
+- HTTP/1.1 server on 127.0.0.1 (not HTTPS, no HTTP/2 — measures SDK overhead only, not multiplexing)
+- Fixtures captured from a real coding agent session
+- SSE fixture (`out2.json`) is Chat Completions format served at `/v1/responses` endpoint — may slightly penalize official SDK's Responses adapter
 - Both SDKs in same Node.js process, same event loop
 - `--expose-gc` with `global.gc()` between suites
 - 50 iterations, 20 warmup, median reported
@@ -124,8 +125,10 @@ comes from the runtime, not code quality:
 
 ### Live
 - Real OpenAI API, configurable model
-- 10 iterations, 3 warmup, warm HTTP/2 connections
+- HTTP/2 with connection pooling (reqwest ALPN negotiation)
+- 10 iterations, 3 warmup, warm connections
 - macOS Apple Silicon (M-series)
+- At n=10, differences <15% are within API jitter (not significant)
 
 ## Reproducing
 
