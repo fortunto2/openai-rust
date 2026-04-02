@@ -39,7 +39,7 @@ The types crate has zero runtime dependencies beyond `serde` and can be used ind
 
 ## Persistent WebSockets
 
-Keep one `wss://` connection open for the entire agent cycle. Both HTTP and WebSocket reuse TCP+TLS connections (reqwest uses connection pooling, so there's no per-request TLS handshake either way), but WebSocket eliminates HTTP/2 frame negotiation entirely.
+Keep one `wss://` connection open for the entire agent cycle. Both HTTP and WebSocket reuse TCP+TLS connections (reqwest uses connection pooling), but the server uses connection-local caching for WebSocket — keeping the previous response state in memory for faster continuations.
 
 ```rust
 let mut session = client.ws_session().await?;
@@ -97,7 +97,7 @@ One derive, both directions — the same `#[derive(JsonSchema)]` generates respo
 
 ## SSE Streaming
 
-Time-to-first-token matters for UX. Our SSE parser avoids intermediate allocations and sets anti-buffering headers that prevent reverse proxies from holding back chunks:
+Time-to-first-token matters for UX. Our SSE parser uses incremental buffered line extraction and sets standard anti-buffering headers that prevent reverse proxies from holding back chunks:
 
 ```
 Accept: text/event-stream
@@ -106,7 +106,7 @@ Cache-Control: no-cache
 
 Without these, Cloudflare and nginx buffer streaming responses, adding 50-200ms to TTFT.
 
-On mock benchmarks (localhost, no network), SSE processing is 2.5x faster than the official JS SDK: 312µs vs 783µs for 114 real agent chunks (p<0.001). On live API calls, the difference is masked by 200ms+ network latency — but it compounds in agent loops with many streaming rounds.
+On mock benchmarks (localhost, no network), SSE processing via our Node napi-rs bindings is 2.6x faster than the official JS SDK: 283µs vs 742µs for 114 real agent chunks (p<0.001). On live API calls, the difference is masked by 200ms+ network latency — but it compounds in agent loops with many streaming rounds.
 
 ## Stream Helpers
 
@@ -141,11 +141,11 @@ openai-oxide = { version = "0.11", default-features = false, features = ["chat",
 worker = "0.7"
 ```
 
-Streaming, structured outputs, retry logic — all work in WASM. [Live demo](https://cloudflare-worker-dioxus.nameless-sunset-8f24.workers.dev).
+Streaming, structured outputs, and JSON request retries work in WASM. Limitations: no multipart uploads, no streaming retries (yet). [Live demo](https://cloudflare-worker-dioxus.nameless-sunset-8f24.workers.dev).
 
 ## HTTP Tuning Defaults
 
-These are standard reqwest builder options, but neither async-openai nor genai enable them by default:
+These are standard reqwest builder options — enabled by default in openai-oxide:
 
 | Optimization | What it does |
 |:---|:---|
@@ -173,14 +173,14 @@ We spent a lot of time on benchmarks and learned an important lesson: **on singl
 
 On single HTTP requests, oxide is not faster than async-openai or genai. All three SDKs are within API variance.
 
-**Node.js** (n=10, median):
+**Node.js** (n=5, median of 3 runs):
 
 | Test | openai-oxide | official openai | Note |
 |:---|:---|:---|:---|
-| Multi-turn (2 reqs) | **~2200ms** | ~2500ms | oxide +12% |
-| Streaming TTFT | **~600ms** | ~670ms | oxide consistently faster |
-| Structured output | ~1400ms | ~1350ms | within noise |
-| Function calling | ~1220ms | ~1210ms | within noise |
+| Plain text | 1075ms | 1311ms | -18% |
+| Structured output | 1370ms | 1765ms | -22% |
+| Multi-turn (2 reqs) | 2283ms | 2859ms | -20% |
+| Streaming TTFT | 534ms | 580ms | within noise |
 
 **Python** (n=5, median of 3 runs):
 
@@ -197,10 +197,10 @@ The interesting story is pure SDK overhead, isolated with a localhost mock serve
 
 | Test | openai-oxide | official JS SDK | oxide faster | sig |
 |:---|:---|:---|:---|:---|
-| Tiny req → Tiny resp | 112µs | 431µs | **+74%** | *** |
-| Heavy 657KB → Real resp | 2.3ms | 2.7ms | **+16%** | *** |
-| SSE stream (114 chunks) | 312µs | 783µs | **+60%** | *** |
-| Agent 20x sequential | 1.9ms | 4.6ms | **+58%** | *** |
+| Tiny req → Tiny resp | 172µs | 443µs | **+61%** | *** |
+| Heavy 657KB → Real resp | 4.9ms | 6.2ms | **+21%** | *** |
+| SSE stream (114 chunks) | 283µs | 742µs | **+62%** | *** |
+| Agent 20x sequential | 2.1ms | 5.4ms | **+61%** | *** |
 
 *50 iterations, 20 warmup, Welch's t-test — all p<0.001.*
 
