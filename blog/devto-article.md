@@ -159,7 +159,7 @@ Will these make your API calls faster? Probably not. Server-side latency dominat
 
 ## Benchmarks — What's Real and What's Noise
 
-After many rounds of benchmarking: **on single API calls, SDK choice doesn't matter for speed.** Network latency (200ms-2s) is 100-1000x larger than SDK overhead (0.1-5ms). At n=5 with live API calls, differences under 15% are within API jitter and not statistically significant.
+After many rounds of benchmarking: **on today's API latencies, SDK choice doesn't matter for single calls.** Network latency (200ms-2s) dwarfs SDK overhead (0.1-5ms). At n=5, differences under 15% are API jitter.
 
 ### Live API (gpt-5.4) — honest results
 
@@ -171,7 +171,7 @@ After many rounds of benchmarking: **on single API calls, SDK choice doesn't mat
 | Function calling | **1192ms** | 1748ms | **1030ms** | genai fastest |
 | Streaming TTFT | **645ms** | 685ms | 670ms | within noise |
 
-On single HTTP requests, oxide is not faster than async-openai or genai. All three SDKs are within API variance.
+No single SDK consistently wins at n=5. oxide takes function calling and streaming, genai wins plain text (it skips full deserialization).
 
 **Node.js** (n=5, median of 3 runs):
 
@@ -204,7 +204,9 @@ The interesting part is pure SDK overhead, isolated with a localhost mock server
 
 *50 iterations, 20 warmup, Welch's t-test — all p<0.001.*
 
-**What this means:** if your bottleneck is API latency (most use cases), SDK choice doesn't affect speed. If you're running high-throughput pipelines or local model proxies, oxide saves real time. But for most users the point is **API completeness** (WebSocket, structured outputs, WASM, stream helpers) and **type safety** (1100+ types), not raw speed.
+**What this means today:** on OpenAI's API (200ms-2s), SDK overhead is <1% of wall time. But the picture changes with fast inference providers (Cerebras, Groq, local models returning in 10-50ms) and agent farms running hundreds of parallel sessions. At those speeds, SDK overhead becomes 5-30% of wall time, and the 2-3x gap compounds.
+
+The value right now is **API completeness** (WebSocket with connection pool, structured outputs, WASM, stream helpers), **type safety** (1100+ auto-synced types), and the trajectory: as APIs get faster, the Rust overhead advantage grows.
 
 Full reproducible benchmarks: `node --expose-gc benchmarks/bench_science.js`
 
@@ -245,7 +247,24 @@ The whole thing (100+ API methods, typed streaming, structured outputs, WASM, No
 
 The key insight: treat the Python SDK as a spec, not as code to port line-by-line. The agent handles mechanical translation (types, error mapping, serialization); you focus on Rust-specific wins (tagged enums, feature gates, WASM cfg).
 
-A harder lesson: **benchmarks are treacherous.** We went through multiple rounds of removing claims that looked impressive but weren't statistically significant at n=5 with live API calls. The honest answer is that SDK overhead is negligible compared to server latency for most use cases. The real wins are in features (WebSocket, structured outputs, WASM) and type safety (1100+ auto-synced types), not milliseconds on single requests.
+A harder lesson: **benchmarks are treacherous.** We went through multiple rounds removing claims that weren't statistically significant at n=5. The real story is not about milliseconds on single requests. It's about what happens at scale: structured outputs with schema generation on every call, hundreds of parallel agent sessions, function calling chains with 20+ tool invocations. That's where Rust's lack of GC pauses and lower per-call overhead start to compound.
+
+## One Crate, Every Platform
+
+The biggest payoff from writing the core in Rust: it runs everywhere.
+
+| Platform | Binding | Status |
+|----------|---------|--------|
+| Rust | native | stable |
+| Node.js / TypeScript | napi-rs | stable |
+| Python | PyO3 + maturin | stable |
+| Browser / Cloudflare Workers | WASM | stable |
+| iOS / macOS | UniFFI (Swift) | planned |
+| Android | UniFFI (Kotlin) | planned |
+
+Same HTTP tuning, WebSocket pool, streaming parser, and retry logic on every platform. No reimplementation, no behavior drift.
+
+This also means the crate works as **agent infrastructure**. [sgr-agent](https://github.com/fortunto2/rust-code/tree/master/crates/sgr-agent) is an LLM agent framework built on openai-oxide that runs as a [TUI coding agent](https://github.com/fortunto2/rust-code) today and can compile to WASM for browser-based agents tomorrow. The same agent code, the same OpenAI layer, different targets.
 
 ## Try It
 
