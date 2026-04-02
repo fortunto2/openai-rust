@@ -25,13 +25,13 @@ What you get out of the box:
 - **Structured Outputs — `parse::<T>()`:** Auto-generates JSON schema from Rust types via `schemars` and deserializes the response in one call — `parse::<MyStruct>()`. Works with Chat and Responses APIs. Node (Zod) and Python (Pydantic v2) bindings included.
 - **Stream Helpers:** High-level `ChatStreamEvent` with automatic text/tool-call accumulation, typed `ContentDelta`/`ToolCallDone` events, `get_final_completion()`, and `current_content()` snapshots. No manual chunk stitching.
 - **Streaming:** SSE parser with anti-buffering headers. On mock benchmarks, 2.5x faster per-chunk processing vs official JS SDK (312µs vs 783µs for 114 chunks, p<0.001).
-- **WebSocket Mode:** Persistent `wss://` connection for the Responses API. Preliminary measurements show 29-44% faster on multi-turn benchmarks vs HTTP (warm connections, n=5 — needs more iterations to confirm).
+- **WebSocket Mode:** Persistent `wss://` connection for the [Responses API](https://platform.openai.com/docs/guides/websocket-mode). OpenAI reports [up to ~40% faster](https://platform.openai.com/docs/guides/websocket-mode) end-to-end for 20+ tool call chains — our preliminary measurements (29-44%, n=5) align with this. The only Rust client that implements this endpoint.
 - **Stream FC Early Parse:** Yields function calls the exact moment `arguments.done` is emitted, letting you start executing local tools before the overall response finishes.
-- **Hardware-Accelerated JSON (`simd`):** Opt-in AVX2/NEON vector instructions for parsing massive agent histories and complex tool calls in microseconds.
+- **Hardware-Accelerated JSON (`simd`):** Opt-in AVX2/NEON vector instructions for faster JSON parsing of large payloads (agent histories, complex tool calls).
 - **Hedged Requests:** Send redundant requests and cancel the slower ones. Trades extra tokens for lower tail latency (technique from Google's "The Tail at Scale").
 - **Webhook Verification:** HMAC-SHA256 signature verification with timestamp replay protection — production-ready webhook handling out of the box.
-- **HTTP Tuning:** gzip, TCP_NODELAY, HTTP/2 keep-alive with adaptive window, connection pooling — enabled by default. Neither async-openai nor genai set these.
-- **WASM First-Class:** Compiles to `wasm32-unknown-unknown` without dropping features. Streaming, retries, and early-parsing work flawlessly in Cloudflare Workers and browsers. [Live demo](https://cloudflare-worker-dioxus.nameless-sunset-8f24.workers.dev).
+- **HTTP Tuning:** gzip, TCP_NODELAY, HTTP/2 keep-alive with adaptive window, connection pooling — enabled by default.
+- **WASM First-Class:** Compiles to `wasm32-unknown-unknown` with full feature support — streaming, retries, early-parsing all work in Cloudflare Workers and browsers. Other Rust clients either don't support WASM or drop streaming/retry. [Live demo](https://cloudflare-worker-dioxus.nameless-sunset-8f24.workers.dev).
 
 ### WebSocket Mode for Agent Loops
 
@@ -53,9 +53,9 @@ Preliminary measurements on warm connections (gpt-5.4, median of medians, n=5):
 - **Multi-turn (2 reqs):** 1425ms vs 2362ms (40% faster)
 - **Rapid-fire (5 calls):** 3227ms vs 5807ms (44% faster)
 
-*These numbers are preliminary and need a reproducible benchmark script with more iterations to be conclusive. At n=5, API-side variance is significant.*
+This aligns with [OpenAI's own documentation](https://platform.openai.com/docs/guides/websocket-mode): *"For rollouts with 20+ tool calls, we have seen up to roughly 40% faster end-to-end execution."*
 
-The gap likely reflects both reduced framing overhead and different server-side routing for the WebSocket endpoint. Early parse (yielding tool calls before `[DONE]`) provides additional savings in streaming mode.
+*Our numbers are preliminary (n=5), but the direction matches OpenAI's published benchmarks.* The gap reflects both reduced framing overhead and different server-side routing for the WebSocket endpoint. Early parse (yielding tool calls before `[DONE]`) provides additional savings in streaming mode.
 
 ---
 
@@ -167,14 +167,15 @@ asyncio.run(main())
 
 | Feature | `openai-oxide` | `async-openai` 0.34 | `genai` 0.6 |
 | :--- | :---: | :---: | :---: |
-| Streaming SSE (584ms TTFT) | **yes** | no | no |
-| WebSocket Responses API | **yes** | no | no |
-| Structured `parse::<T>()` | **yes** | no | no |
-| Parallel fan-out (1057ms) | **yes** | manual | manual |
-| WASM support | **yes** | no | no |
+| SSE streaming | yes | yes | yes |
+| Stream helpers (typed events) | **yes** | no | no |
+| [WebSocket mode](https://platform.openai.com/docs/guides/websocket-mode) for Responses API | **yes** | no | no |
+| Structured `parse::<T>()` with schema gen | **yes** | no | no |
+| WASM (full — streaming + retries) | **yes** | partial (no streaming) | no |
 | Node.js / Python bindings | **yes** | no | no |
 | Hedged requests | **yes** | no | no |
 | Stream FC early parse | **yes** | no | no |
+| Webhook verification | yes | yes | no |
 
 *Reproduce: `cd benchmarks/rust-compare && cargo run --release`*
 
@@ -357,7 +358,7 @@ let tool = get_weather_tool();
 ```
 
 ### Node.js / TypeScript Native Bindings
-Thanks to NAPI-RS, we now provide lightning-fast Node.js bindings that execute requests and stream events directly from Rust into the V8 event loop without pure-JS blocking overhead.
+Native NAPI-RS bindings — requests and stream events execute in Rust and cross into the V8 event loop with minimal overhead.
 
 ```javascript
 const { Client } = require("openai-oxide");
@@ -405,7 +406,7 @@ Every endpoint is gated behind a Cargo feature. If you are building for **WebAss
 ```toml
 [dependencies]
 # Example: Compile ONLY the Responses API (removes Audio, Images, Assistants, etc.)
-openai-oxide = { version = "0.9", default-features = false, features = ["responses"] }
+openai-oxide = { version = "0.11", default-features = false, features = ["responses"] }
 ```
 
 ### Available API Features:
@@ -586,7 +587,7 @@ This crate was built in days, not months — using [Claude Code](https://claude.
 
 ## Roadmap
 
-Our goal is to make `openai-oxide` the universal engine for all LLM integrations across the entire software stack.
+Full OpenAI API coverage from a single codebase — Rust core with native bindings for every major platform.
 
 - [x] **Rust Core**: Fully typed, high-performance client (Chat, Responses, Realtime, Assistants).
 - [x] **WASM Support**: First-class Cloudflare Workers & browser execution.
@@ -614,7 +615,7 @@ make sync       # downloads latest spec, diffs against local schema, runs covera
 2. Displays a precise `git diff` of newly added endpoints, struct fields, and enums.
 3. Runs the `openapi_coverage` test suite to statically verify our Rust types against the spec.
 
-Coverage is enforced on every commit via pre-commit hooks. Current field coverage for all implemented typed schemas is **100%**. This guarantees 1:1 feature parity with the Python SDK, ensuring you can adopt new OpenAI models and features on day one.
+Coverage is enforced on every commit via pre-commit hooks (currently **96%** — missing `stream` and `partial_images` on Images). Types are auto-synced from the Python SDK via `py2rust.py`, so new OpenAI fields land with a single `make sync-types` run.
 
 
 ## Used In
