@@ -38,12 +38,14 @@ openai-oxide (Rust core)
 
 **Structured outputs that flow across the FFI boundary.** `parse::<T>()` takes a Rust struct with `#[derive(JsonSchema)]`, generates a JSON schema, sends it to the API, gets back guaranteed-valid JSON, and deserializes it. One call. The key insight: these same Rust types become Swift types via UniFFI and JavaScript types via napi-rs. So the model's structured response is typed end-to-end from the API to the UI layer, with no manual JSON parsing anywhere in the chain.
 
-**Benchmarks taught me humility.** I spent a week claiming my client was "40% faster." Then I actually did proper statistical analysis (Welch's t-test, n=50 on mock server, n=5 on live API). Reality: on single API calls to OpenAI (200ms-2s latency), no SDK is meaningfully faster than another. The server dominates. Where Rust does win: pure SDK overhead is 2-3x lower on mock benchmarks (p<0.001). That matters with fast inference providers (Cerebras at 10-50ms), agent farms running hundreds of sessions, and voice apps where you feel every millisecond. It doesn't matter for a single chat call.
+**This is part of a bigger machine.** I'm building a [solo-factory](https://github.com/fortunto2/solo-factory) — a toolkit for launching startups solo. It includes Claude Code skills for planning, building, deploying, and reviewing projects. openai-oxide and sgr-agent are the AI infrastructure layer. Every new product I start gets the same Rust core, same agent framework, same type-safe LLM integration. The video app, the coding agent, the voice assistant — they all started from the same scaffold, and they all share the same battle-tested LLM client underneath.
+
+The solo-factory approach means I'm not building one product — I'm building the tooling that lets me ship products faster. openai-oxide is one of those tools that turned out useful beyond my own projects.
 
 ### What I'd like to discuss
 
-- Has anyone else gone the "one Rust core, thin bindings everywhere" route for an SDK? I'm curious about the long-term maintenance experience.
+- Has anyone else gone the "one Rust core, thin bindings everywhere" route for a client SDK? Curious about long-term maintenance.
 - The UniFFI → Swift path works but feels underexplored. Anyone using it in production iOS apps?
-- Is WebSocket mode for the Responses API on anyone's radar? It's documented but I rarely see it mentioned.
+- Is OpenAI's WebSocket mode for the Responses API on anyone's radar? Documented but rarely mentioned.
 
 Links: [GitHub](https://github.com/fortunto2/openai-oxide) · [crates.io](https://crates.io/crates/openai-oxide) · [coding agent](https://github.com/fortunto2/rust-code) · [npm](https://www.npmjs.com/package/openai-oxide) · [PyPI](https://pypi.org/project/openai-oxide/)
