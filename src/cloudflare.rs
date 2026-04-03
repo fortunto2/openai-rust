@@ -1,243 +1,133 @@
-// Cloudflare Workers AI client configuration.
+// Cloudflare Workers AI helpers.
 //
-// Provides `CloudflareConfig` builder for constructing an `OpenAI` client that
-// targets Cloudflare Workers AI. Uses the OpenAI-compatible endpoint at
-// `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1`.
+// Workers AI is OpenAI-compatible. These helpers construct the correct
+// base URL and optionally set the `x-session-affinity` header for prefix caching.
 //
-// Key features:
-// - `x-session-affinity` header for prefix caching (routes to same instance)
-// - Standard Bearer token auth with Cloudflare API token
-// - OpenAI guide: <https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/>
+// OpenAI guide: <https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/>
 
 use reqwest::header::{HeaderMap, HeaderValue};
-use std::env;
 
-use crate::client::OpenAI;
 use crate::config::ClientConfig;
 use crate::error::OpenAIError;
 
 const SESSION_AFFINITY_HEADER: &str = "x-session-affinity";
 
-/// Configuration builder for Cloudflare Workers AI.
-///
-/// Cloudflare Workers AI provides an OpenAI-compatible API at
-/// `/client/v4/accounts/{account_id}/ai/v1`. It supports prefix caching
-/// via the `x-session-affinity` header, which routes requests to the same
-/// model instance for better cache hit rates.
-///
-/// # Examples
+/// Build a `ClientConfig` for Cloudflare Workers AI.
 ///
 /// ```ignore
-/// use openai_oxide::{OpenAI, CloudflareConfig};
-///
-/// let client = OpenAI::cloudflare(
-///     CloudflareConfig::new("account-id", "cf-api-token")
-/// )?;
-///
-/// // Use any Workers AI model with the standard OpenAI API
-/// let response = client.chat().completions().create(
-///     ChatCompletionRequest::new(
-///         "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-///         vec![/* messages */],
-///     )
-/// ).await?;
+/// let client = OpenAI::with_config(
+///     cloudflare::config("account-id", "cf-token", None)?
+/// );
+/// // model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 /// ```
 ///
 /// With session affinity for prefix caching:
-///
 /// ```ignore
-/// let client = OpenAI::cloudflare(
-///     CloudflareConfig::new("account-id", "cf-api-token")
-///         .session_affinity("my-agent-session-123")
-/// )?;
-/// // All requests routed to the same instance — cached prefixes reused
+/// let client = OpenAI::with_config(
+///     cloudflare::config("account-id", "cf-token", Some("session-123"))?
+/// );
 /// ```
-#[derive(Debug, Clone)]
-pub struct CloudflareConfig {
-    /// Cloudflare account ID.
-    pub account_id: String,
+pub fn config(
+    account_id: &str,
+    api_token: &str,
+    session_affinity: Option<&str>,
+) -> Result<ClientConfig, OpenAIError> {
+    let base_url = format!("https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1");
 
-    /// Cloudflare API token (Bearer auth).
-    pub api_token: String,
+    let mut cfg = ClientConfig::new(api_token).base_url(base_url);
 
-    /// Session affinity key for prefix caching.
-    /// Routes requests to the same model instance.
-    pub session_affinity: Option<String>,
+    if let Some(key) = session_affinity {
+        let mut headers = HeaderMap::with_capacity(1);
+        headers.insert(
+            SESSION_AFFINITY_HEADER,
+            HeaderValue::from_str(key).map_err(|e| {
+                OpenAIError::InvalidArgument(format!("invalid session affinity key: {e}"))
+            })?,
+        );
+        cfg = cfg.default_headers(headers);
+    }
 
-    /// Custom gateway ID for AI Gateway (optional).
-    /// Changes base URL to use AI Gateway endpoint.
-    pub gateway_id: Option<String>,
+    Ok(cfg)
 }
 
-impl CloudflareConfig {
-    /// Create a new Cloudflare Workers AI configuration.
-    ///
-    /// # Arguments
-    /// - `account_id` — your Cloudflare account ID
-    /// - `api_token` — Cloudflare API token with Workers AI permissions
-    #[must_use]
-    pub fn new(account_id: impl Into<String>, api_token: impl Into<String>) -> Self {
-        Self {
-            account_id: account_id.into(),
-            api_token: api_token.into(),
-            session_affinity: None,
-            gateway_id: None,
-        }
+/// Build a `ClientConfig` for Cloudflare AI Gateway.
+///
+/// AI Gateway adds logging, caching, and rate limiting on top of Workers AI.
+///
+/// ```ignore
+/// let client = OpenAI::with_config(
+///     cloudflare::gateway_config("account-id", "gateway-id", "cf-token", None)?
+/// );
+/// ```
+pub fn gateway_config(
+    account_id: &str,
+    gateway_id: &str,
+    api_token: &str,
+    session_affinity: Option<&str>,
+) -> Result<ClientConfig, OpenAIError> {
+    let base_url = format!("https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/openai");
+
+    let mut cfg = ClientConfig::new(api_token).base_url(base_url);
+
+    if let Some(key) = session_affinity {
+        let mut headers = HeaderMap::with_capacity(1);
+        headers.insert(
+            SESSION_AFFINITY_HEADER,
+            HeaderValue::from_str(key).map_err(|e| {
+                OpenAIError::InvalidArgument(format!("invalid session affinity key: {e}"))
+            })?,
+        );
+        cfg = cfg.default_headers(headers);
     }
 
-    /// Set session affinity key for prefix caching.
-    ///
-    /// Routes all requests to the same model instance, improving cache hit
-    /// rates for prefix caching. Use a unique string per agent session or
-    /// conversation. This can reduce TTFT and cost for multi-turn interactions.
-    ///
-    /// See: <https://blog.cloudflare.com/workers-ai-large-models/>
-    #[must_use]
-    pub fn session_affinity(mut self, key: impl Into<String>) -> Self {
-        self.session_affinity = Some(key.into());
-        self
-    }
-
-    /// Set AI Gateway ID for request logging and caching.
-    ///
-    /// When set, the base URL uses the AI Gateway endpoint instead of the
-    /// direct Workers AI endpoint.
-    #[must_use]
-    pub fn gateway_id(mut self, id: impl Into<String>) -> Self {
-        self.gateway_id = Some(id.into());
-        self
-    }
-
-    /// Build an `OpenAI` client from this Cloudflare configuration.
-    pub fn build(self) -> Result<OpenAI, OpenAIError> {
-        let base_url = match &self.gateway_id {
-            Some(gw) => format!(
-                "https://gateway.ai.cloudflare.com/v1/{}/{}/openai",
-                self.account_id, gw
-            ),
-            None => format!(
-                "https://api.cloudflare.com/client/v4/accounts/{}/ai/v1",
-                self.account_id
-            ),
-        };
-
-        let mut config = ClientConfig::new(&self.api_token).base_url(base_url);
-
-        if let Some(ref session_key) = self.session_affinity {
-            let mut headers = HeaderMap::with_capacity(1);
-            headers.insert(
-                SESSION_AFFINITY_HEADER,
-                HeaderValue::from_str(session_key).map_err(|e| {
-                    OpenAIError::InvalidArgument(format!("invalid session affinity key: {e}"))
-                })?,
-            );
-            config = config.default_headers(headers);
-        }
-
-        Ok(OpenAI::with_config(config))
-    }
-
-    /// Build an `OpenAI` client from environment variables.
-    ///
-    /// Reads:
-    /// - `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID
-    /// - `CLOUDFLARE_API_TOKEN` — Cloudflare API token
-    /// - `CLOUDFLARE_SESSION_AFFINITY` — optional session affinity key
-    /// - `CLOUDFLARE_GATEWAY_ID` — optional AI Gateway ID
-    pub fn from_env() -> Result<OpenAI, OpenAIError> {
-        let account_id = env::var("CLOUDFLARE_ACCOUNT_ID").map_err(|_| {
-            OpenAIError::InvalidArgument(
-                "CLOUDFLARE_ACCOUNT_ID environment variable not set".to_string(),
-            )
-        })?;
-
-        let api_token = env::var("CLOUDFLARE_API_TOKEN").map_err(|_| {
-            OpenAIError::InvalidArgument(
-                "CLOUDFLARE_API_TOKEN environment variable not set".to_string(),
-            )
-        })?;
-
-        let mut config = Self::new(account_id, api_token);
-
-        if let Ok(session) = env::var("CLOUDFLARE_SESSION_AFFINITY") {
-            config = config.session_affinity(session);
-        }
-
-        if let Ok(gw) = env::var("CLOUDFLARE_GATEWAY_ID") {
-            config = config.gateway_id(gw);
-        }
-
-        config.build()
-    }
+    Ok(cfg)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
-    fn test_cloudflare_base_url() {
-        let client = CloudflareConfig::new("abc123", "cf-token").build().unwrap();
-
+    fn test_base_url() {
+        let cfg = config("abc123", "cf-token", None).unwrap();
         assert_eq!(
-            client.config.base_url(),
+            cfg.base_url,
             "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
         );
     }
 
     #[test]
-    fn test_cloudflare_gateway_url() {
-        let client = CloudflareConfig::new("abc123", "cf-token")
-            .gateway_id("my-gateway")
-            .build()
-            .unwrap();
-
+    fn test_gateway_url() {
+        let cfg = gateway_config("abc123", "my-gw", "cf-token", None).unwrap();
         assert_eq!(
-            client.config.base_url(),
-            "https://gateway.ai.cloudflare.com/v1/abc123/my-gateway/openai"
+            cfg.base_url,
+            "https://gateway.ai.cloudflare.com/v1/abc123/my-gw/openai"
         );
     }
 
     #[test]
-    fn test_cloudflare_session_affinity_header() {
-        let client = CloudflareConfig::new("abc123", "cf-token")
-            .session_affinity("ses_12345")
-            .build()
-            .unwrap();
-
-        let headers = client.config.default_headers().unwrap();
-        assert_eq!(headers.get(SESSION_AFFINITY_HEADER).unwrap(), "ses_12345");
+    fn test_session_affinity_header() {
+        let cfg = config("abc123", "cf-token", Some("ses_123")).unwrap();
+        let headers = cfg.default_headers.as_ref().unwrap();
+        assert_eq!(headers.get(SESSION_AFFINITY_HEADER).unwrap(), "ses_123");
     }
 
     #[test]
-    fn test_cloudflare_no_session_affinity() {
-        let client = CloudflareConfig::new("abc123", "cf-token").build().unwrap();
-
-        assert!(client.config.default_headers().is_none());
+    fn test_no_session_affinity() {
+        let cfg = config("abc123", "cf-token", None).unwrap();
+        assert!(cfg.default_headers.is_none());
     }
 
     #[test]
-    fn test_cloudflare_bearer_auth() {
-        let client = CloudflareConfig::new("abc123", "cf-token").build().unwrap();
-
-        assert_eq!(client.config.api_key(), "cf-token");
+    fn test_bearer_auth() {
+        let cfg = config("abc123", "cf-token", None).unwrap();
+        assert_eq!(cfg.api_key, "cf-token");
     }
 
-    /// E2E test: build through CloudflareConfig, verify headers reach the server.
-    ///
-    /// We build via CloudflareConfig to get the correct default_headers, then
-    /// reconstruct with the mock server URL (CloudflareConfig hardcodes the
-    /// Cloudflare domain, so we extract the headers it produced).
     #[tokio::test]
-    async fn test_cloudflare_e2e_session_affinity() {
-        // 1. Build through CloudflareConfig to get the real headers
-        let cf_client = CloudflareConfig::new("test-account", "cf-token")
-            .session_affinity("agent-42")
-            .build()
-            .unwrap();
-        let built_headers = cf_client.config.default_headers().unwrap().clone();
+    async fn test_e2e_session_affinity() {
+        use crate::client::OpenAI;
+        use crate::types::chat::{ChatCompletionMessageParam, ChatCompletionRequest, UserContent};
 
-        // 2. Set up mock server
         let mut server = mockito::Server::new_async().await;
         let mock = server
             .mock("POST", "/ai/v1/chat/completions")
@@ -269,14 +159,16 @@ mod tests {
             .create_async()
             .await;
 
-        // 3. Rebuild with mock URL but same headers from CloudflareConfig
-        let config = ClientConfig::new("cf-token")
+        // Build through config() to verify it produces correct headers,
+        // then rebuild with mock server URL
+        let real_cfg = config("test", "cf-token", Some("agent-42")).unwrap();
+        let built_headers = real_cfg.default_headers.unwrap().clone();
+
+        let mock_cfg = ClientConfig::new("cf-token")
             .base_url(format!("{}/ai/v1", server.url()))
             .default_headers(built_headers);
-        let client = OpenAI::with_config(config);
 
-        use crate::types::chat::{ChatCompletionMessageParam, ChatCompletionRequest, UserContent};
-
+        let client = OpenAI::with_config(mock_cfg);
         let request = ChatCompletionRequest::new(
             "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
             vec![ChatCompletionMessageParam::User {
