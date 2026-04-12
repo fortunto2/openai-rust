@@ -326,6 +326,14 @@ pub fn ensure_strict(value: &mut serde_json::Value) {
             map.remove("default");
         }
 
+        // Remove format field (schemars adds int32/int64/uint32/double etc.)
+        // OpenAI accepts but ignores; Cerebras and other providers reject it.
+        map.remove("format");
+        // Remove minimum:0 for unsigned types (schemars adds for u32/u64)
+        if map.get("minimum") == Some(&serde_json::json!(0.0)) {
+            map.remove("minimum");
+        }
+
         // oneOf → anyOf (OpenAI strict doesn't support oneOf)
         if let Some(one_of) = map.remove("oneOf") {
             map.insert("anyOf".into(), one_of);

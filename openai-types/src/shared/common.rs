@@ -222,6 +222,23 @@ pub struct Usage {
     pub completion_tokens_details: Option<CompletionTokensDetails>,
 }
 
+impl Usage {
+    /// Number of prompt tokens served from cache (0 if no cache hit).
+    pub fn cached_tokens(&self) -> i64 {
+        self.prompt_tokens_details
+            .as_ref()
+            .and_then(|d| d.cached_tokens)
+            .unwrap_or(0)
+    }
+
+    /// Cache hit ratio as percentage (0-100).
+    pub fn cache_hit_pct(&self) -> u64 {
+        let input = self.prompt_tokens.unwrap_or(0) as u64;
+        let cached = self.cached_tokens() as u64;
+        if input > 0 { (cached * 100) / input } else { 0 }
+    }
+}
+
 /// Detailed breakdown of prompt token usage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "structured", derive(schemars::JsonSchema))]

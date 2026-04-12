@@ -490,13 +490,34 @@ pub struct Tool {
     pub function: FunctionDef,
 }
 
+/// Recursively strip `format` and `minimum:0` from JSON schema values.
+/// schemars adds int32/int64/uint32/double format fields that some providers reject.
+fn strip_format_recursive(value: &mut serde_json::Value) {
+    if let Some(map) = value.as_object_mut() {
+        map.remove("format");
+        if map.get("minimum") == Some(&serde_json::json!(0.0)) {
+            map.remove("minimum");
+        }
+        for v in map.values_mut() {
+            strip_format_recursive(v);
+        }
+    } else if let Some(arr) = value.as_array_mut() {
+        for v in arr {
+            strip_format_recursive(v);
+        }
+    }
+}
+
 impl Tool {
     /// Create a standard function tool.
+    /// Strips `format` and `minimum:0` fields recursively for cross-provider compatibility
+    /// (schemars adds int32/int64/uint32/double which providers like Cerebras reject).
     pub fn function(
         name: impl Into<String>,
         description: impl Into<String>,
-        parameters: serde_json::Value,
+        mut parameters: serde_json::Value,
     ) -> Self {
+        strip_format_recursive(&mut parameters);
         Self {
             type_: "function".to_string(),
             function: FunctionDef {
