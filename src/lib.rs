@@ -38,6 +38,7 @@
 #[cfg(feature = "reqwest-012")]
 extern crate reqwest012 as reqwest;
 
+pub mod anthropic;
 pub mod azure;
 pub mod client;
 pub mod cloudflare;
